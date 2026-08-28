@@ -114,3 +114,13 @@ class Participant(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.entry_type})"
+
+    def save(self, *args, **kwargs):
+        # 관리자 화면 등에서 체크인 상태를 "체크인 전"으로 되돌리면, 이전
+        # 체크인 시각이 그대로 남아 헷갈리지 않도록 함께 지운다.
+        if self.checkin_status == CheckinStatus.NOT_CHECKED_IN and self.checked_in_at is not None:
+            self.checked_in_at = None
+            update_fields = kwargs.get("update_fields")
+            if update_fields is not None and "checked_in_at" not in update_fields:
+                kwargs["update_fields"] = list(update_fields) + ["checked_in_at"]
+        super().save(*args, **kwargs)
