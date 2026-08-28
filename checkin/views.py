@@ -16,6 +16,7 @@ from django.views.decorators.http import require_GET, require_POST
 
 from .forms import RegisterForm
 from .models import Event, Participant
+from .services import sheet_sync
 
 UUID_RE = re.compile(
     r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
@@ -108,6 +109,7 @@ def _mark_checked_in(participant: Participant) -> None:
     participant.checkin_status = "CHECKED_IN"
     participant.checked_in_at = timezone.now()
     participant.save(update_fields=["checkin_status", "checked_in_at"])
+    sheet_sync.push_arrival(participant)
 
 
 # --------------------------------------------------------------------------
