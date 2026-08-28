@@ -7,6 +7,7 @@ from django.http import HttpResponse
 
 from .models import Event, Participant
 from .services import sheet_sync
+from .services.announcement_export import build_announcement_file
 from .services.assign_labels import assign_labels_and_tokens
 
 
@@ -61,12 +62,27 @@ def export_event_csv(modeladmin, request, queryset):
     return response
 
 
+@admin.action(description="선택 회차: 공지용 명단 엑셀 다운로드 (이름/연락처 마스킹)")
+def export_announcement_excel(modeladmin, request, queryset):
+    event = queryset.first()
+    if queryset.count() > 1:
+        messages.warning(request, "공지용 명단은 한 번에 회차 하나씩만 가능합니다. 첫 번째로 선택한 회차만 내려받습니다.")
+
+    filename, content = build_announcement_file(event)
+    response = HttpResponse(
+        content,
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    return response
+
+
 @admin.register(Event)
 class EventAdmin(admin.ModelAdmin):
     list_display = ("name", "volume", "is_active", "participant_count", "created_at")
     list_filter = ("is_active",)
     ordering = ("-volume",)
-    actions = [run_label_assign, push_order_to_sheet, export_event_csv]
+    actions = [run_label_assign, push_order_to_sheet, export_event_csv, export_announcement_excel]
 
     @admin.display(description="신청자 수")
     def participant_count(self, obj):
@@ -97,11 +113,11 @@ def mark_paid(modeladmin, request, queryset):
 @admin.register(Participant)
 class ParticipantAdmin(admin.ModelAdmin):
     list_display = (
-        "name", "event", "entry_type", "genre", "verification_status",
-        "payment_status", "label_code_display", "checkin_status",
+        "name", "phone", "school", "academic_status", "event", "entry_type", "genre",
+        "verification_status", "payment_status", "label_code_display", "checkin_status",
     )
     list_filter = ("event", "entry_type", "verification_status", "payment_status", "checkin_status", "genre")
-    search_fields = ("name", "phone", "email")
+    search_fields = ("name", "phone", "email", "school")
     actions = [approve_verification, mark_paid]
     readonly_fields = ("id", "qr_token", "created_at")
 
