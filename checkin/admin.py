@@ -80,11 +80,11 @@ def mark_paid(modeladmin, request, queryset):
 @admin.register(Participant)
 class ParticipantAdmin(admin.ModelAdmin):
     list_display = (
-        "name", "event", "entry_type", "genre", "verification_status",
-        "payment_status", "label_code", "checkin_status",
+        "name", "phone", "school", "academic_status", "event", "entry_type", "genre",
+        "verification_status", "payment_status", "label_code", "checkin_status",
     )
     list_filter = ("event", "entry_type", "verification_status", "payment_status", "checkin_status", "genre")
-    search_fields = ("name", "phone", "email")
+    search_fields = ("name", "phone", "email", "school")
     actions = [approve_verification, mark_paid]
     readonly_fields = ("id", "qr_token", "created_at")
 
