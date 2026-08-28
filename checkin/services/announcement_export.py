@@ -47,11 +47,14 @@ def _mask_middle(s: str) -> str:
 
 def mask_name(raw_name: str) -> str:
     """'본명/댄서네임' 형식이면 본명 부분만 가운데를 마스킹하고 댄서네임은
-    그대로 둔다. 구분자가 없으면(=댄서네임을 따로 안 적어 이름과 같은
-    경우) 전체를 이름과 동일하게 마스킹한다."""
-    real, _, dancer = raw_name.partition("/")
+    그대로 둔다. 구분자가 없거나(=댄서네임을 따로 안 적어 이름과 같은 경우),
+    댄서네임을 본명과 똑같이 적은 경우(예: "김민준/김민준")는 양쪽 다
+    동일하게 마스킹한다."""
+    real, sep, dancer = raw_name.partition("/")
     masked_real = _mask_middle(real)
-    return f"{masked_real}/{dancer}" if dancer else masked_real
+    if not sep or dancer == real:
+        return f"{masked_real}/{masked_real}" if sep else masked_real
+    return f"{masked_real}/{dancer}"
 
 
 def mask_phone(raw_phone: str) -> str:
