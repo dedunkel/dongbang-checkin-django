@@ -1,6 +1,8 @@
 import csv
 
 from django.contrib import admin, messages
+from django.db.models import CharField, Value
+from django.db.models.functions import Cast, Concat, LPad
 from django.http import HttpResponse
 
 from .models import Event, Participant
@@ -81,12 +83,29 @@ def mark_paid(modeladmin, request, queryset):
 class ParticipantAdmin(admin.ModelAdmin):
     list_display = (
         "name", "event", "entry_type", "genre", "verification_status",
-        "payment_status", "label_code", "checkin_status",
+        "payment_status", "label_code_display", "checkin_status",
     )
     list_filter = ("event", "entry_type", "verification_status", "payment_status", "checkin_status", "genre")
     search_fields = ("name", "phone", "email")
     actions = [approve_verification, mark_paid]
     readonly_fields = ("id", "qr_token", "created_at")
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        # label_code("A-10")를 그대로 정렬하면 문자열 비교라 "A-10"이 "A-2"보다
+        # 앞에 와버림. label_number를 0으로 채운 문자열로 만들어 정렬 전용
+        # 컬럼으로 붙여서, group+번호 순으로 정렬되게 한다.
+        return qs.annotate(
+            _label_sort=Concat(
+                "label_group",
+                LPad(Cast("label_number", CharField()), 2, Value("0")),
+                output_field=CharField(),
+            )
+        )
+
+    @admin.display(description="Label code", ordering="_label_sort")
+    def label_code_display(self, obj):
+        return obj.label_code
 
     fieldsets = (
         (None, {"fields": ("event", "entry_type", "name", "phone", "email")}),
