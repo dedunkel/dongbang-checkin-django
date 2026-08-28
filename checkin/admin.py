@@ -1,9 +1,12 @@
 import csv
 
 from django.contrib import admin, messages
+from django.db.models import CharField, Value
+from django.db.models.functions import Cast, Concat, LPad
 from django.http import HttpResponse
 
 from .models import Event, Participant
+from .services import sheet_sync
 from .services.announcement_export import build_announcement_file
 from .services.assign_labels import assign_labels_and_tokens
 
@@ -16,6 +19,20 @@ def run_label_assign(modeladmin, request, queryset):
             request,
             f'"{event.name}": 라벨 신규 배정 {result["labeled"]}명 / QR 신규 발급 {result["issued"]}명',
         )
+
+
+@admin.action(description="⑤ 선택 회차: 라벨 순서를 점수 시트에 반영")
+def push_order_to_sheet(modeladmin, request, queryset):
+    for event in queryset:
+        result = sheet_sync.push_order_for_event(event)
+        if result.get("ok"):
+            messages.success(
+                request,
+                f'"{event.name}": 점수 시트 순서 반영 완료 '
+                f'({result.get("matchedCount", 0)}/{result.get("totalCount", 0)}명 매칭)',
+            )
+        else:
+            messages.error(request, f'"{event.name}": 점수 시트 반영 실패 — {result.get("message")}')
 
 
 @admin.action(description="선택 회차: 참가자 CSV 백업 다운로드")
@@ -65,7 +82,7 @@ class EventAdmin(admin.ModelAdmin):
     list_display = ("name", "volume", "is_active", "participant_count", "created_at")
     list_filter = ("is_active",)
     ordering = ("-volume",)
-    actions = [run_label_assign, export_event_csv, export_announcement_excel]
+    actions = [run_label_assign, push_order_to_sheet, export_event_csv, export_announcement_excel]
 
     @admin.display(description="신청자 수")
     def participant_count(self, obj):
@@ -97,12 +114,29 @@ def mark_paid(modeladmin, request, queryset):
 class ParticipantAdmin(admin.ModelAdmin):
     list_display = (
         "name", "phone", "school", "academic_status", "event", "entry_type", "genre",
-        "verification_status", "payment_status", "label_code", "checkin_status",
+        "verification_status", "payment_status", "label_code_display", "checkin_status",
     )
     list_filter = ("event", "entry_type", "verification_status", "payment_status", "checkin_status", "genre")
     search_fields = ("name", "phone", "email", "school")
     actions = [approve_verification, mark_paid]
     readonly_fields = ("id", "qr_token", "created_at")
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        # label_code("A-10")를 그대로 정렬하면 문자열 비교라 "A-10"이 "A-2"보다
+        # 앞에 와버림. label_number를 0으로 채운 문자열로 만들어 정렬 전용
+        # 컬럼으로 붙여서, group+번호 순으로 정렬되게 한다.
+        return qs.annotate(
+            _label_sort=Concat(
+                "label_group",
+                LPad(Cast("label_number", CharField()), 2, Value("0")),
+                output_field=CharField(),
+            )
+        )
+
+    @admin.display(description="Label code", ordering="_label_sort")
+    def label_code_display(self, obj):
+        return obj.label_code
 
     fieldsets = (
         (None, {"fields": ("event", "entry_type", "name", "phone", "email")}),
