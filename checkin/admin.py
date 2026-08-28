@@ -4,6 +4,7 @@ from django.contrib import admin, messages
 from django.http import HttpResponse
 
 from .models import Event, Participant
+from .services import sheet_sync
 from .services.assign_labels import assign_labels_and_tokens
 
 
@@ -15,6 +16,20 @@ def run_label_assign(modeladmin, request, queryset):
             request,
             f'"{event.name}": 라벨 신규 배정 {result["labeled"]}명 / QR 신규 발급 {result["issued"]}명',
         )
+
+
+@admin.action(description="⑤ 선택 회차: 라벨 순서를 점수 시트에 반영")
+def push_order_to_sheet(modeladmin, request, queryset):
+    for event in queryset:
+        result = sheet_sync.push_order_for_event(event)
+        if result.get("ok"):
+            messages.success(
+                request,
+                f'"{event.name}": 점수 시트 순서 반영 완료 '
+                f'({result.get("matchedCount", 0)}/{result.get("totalCount", 0)}명 매칭)',
+            )
+        else:
+            messages.error(request, f'"{event.name}": 점수 시트 반영 실패 — {result.get("message")}')
 
 
 @admin.action(description="선택 회차: 참가자 CSV 백업 다운로드")
@@ -49,7 +64,7 @@ class EventAdmin(admin.ModelAdmin):
     list_display = ("name", "volume", "is_active", "participant_count", "created_at")
     list_filter = ("is_active",)
     ordering = ("-volume",)
-    actions = [run_label_assign, export_event_csv]
+    actions = [run_label_assign, push_order_to_sheet, export_event_csv]
 
     @admin.display(description="신청자 수")
     def participant_count(self, obj):
