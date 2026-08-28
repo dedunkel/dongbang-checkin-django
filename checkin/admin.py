@@ -4,6 +4,7 @@ from django.contrib import admin, messages
 from django.db.models import CharField, Value
 from django.db.models.functions import Cast, Concat, LPad
 from django.http import HttpResponse
+from django.utils.http import content_disposition_header
 
 from .models import Event, Participant
 from .services import sheet_sync
@@ -42,7 +43,9 @@ def export_event_csv(modeladmin, request, queryset):
         messages.warning(request, "CSV 백업은 한 번에 회차 하나씩만 가능합니다. 첫 번째로 선택한 회차만 내려받습니다.")
 
     response = HttpResponse(content_type="text/csv; charset=utf-8-sig")
-    response["Content-Disposition"] = f'attachment; filename="{event.name}_backup.csv"'
+    response.headers["Content-Disposition"] = content_disposition_header(
+        as_attachment=True, filename=f"{event.name}_backup.csv"
+    )
     writer = csv.writer(response)
     writer.writerow(
         [
@@ -73,7 +76,9 @@ def export_announcement_excel(modeladmin, request, queryset):
         content,
         content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
-    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    response.headers["Content-Disposition"] = content_disposition_header(
+        as_attachment=True, filename=filename
+    )
     return response
 
 
