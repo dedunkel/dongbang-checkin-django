@@ -27,6 +27,12 @@ function resultBox(html, ok) {
   el.style.color = ok === undefined ? '' : (ok ? '#34d399' : '#f87171');
 }
 
+function participantInfoHtml(p) {
+  return `<b>${p.name}</b> (${p.entryType}${p.genre ? ' · ' + p.genre : ''})<br>` +
+         `${p.school ? p.school + '<br>' : ''}` +
+         `<span style="font-size:1.6rem;font-weight:800;">${p.labelCode || ''}</span>`;
+}
+
 async function lookupQr(text) {
   const res = await fetch('{% url "checkin:qr_lookup_api" %}', {
     method: 'POST',
@@ -39,8 +45,7 @@ async function lookupQr(text) {
     return;
   }
   const p = data.data;
-  const info = `<b>${p.name}</b> (${p.entryType}${p.genre ? ' · ' + p.genre : ''})<br>` +
-               `<span style="font-size:1.6rem;font-weight:800;">${p.labelCode || ''}</span>`;
+  const info = participantInfoHtml(p);
   if (p.checkinStatus === 'CHECKED_IN') {
     resultBox(`${info}<br>이미 체크인됨`, false);
   } else {
@@ -55,8 +60,7 @@ document.getElementById('scanResult').addEventListener('click', async (e) => {
     method: 'POST', headers: { 'X-CSRFToken': csrfToken },
   });
   const data = await res.json();
-  resultBox(`<b>${data.data.name}</b> (${data.data.entryType}${data.data.genre ? ' · ' + data.data.genre : ''})<br>` +
-             `<span style="font-size:1.6rem;font-weight:800;">${data.data.labelCode || ''}</span><br>체크인 완료`, true);
+  resultBox(`${participantInfoHtml(data.data)}<br>체크인 완료`, true);
 });
 
 // --- 카메라 QR 스캔 ---
