@@ -1,0 +1,24 @@
+{% extends "checkin/base.html" %}
+{% block title %}체크인 QR{% endblock %}
+{% block content %}
+{% if not_found %}
+  <div class="card"><p class="muted">QR 정보를 찾을 수 없습니다. 링크가 정확한지 확인해주세요.</p></div>
+{% else %}
+  <div class="card" style="text-align:center;">
+    <p class="muted">동방배틀 체크인 QR</p>
+    <h1 style="margin-top:0.25rem;">{{ participant.name }}</h1>
+    <p class="muted">{{ participant.entry_type }}{% if participant.genre %} · {{ participant.genre }}{% endif %}</p>
+    <img src="{{ qr_data_url }}" alt="체크인 QR" width="220" height="220"
+         style="margin: 1rem auto; border-radius: 0.75rem; background: white; padding: 0.75rem;" />
+    {% if participant.label_code %}
+      <div style="font-size:2rem; font-weight:800; margin-top:0.5rem;">{{ participant.label_code }}</div>
+    {% endif %}
+    <p class="muted" style="margin-top:1rem;">
+      {% if participant.checkin_status == "CHECKED_IN" %}이미 체크인 완료{% else %}행사 당일 인포에서 이 화면을 보여주세요{% endif %}
+    </p>
+    <p style="font-size:0.7rem; color:#525252; margin-top:1rem;">
+      이 QR 화면은 본인 확인용입니다. 캡처본을 타인과 공유하지 마세요.
+    </p>
+  </div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,116 @@
+{% extends "checkin/base.html" %}
+{% block title %}현장 체크인{% endblock %}
+{% block content %}
+<h1>현장 체크인{% if event %} · {{ event.name }}{% endif %}</h1>
+
+{% csrf_token %}
+
+<div class="card">
+  <video id="video" autoplay playsinline muted style="width:100%; border-radius:0.75rem; background:#000;"></video>
+  <canvas id="canvas" style="display:none;"></canvas>
+  <div id="scanResult" style="margin-top:1rem; min-height:3rem;"></div>
+</div>
+
+<div class="card" style="margin-top:1.25rem;">
+  <label for="searchBox">이름/전화번호로 수동 검색</label>
+  <input type="text" id="searchBox" placeholder="이름 또는 전화번호" />
+  <div id="searchResults" style="margin-top:0.75rem;"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.js"></script>
+<script>
+const csrfToken = document.querySelector('input[name=csrfmiddlewaretoken]').value;
+
+function resultBox(html, ok) {
+  const el = document.getElementById('scanResult');
+  el.innerHTML = html;
+  el.style.color = ok === undefined ? '' : (ok ? '#34d399' : '#f87171');
+}
+
+async function submitCheckin(text) {
+  const res = await fetch('{% url "checkin:checkin_api" %}', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+    body: JSON.stringify({ text }),
+  });
+  const data = await res.json();
+  if (data.status === 'success') {
+    resultBox(`<b>${data.data.name}</b> (${data.data.entryType}${data.data.genre ? ' · ' + data.data.genre : ''})<br>` +
+               `<span style="font-size:1.6rem;font-weight:800;">${data.data.labelCode || ''}</span><br>체크인 완료`, true);
+  } else if (data.status === 'ALREADY_CHECKED_IN') {
+    resultBox(`<b>${data.data.name}</b><br>이미 체크인됨`, false);
+  } else {
+    resultBox('등록되지 않은 QR입니다.', false);
+  }
+}
+
+// --- 카메라 QR 스캔 ---
+let lastText = '';
+let lastAt = 0;
+const video = document.getElementById('video');
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+async function startCamera() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+    video.srcObject = stream;
+    requestAnimationFrame(tick);
+  } catch (e) {
+    resultBox('카메라를 사용할 수 없습니다. 아래 수동 검색을 이용해주세요.', false);
+  }
+}
+
+function tick() {
+  if (video.readyState === video.HAVE_ENOUGH_DATA) {
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const code = jsQR(imageData.data, imageData.width, imageData.height);
+    if (code && code.data) {
+      const now = Date.now();
+      if (code.data !== lastText || now - lastAt > 3000) {
+        lastText = code.data;
+        lastAt = now;
+        submitCheckin(code.data);
+      }
+    }
+  }
+  requestAnimationFrame(tick);
+}
+startCamera();
+
+// --- 수동 검색 ---
+const searchBox = document.getElementById('searchBox');
+const searchResults = document.getElementById('searchResults');
+let searchTimer = null;
+
+searchBox.addEventListener('input', () => {
+  clearTimeout(searchTimer);
+  const q = searchBox.value.trim();
+  if (!q) { searchResults.innerHTML = ''; return; }
+  searchTimer = setTimeout(async () => {
+    const res = await fetch(`{% url "checkin:participant_search_api" %}?q=${encodeURIComponent(q)}`);
+    const data = await res.json();
+    searchResults.innerHTML = data.results.map(p => `
+      <div style="display:flex; justify-content:space-between; align-items:center; padding:0.5rem 0; border-top:1px solid #262626;">
+        <span>${p.name} · ${p.phone} ${p.labelCode ? '· ' + p.labelCode : ''}</span>
+        ${p.checkinStatus === 'CHECKED_IN'
+          ? '<span class="muted">체크인됨</span>'
+          : `<button data-id="${p.id}" class="manualBtn" style="margin:0;padding:0.35rem 0.7rem;font-size:0.8rem;">체크인</button>`}
+      </div>
+    `).join('') || '<p class="muted">검색 결과가 없습니다.</p>';
+  }, 250);
+});
+
+searchResults.addEventListener('click', async (e) => {
+  if (!e.target.classList.contains('manualBtn')) return;
+  const id = e.target.dataset.id;
+  await fetch(`/api/participants/${id}/manual-checkin/`, {
+    method: 'POST', headers: { 'X-CSRFToken': csrfToken },
+  });
+  searchBox.dispatchEvent(new Event('input'));
+});
+</script>
+{% endblock %}

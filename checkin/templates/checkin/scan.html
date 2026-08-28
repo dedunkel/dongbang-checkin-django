@@ -1,0 +1,29 @@
+{% extends "checkin/base.html" %}
+{% block title %}체크인 확인{% endblock %}
+{% block content %}
+{% if not_found %}
+  <div class="card"><p class="muted">등록되지 않은 QR입니다.</p></div>
+{% else %}
+  <div class="card" style="text-align:center;">
+    <p class="muted">동방배틀 체크인</p>
+    <h1 style="margin-top:0.25rem;">{{ participant.name }}</h1>
+    <p class="muted">{{ participant.entry_type }}{% if participant.genre %} · {{ participant.genre }}{% endif %}</p>
+    {% if participant.label_code %}
+      <div style="font-size:2.5rem; font-weight:800; margin-top:0.75rem;">{{ participant.label_code }}</div>
+    {% endif %}
+
+    {% if participant.checkin_status == "CHECKED_IN" %}
+      <p class="success" style="font-size:1.1rem; margin-top:1.25rem;">✓ 체크인 완료</p>
+      {% if participant.checked_in_at %}
+        <p class="muted">{{ participant.checked_in_at }}</p>
+      {% endif %}
+    {% else %}
+      <p class="muted" style="margin-top:1.25rem;">아직 체크인되지 않았습니다.</p>
+      <a class="btn" href="{% url 'checkin:scan_confirm' token=participant.qr_token %}">체크인 확정</a>
+      <p style="font-size:0.75rem; color:#525252; margin-top:0.75rem;">
+        (스태프 로그인이 필요합니다 — 로그인 화면이 뜨면 로그인 후 이 화면으로 자동으로 돌아옵니다)
+      </p>
+    {% endif %}
+  </div>
+{% endif %}
+{% endblock %}

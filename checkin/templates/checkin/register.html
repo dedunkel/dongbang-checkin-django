@@ -1,0 +1,46 @@
+{% extends "checkin/base.html" %}
+{% block title %}참가/관람 신청{% endblock %}
+{% block content %}
+<h1>{{ event.name }} 참가/관람 신청</h1>
+
+{% if no_active_event %}
+  <div class="card"><p class="muted">현재 신청을 받는 회차가 없습니다. 운영진에게 문의해주세요.</p></div>
+{% elif success %}
+  <div class="card">
+    <p class="success">신청이 접수되었습니다.</p>
+    <p class="muted">검수 후 QR 링크를 문자로 보내드립니다.</p>
+  </div>
+{% else %}
+  <div class="card">
+    <form method="post" novalidate>
+      {% csrf_token %}
+      <label>{{ form.entry_type.label }}</label>
+      <div class="radio-row">{{ form.entry_type }}</div>
+      {{ form.entry_type.errors }}
+
+      <label for="{{ form.name.id_for_label }}">{{ form.name.label }}</label>
+      {{ form.name }}
+      {{ form.name.errors }}
+
+      <label for="{{ form.phone.id_for_label }}">{{ form.phone.label }}</label>
+      {{ form.phone }}
+      {{ form.phone.errors }}
+
+      <label for="{{ form.school.id_for_label }}">{{ form.school.label }}</label>
+      {{ form.school }}
+
+      <label for="{{ form.academic_status.id_for_label }}">{{ form.academic_status.label }}</label>
+      {{ form.academic_status }}
+
+      <label for="{{ form.genre.id_for_label }}">{{ form.genre.label }}</label>
+      {{ form.genre }}
+      {{ form.genre.errors }}
+
+      <label for="{{ form.email.id_for_label }}">{{ form.email.label }}</label>
+      {{ form.email }}
+
+      <button type="submit">신청하기</button>
+    </form>
+  </div>
+{% endif %}
+{% endblock %}
