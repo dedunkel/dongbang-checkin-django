@@ -48,8 +48,8 @@
 ### 2. 설치
 
 ```bash
-python3 -m venv venv
-source venv/bin/activate   # Windows는 venv\Scripts\activate
+python -m venv venv
+source venv/bin/activate   # Windows는 venv/Scripts/activate
 pip install -r requirements.txt
 cp .env.example .env
 # .env 안의 DATABASE_URL을 본인 Postgres 접속 정보로 수정 (또는 그 줄을 지우면 SQLite 사용)
