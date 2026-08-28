@@ -27,22 +27,37 @@ function resultBox(html, ok) {
   el.style.color = ok === undefined ? '' : (ok ? '#34d399' : '#f87171');
 }
 
-async function submitCheckin(text) {
-  const res = await fetch('{% url "checkin:checkin_api" %}', {
+async function lookupQr(text) {
+  const res = await fetch('{% url "checkin:qr_lookup_api" %}', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
     body: JSON.stringify({ text }),
   });
   const data = await res.json();
-  if (data.status === 'success') {
-    resultBox(`<b>${data.data.name}</b> (${data.data.entryType}${data.data.genre ? ' · ' + data.data.genre : ''})<br>` +
-               `<span style="font-size:1.6rem;font-weight:800;">${data.data.labelCode || ''}</span><br>체크인 완료`, true);
-  } else if (data.status === 'ALREADY_CHECKED_IN') {
-    resultBox(`<b>${data.data.name}</b><br>이미 체크인됨`, false);
-  } else {
+  if (data.status !== 'FOUND') {
     resultBox('등록되지 않은 QR입니다.', false);
+    return;
+  }
+  const p = data.data;
+  const info = `<b>${p.name}</b> (${p.entryType}${p.genre ? ' · ' + p.genre : ''})<br>` +
+               `<span style="font-size:1.6rem;font-weight:800;">${p.labelCode || ''}</span>`;
+  if (p.checkinStatus === 'CHECKED_IN') {
+    resultBox(`${info}<br>이미 체크인됨`, false);
+  } else {
+    resultBox(`${info}<br><button data-id="${p.id}" id="confirmCheckinBtn" style="margin-top:0.5rem;">체크인 확정</button>`);
   }
 }
+
+document.getElementById('scanResult').addEventListener('click', async (e) => {
+  if (e.target.id !== 'confirmCheckinBtn') return;
+  const id = e.target.dataset.id;
+  const res = await fetch(`/api/participants/${id}/manual-checkin/`, {
+    method: 'POST', headers: { 'X-CSRFToken': csrfToken },
+  });
+  const data = await res.json();
+  resultBox(`<b>${data.data.name}</b> (${data.data.entryType}${data.data.genre ? ' · ' + data.data.genre : ''})<br>` +
+             `<span style="font-size:1.6rem;font-weight:800;">${data.data.labelCode || ''}</span><br>체크인 완료`, true);
+});
 
 // --- 카메라 QR 스캔 ---
 let lastText = '';
@@ -73,7 +88,7 @@ function tick() {
       if (code.data !== lastText || now - lastAt > 3000) {
         lastText = code.data;
         lastAt = now;
-        submitCheckin(code.data);
+        lookupQr(code.data);
       }
     }
   }
