@@ -126,7 +126,10 @@ def _extract_token(text: str) -> str | None:
 
 @staff_member_required
 @require_POST
-def checkin_api(request):
+def qr_lookup_api(request):
+    """QR을 조회만 하고 체크인 처리는 하지 않음 — 스태프가 화면에서 참가자 정보를
+    확인하고 "체크인 확정" 버튼을 눌러야 manual_checkin_api가 실제로 체크인시킴.
+    """
     try:
         body = json.loads(request.body or "{}")
     except json.JSONDecodeError:
@@ -143,20 +146,7 @@ def checkin_api(request):
     if not participant:
         return JsonResponse({"status": "NOT_FOUND", "message": "등록되지 않은 QR입니다."})
 
-    if participant.checkin_status == "CHECKED_IN":
-        return JsonResponse(
-            {
-                "status": "ALREADY_CHECKED_IN",
-                "message": "이미 체크인되었습니다.",
-                "data": _participant_dto(participant),
-            }
-        )
-
-    _mark_checked_in(participant)
-
-    return JsonResponse(
-        {"status": "success", "message": "체크인 완료", "data": _participant_dto(participant)}
-    )
+    return JsonResponse({"status": "FOUND", "data": _participant_dto(participant)})
 
 
 @staff_member_required

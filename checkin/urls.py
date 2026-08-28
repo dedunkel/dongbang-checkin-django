@@ -11,7 +11,7 @@ urlpatterns = [
     path("qr/<uuid:token>/", views.qr_view, name="qr"),
     path("checkin/scan/<uuid:token>/", views.scan_view, name="scan"),
     path("checkin/scan/<uuid:token>/confirm/", views.scan_confirm, name="scan_confirm"),
-    path("api/checkin/", views.checkin_api, name="checkin_api"),
+    path("api/checkin/lookup/", views.qr_lookup_api, name="qr_lookup_api"),
     path("api/participants/search/", views.participant_search_api, name="participant_search_api"),
     path(
         "api/participants/<uuid:participant_id>/manual-checkin/",
