@@ -195,15 +195,6 @@ def _participant_dto(p: Participant) -> dict:
 # --------------------------------------------------------------------------
 # 기존 구글 폼 연동 — Forwarder.gs가 새 응답/백필을 이 endpoint로 보냅니다.
 # --------------------------------------------------------------------------
-def _split_school_status(raw: str) -> tuple:
-    if not raw:
-        return None, None
-    parts = [s.strip() for s in raw.split("/") if s.strip()]
-    if len(parts) >= 2:
-        return parts[0], parts[1]
-    return (parts[0] if parts else None), None
-
-
 @csrf_exempt
 @require_POST
 def google_form_import(request):
@@ -253,7 +244,8 @@ def google_form_import(request):
             continue
 
         entry_type = "관람" if "관람" in (row.get("type") or "참가") else "참가"
-        school, academic_status = _split_school_status(row.get("schoolStatus") or "")
+        school = (row.get("school") or "").strip() or None
+        academic_status = (row.get("academicStatus") or "").strip() or None
         genre = (row.get("genre") or "").strip() or None
         if entry_type != "참가":
             genre = None
