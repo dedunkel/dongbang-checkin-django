@@ -38,6 +38,13 @@ ALLOWED_HOSTS = [h.strip() for h in os.environ.get("DJANGO_ALLOWED_HOSTS", "loca
 # google-apps-script/Forwarder.gs의 CONFIG.IMPORT_SECRET과 동일한 값을 넣어야 합니다.
 IMPORT_SECRET = os.environ.get("IMPORT_SECRET", "")
 
+# 체크인 시 인포/공연장 점수 시트의 "도착 여부"에 실시간으로 반영하기 위한 설정.
+# google-apps-script/SheetSync.gs를 그 시트에 붙이고 웹 앱으로 배포한 뒤 발급되는
+# URL과, SheetSync.gs의 CONFIG.SECRET과 동일한 값을 SHEET_SYNC_SECRET에 넣습니다.
+# 비워두면 시트 연동 없이 체크인만 정상 동작합니다 (기능 자체가 꺼짐).
+SHEET_SYNC_URL = os.environ.get("SHEET_SYNC_URL", "")
+SHEET_SYNC_SECRET = os.environ.get("SHEET_SYNC_SECRET", "")
+
 
 # Application definition
 
