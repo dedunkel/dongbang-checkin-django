@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 import os
 from pathlib import Path
 
+from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -25,12 +26,20 @@ load_dotenv(BASE_DIR / ".env")
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get(
-    "DJANGO_SECRET_KEY", "django-insecure-_2ff$i3f=yv0*o3lp%km=1_&0ab!p^#((_r6mu_mcaox5fm(my"
-)
+# 로컬 빠른 실행용 기본값이라 레포에 그대로 커밋돼 있음(=공개된 값) — 아래에서
+# DEBUG=0(배포 모드)일 땐 이 기본값을 쓰지 못하게 강제로 막는다.
+_INSECURE_SECRET_KEY = "django-insecure-_2ff$i3f=yv0*o3lp%km=1_&0ab!p^#((_r6mu_mcaox5fm(my"
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", _INSECURE_SECRET_KEY)
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get("DJANGO_DEBUG", "1") == "1"
+
+if not DEBUG and (not SECRET_KEY or SECRET_KEY == _INSECURE_SECRET_KEY):
+    raise ImproperlyConfigured(
+        "DJANGO_DEBUG=0(배포 모드)인데 DJANGO_SECRET_KEY 환경변수가 설정되어 있지 "
+        "않습니다. 레포에 공개된 기본값을 배포 환경에서 그대로 쓰면 위험하니, "
+        ".env에 랜덤한 값을 넣어주세요."
+    )
 
 ALLOWED_HOSTS = [h.strip() for h in os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",") if h.strip()]
 
