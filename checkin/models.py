@@ -14,6 +14,13 @@ class Event(models.Model):
     volume = models.PositiveIntegerField(unique=True, help_text="예: 33")
     name = models.CharField(max_length=200, help_text='예: "동방배틀 vol.33"')
     is_active = models.BooleanField(default=True, help_text="신규 신청을 받는 현재 회차인지")
+    # 이 회차의 점수 시트에 붙인 google-apps-script/SheetSync.gs를 웹 앱으로
+    # 배포하면 나오는 URL(/exec로 끝남). 회차마다 새 시트를 만들어 새로 배포하기
+    # 때문에 값이 자주 바뀌는데, 환경변수로 두면 매 행사마다 재배포가 필요해서
+    # 회차별로 여기서 바로 수정할 수 있게 함(비워두면 이 기능만 꺼짐).
+    sheet_sync_url = models.URLField(
+        blank=True, null=True, help_text="이 회차 점수 시트에 배포한 SheetSync.gs 웹 앱 URL (선택)"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
