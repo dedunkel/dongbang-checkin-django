@@ -65,18 +65,34 @@ def mask_phone(raw_phone: str) -> str:
     return f"{digits[:3]}-****-{digits[7:]}"
 
 
-def _write_sheet(wb: Workbook, event: Event, sheet_title: str, participants: list[Participant]) -> None:
-    ws = wb.create_sheet(title=sheet_title)
+def participants_for_tab(event: Event, genre: str | None) -> list[Participant]:
+    """탭 하나(장르 또는 관람)에 들어갈 참가자를, 그 탭에서 보여줄 순서로 정렬해 반환.
+    장르 탭은 라벨 코드(조+번호) 기준, 관람 탭은 신청 순서(생성일시) 기준."""
+    if genre is None:
+        return list(Participant.objects.filter(event=event, entry_type="관람").order_by("created_at"))
+    return sorted(
+        Participant.objects.filter(event=event, entry_type="참가", genre=genre, label_code__isnull=False),
+        key=lambda p: (p.label_group, p.label_number),
+    )
+
+
+def write_title_row(ws, event: Event, sheet_title: str, num_columns: int) -> None:
+    """탭 맨 위에 "동방배틀 Vol.N {장르} 참가자 명단"(관람은 "관람자 명단") 제목
+    행을 병합 셀로 넣는다. 공지용 명단/점수표 둘 다 같은 제목 형식을 쓴다."""
     title_text = (
         f"동방배틀 Vol.{event.volume} 관람자 명단"
         if sheet_title == "관람"
         else f"동방배틀 Vol.{event.volume} {sheet_title} 참가자 명단"
     )
-
-    ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=len(HEADERS))
+    ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=num_columns)
     title_cell = ws.cell(row=1, column=1, value=title_text)
     title_cell.font = Font(bold=True, size=13)
     title_cell.alignment = Alignment(horizontal="center")
+
+
+def _write_sheet(wb: Workbook, event: Event, sheet_title: str, participants: list[Participant]) -> None:
+    ws = wb.create_sheet(title=sheet_title)
+    write_title_row(ws, event, sheet_title, len(HEADERS))
 
     for col, header in enumerate(HEADERS, start=1):
         cell = ws.cell(row=2, column=col, value=header)
@@ -104,16 +120,7 @@ def build_announcement_workbook(event: Event) -> Workbook:
     wb.remove(wb.active)  # 기본으로 생기는 빈 시트 제거
 
     for genre, tab_name in GENRE_TABS:
-        if genre is None:
-            participants = list(
-                Participant.objects.filter(event=event, entry_type="관람").order_by("created_at")
-            )
-        else:
-            participants = sorted(
-                Participant.objects.filter(event=event, entry_type="참가", genre=genre, label_code__isnull=False),
-                key=lambda p: (p.label_group, p.label_number),
-            )
-        _write_sheet(wb, event, tab_name, participants)
+        _write_sheet(wb, event, tab_name, participants_for_tab(event, genre))
 
     return wb
 

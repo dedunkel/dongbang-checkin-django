@@ -10,6 +10,7 @@ from .models import Event, Participant
 from .services import sheet_sync
 from .services.announcement_export import build_announcement_file
 from .services.assign_labels import assign_labels_and_tokens
+from .services.score_sheet_export import build_score_sheet_file
 
 
 @admin.action(description="④ 선택 회차: 승인자 라벨/QR 발급 실행")
@@ -82,12 +83,35 @@ def export_announcement_excel(modeladmin, request, queryset):
     return response
 
 
+@admin.action(description="선택 회차: 점수표 엑셀 다운로드 (마스킹 없음, 스태프 내부용)")
+def export_score_sheet_excel(modeladmin, request, queryset):
+    event = queryset.first()
+    if queryset.count() > 1:
+        messages.warning(request, "점수표는 한 번에 회차 하나씩만 가능합니다. 첫 번째로 선택한 회차만 내려받습니다.")
+
+    filename, content = build_score_sheet_file(event)
+    response = HttpResponse(
+        content,
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+    response.headers["Content-Disposition"] = content_disposition_header(
+        as_attachment=True, filename=filename
+    )
+    return response
+
+
 @admin.register(Event)
 class EventAdmin(admin.ModelAdmin):
     list_display = ("name", "volume", "is_active", "participant_count", "created_at")
     list_filter = ("is_active",)
     ordering = ("-volume",)
-    actions = [run_label_assign, push_order_to_sheet, export_event_csv, export_announcement_excel]
+    actions = [
+        run_label_assign,
+        push_order_to_sheet,
+        export_event_csv,
+        export_announcement_excel,
+        export_score_sheet_excel,
+    ]
 
     @admin.display(description="신청자 수")
     def participant_count(self, obj):
