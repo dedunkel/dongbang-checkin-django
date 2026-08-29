@@ -122,9 +122,13 @@ if DATABASE_URL:
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.postgresql",
-            "NAME": _u.path.lstrip("/"),
-            "USER": _u.username,
-            "PASSWORD": _u.password,
+            "NAME": _urlparse.unquote(_u.path.lstrip("/")),
+            # urlparse는 username/password를 percent-decode하지 않고 원문 그대로
+            # 돌려준다 — 비밀번호에 특수문자가 있어 URL 인코딩된 경우(Supabase가
+            # 안내하는 방식) unquote 없이 그대로 쓰면 인코딩된 문자열 자체가
+            # 비밀번호로 전달돼 인증이 실패한다.
+            "USER": _urlparse.unquote(_u.username) if _u.username else _u.username,
+            "PASSWORD": _urlparse.unquote(_u.password) if _u.password else _u.password,
             "HOST": _u.hostname,
             "PORT": _u.port or 5432,
             # Render의 관리형 Postgres 등 sslmode가 필요한 연결 문자열 대응
