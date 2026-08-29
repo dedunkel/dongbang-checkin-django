@@ -43,6 +43,18 @@ if not DEBUG and (not SECRET_KEY or SECRET_KEY == _INSECURE_SECRET_KEY):
 
 ALLOWED_HOSTS = [h.strip() for h in os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",") if h.strip()]
 
+# Render 등 리버스 프록시 뒤에서 배포할 때 필요:
+# - CSRF_TRUSTED_ORIGINS: 스킴(https://)까지 포함한 배포 도메인을 넣어야 admin
+#   로그인 등 POST 요청에서 CSRF 검증이 통과함 (예: "https://your-app.onrender.com").
+# - SECURE_PROXY_SSL_HEADER: Render는 사용자에게는 https로 응답하지만 내부적으로는
+#   http로 앱에 전달하므로, 이 헤더가 없으면 Django가 매 요청을 안전하지 않은
+#   연결로 오인해 요청이 실제로 https였는지 판단이 어긋난다.
+CSRF_TRUSTED_ORIGINS = [
+    o.strip() for o in os.environ.get("DJANGO_CSRF_TRUSTED_ORIGINS", "").split(",") if o.strip()
+]
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
 # 기존 구글 폼 → /api/import/google-form 요청 인증용 공유 비밀키.
 # google-apps-script/Forwarder.gs의 CONFIG.IMPORT_SECRET과 동일한 값을 넣어야 합니다.
 IMPORT_SECRET = os.environ.get("IMPORT_SECRET", "")
@@ -69,6 +81,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -105,6 +118,7 @@ if DATABASE_URL:
     import urllib.parse as _urlparse
 
     _u = _urlparse.urlparse(DATABASE_URL)
+    _qs = _urlparse.parse_qs(_u.query)
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.postgresql",
@@ -113,6 +127,9 @@ if DATABASE_URL:
             "PASSWORD": _u.password,
             "HOST": _u.hostname,
             "PORT": _u.port or 5432,
+            # Render의 관리형 Postgres 등 sslmode가 필요한 연결 문자열 대응
+            # (예: "?sslmode=require" — 이 값을 안 넘기면 접속이 거부될 수 있음).
+            "OPTIONS": {"sslmode": _qs["sslmode"][0]} if "sslmode" in _qs else {},
         }
     }
 else:
@@ -161,6 +178,18 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = "static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
+
+# whitenoise로 정적 파일을 앱 프로세스 자체가 서빙 (Render 같은 PaaS는 별도
+# 웹서버/CDN 없이 gunicorn만 떠 있는 구조라 nginx가 없음).
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field

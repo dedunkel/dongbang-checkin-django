@@ -184,16 +184,32 @@ Forwarder.gs`)을 씁니다.
 
 ## 배포 (실제 서비스로 만들기)
 
-1. **DB**: [Supabase](https://supabase.com) 또는 [Neon](https://neon.tech)에서
-   무료 Postgres 프로젝트 생성 → connection string을 `.env`의 `DATABASE_URL`에.
+1. **DB**: [Supabase](https://supabase.com), [Neon](https://neon.tech), 또는 Render
+   자체 Postgres에서 무료 Postgres 프로젝트 생성 → connection string을 배포
+   환경변수 `DATABASE_URL`에 (sslmode가 붙은 URL도 그대로 지원합니다).
 2. **배포**: Django는 Railway, Render, Fly.io, PythonAnywhere 등에서 쉽게
    돌릴 수 있습니다 (Vercel은 Django 같은 상시 구동 서버엔 잘 안 맞습니다 —
-   Next.js 버전과 배포처가 다른 이유입니다). 배포 시 `DJANGO_DEBUG=0`,
-   `DJANGO_SECRET_KEY`를 랜덤 값으로, `DJANGO_ALLOWED_HOSTS`에 실제 도메인을
-   설정하고 `python manage.py collectstatic`을 실행해주세요. WSGI 서버는
-   `gunicorn config.wsgi`를 권장합니다.
+   Next.js 버전과 배포처가 다른 이유입니다).
+
+   **Render 기준 설정값:**
+   - Build Command: `pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate`
+   - Start Command: `gunicorn config.wsgi`
+   - 환경변수:
+     - `DJANGO_DEBUG=0`
+     - `DJANGO_SECRET_KEY` — 랜덤 값 (`python -c "import secrets; print(secrets.token_urlsafe(50))"`으로 생성)
+     - `DJANGO_ALLOWED_HOSTS` — 예: `your-app.onrender.com`
+     - `DJANGO_CSRF_TRUSTED_ORIGINS` — 스킴 포함, 예: `https://your-app.onrender.com`
+       (없으면 /admin 로그인 등 POST 요청이 CSRF 오류로 막힘)
+     - `DATABASE_URL`, `IMPORT_SECRET`, (쓴다면) `SHEET_SYNC_URL`/`SHEET_SYNC_SECRET`
+
+   정적 파일은 [whitenoise](https://whitenoise.readthedocs.io/)가 앱 프로세스
+   안에서 직접 서빙하므로 별도 CDN/nginx 설정 없이 `collectstatic`만 해주면
+   됩니다.
 3. 배포된 도메인이 `/admin/`, `/checkin/`, `/register/` 링크가 되고, QR
    링크(`.../qr/{token}/`)도 이 도메인 기준으로 자동 생성됩니다.
+4. `google-apps-script/Forwarder.gs`의 `CONFIG.SERVER_URL`을 배포 도메인 +
+   `/api/import/google-form/`로 바꿔야 실제 구글 폼 응답 시트와 연동됩니다
+   (Apps Script는 구글 서버에서 실행돼서 `localhost`는 호출할 수 없습니다).
 
 ## 프로젝트 구조
 
