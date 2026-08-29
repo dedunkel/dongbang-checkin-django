@@ -5,6 +5,7 @@ from django.db import transaction
 from django.db.models import CharField, Value
 from django.db.models.functions import Cast, Concat, LPad
 from django.http import HttpResponse
+from django.urls import reverse
 from django.utils.http import content_disposition_header
 
 from .models import Event, Participant
@@ -74,6 +75,41 @@ def export_event_csv(modeladmin, request, queryset):
                 p.checkin_status, p.checked_in_at or "", p.created_at,
             ]
         )
+    return response
+
+
+@admin.action(description="선택 회차: QR 발송용 명단 다운로드 (문자/카톡 대량발송 도구용)")
+def export_qr_send_list(modeladmin, request, queryset):
+    # 연락처 + 개인별 QR 링크를 그대로 담는 액션이라 CSV 백업/점수표와 동일하게
+    # 운영진 전용으로 제한한다.
+    if not request.user.has_perm("checkin.export_sensitive_data"):
+        messages.error(request, "QR 발송용 명단 다운로드는 운영진만 실행할 수 있습니다.")
+        return
+
+    event = queryset.first()
+    if queryset.count() > 1:
+        messages.warning(request, "QR 발송용 명단은 한 번에 회차 하나씩만 가능합니다. 첫 번째로 선택한 회차만 내려받습니다.")
+
+    participants = list(event.participants.filter(qr_token__isnull=False).order_by("entry_type", "genre", "created_at"))
+    skipped = event.participants.filter(qr_token__isnull=True).count()
+    if skipped:
+        messages.warning(
+            request,
+            f'"{event.name}": 아직 QR이 발급되지 않은 참가자 {skipped}명은 명단에서 제외했습니다 '
+            '(먼저 "④ 선택 회차: 승인자 라벨/QR 발급 실행"을 실행해주세요).',
+        )
+
+    response = HttpResponse(content_type="text/csv; charset=utf-8-sig")
+    response.headers["Content-Disposition"] = content_disposition_header(
+        as_attachment=True, filename=f"{event.name}_QR발송명단.csv"
+    )
+    writer = csv.writer(response)
+    writer.writerow(["이름", "연락처", "구분", "장르", "QR 링크", "안내 문구"])
+    for p in participants:
+        qr_url = request.build_absolute_uri(reverse("checkin:qr", args=[p.qr_token]))
+        real_name = p.name.split("/")[0]
+        message = f"[{event.name}] {real_name}님, 아래 링크에서 입장용 QR을 확인해주세요.\n{qr_url}"
+        writer.writerow([p.name, p.phone, p.entry_type, p.genre or "", qr_url, message])
     return response
 
 
@@ -162,6 +198,7 @@ class EventAdmin(admin.ModelAdmin):
         run_label_assign,
         push_order_to_sheet,
         export_event_csv,
+        export_qr_send_list,
         export_application_confirmation_excel,
         export_announcement_excel,
         export_score_sheet_excel,
@@ -176,6 +213,7 @@ class EventAdmin(admin.ModelAdmin):
         if not request.user.has_perm("checkin.export_sensitive_data"):
             actions.pop("export_score_sheet_excel", None)
             actions.pop("export_event_csv", None)
+            actions.pop("export_qr_send_list", None)
         return actions
 
     def delete_queryset(self, request, queryset):
