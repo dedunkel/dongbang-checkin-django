@@ -40,6 +40,9 @@ const CONFIG = {
   IMPORT_SECRET: 'REPLACE_WITH_SAME_SECRET_AS_ENV',
 
   // 원본 구글 폼 문항(시트 헤더) 이름 — 실제 헤더와 다르면 여기를 맞춰주세요.
+  // 이 폼은 학적증명서 파일 업로드 문항 때문에 응답 시 구글 로그인이 필요해서,
+  // 이메일은 별도 문항으로 안 받기로 함 (별도 이메일 질문이 있다면 fc.email
+  // 키를 다시 추가하면 됨).
   FORM_COLS: {
     type: '참가 / 관람',
     name: '참가자명 / 관람자명',
@@ -48,7 +51,6 @@ const CONFIG = {
     academicStatus: '학적',
     genre: '참가 장르',
     payerName: '입금자명',
-    email: '이메일 주소',
   },
 };
 
@@ -117,7 +119,6 @@ function buildRow_(sheet, header, rowNum) {
     academicStatus: String(map[fc.academicStatus] || ''),
     genre: String(map[fc.genre] || ''),
     payerName: String(map[fc.payerName] || ''),
-    email: String(map[fc.email] || ''),
   };
 }
 
