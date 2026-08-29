@@ -5,6 +5,24 @@
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
 
 :root, html[data-theme="light"] {
+  /* 목업(tokens.css)과 동일한 이름의 시맨틱 토큰 — 아래의 커스텀 화면
+     (토론바/탭/표/폼/뱃지 등)은 Django 기본 admin 변수 대신 이 토큰들을 쓴다. */
+  --bg: oklch(99% 0.002 90);
+  --surface: oklch(100% 0 0);
+  --surface2: oklch(97% 0.003 90);
+  --line: oklch(88% 0.004 60);
+  --text: oklch(18% 0.008 60);
+  --muted: oklch(50% 0.008 60);
+  --dbbt-accent: oklch(40% 0.09 260);
+  --dbbt-accent-soft: oklch(94% 0.02 260);
+  --dbbt-ok: oklch(52% 0.11 155);
+  --dbbt-ok-soft: oklch(94% 0.03 155);
+  --dbbt-warn: oklch(55% 0.14 70);
+  --dbbt-warn-soft: oklch(94% 0.04 70);
+  --dbbt-bad: oklch(52% 0.17 25);
+  --dbbt-bad-soft: oklch(94% 0.04 25);
+  --dbbt-logo-filter: invert(1);
+
   --primary: oklch(94% 0.02 260);
   --secondary: oklch(40% 0.09 260);
   --accent: oklch(40% 0.09 260);
@@ -58,6 +76,22 @@
 
 @media (prefers-color-scheme: dark) {
   html:not([data-theme="light"]) {
+    --bg: oklch(15% 0.006 60);
+    --surface: oklch(20% 0.008 60);
+    --surface2: oklch(24% 0.01 60);
+    --line: oklch(31% 0.012 60);
+    --text: oklch(96% 0.004 90);
+    --muted: oklch(66% 0.016 60);
+    --dbbt-accent: oklch(74% 0.12 260);
+    --dbbt-accent-soft: oklch(27% 0.05 260);
+    --dbbt-ok: oklch(76% 0.13 155);
+    --dbbt-ok-soft: oklch(27% 0.05 155);
+    --dbbt-warn: oklch(78% 0.14 70);
+    --dbbt-warn-soft: oklch(27% 0.05 70);
+    --dbbt-bad: oklch(74% 0.16 25);
+    --dbbt-bad-soft: oklch(27% 0.05 25);
+    --dbbt-logo-filter: none;
+
     --header-logo-filter: invert(1);
     --primary: oklch(27% 0.05 260);
     --secondary: oklch(74% 0.12 260);
@@ -99,6 +133,22 @@
 }
 
 html[data-theme="dark"] {
+  --bg: oklch(15% 0.006 60);
+  --surface: oklch(20% 0.008 60);
+  --surface2: oklch(24% 0.01 60);
+  --line: oklch(31% 0.012 60);
+  --text: oklch(96% 0.004 90);
+  --muted: oklch(66% 0.016 60);
+  --dbbt-accent: oklch(74% 0.12 260);
+  --dbbt-accent-soft: oklch(27% 0.05 260);
+  --dbbt-ok: oklch(76% 0.13 155);
+  --dbbt-ok-soft: oklch(27% 0.05 155);
+  --dbbt-warn: oklch(78% 0.14 70);
+  --dbbt-warn-soft: oklch(27% 0.05 70);
+  --dbbt-bad: oklch(74% 0.16 25);
+  --dbbt-bad-soft: oklch(27% 0.05 25);
+  --dbbt-logo-filter: none;
+
   --header-logo-filter: invert(1);
   --primary: oklch(27% 0.05 260);
   --secondary: oklch(74% 0.12 260);
@@ -140,3 +190,500 @@ html[data-theme="dark"] {
 
 #branding img { height: 15px; width: auto; vertical-align: middle; margin-right: 8px; filter: var(--header-logo-filter); }
 #branding .brand-sub { font-size: 0.65rem; letter-spacing: 0.1em; opacity: 0.85; margin-left: 6px; }
+
+/* ==========================================================================
+   dongbang-ui-handoff "클린" 목업 반영 — 회차/참가자/계정 관리 화면을
+   Django 기본 admin 크롬(파란 헤더바/좌측 필터 사이드바/브레드크럼) 대신
+   목업과 동일한 흰 배경 + 상단 탭 대시보드로 다시 그린다.
+   위쪽의 --header-bg 등은 이 화면들이 숨겨버리는 기본 크롬(예: 삭제 확인,
+   비밀번호 변경 등 커스터마이즈하지 않은 나머지 admin 페이지)을 위한 폴백이다.
+   ========================================================================== */
+
+body.change-list, body.change-form, body.dbbt-login {
+  background: var(--bg);
+}
+
+/* 기본 헤더바/브레드크럼/좌측 사이드바를 걷어내고, 그 자리를 content_title
+   블록(templates/admin/base_site.html)에서 그리는 커스텀 상단바+탭이 대신한다. */
+#header, nav[aria-label="Breadcrumbs"], #nav-sidebar, .toggle-nav-sidebar {
+  display: none !important;
+}
+.main { margin: 0 !important; }
+#content-start { padding: 0; }
+#content { padding: 30px 36px 50px; max-width: 1280px; margin: 0 auto; }
+#container { min-height: 100vh; }
+
+.messagelist { padding: 0; margin: 0 0 16px; list-style: none; }
+.messagelist li {
+  background: var(--surface2); color: var(--text); border: 1px solid var(--line);
+  border-radius: 6px; padding: 10px 14px; font-size: 12.5px; margin-bottom: 8px;
+}
+.messagelist li.success { background: var(--dbbt-ok-soft); color: var(--dbbt-ok); border-color: transparent; }
+.messagelist li.warning { background: var(--dbbt-warn-soft); color: var(--dbbt-warn); border-color: transparent; }
+.messagelist li.error { background: var(--dbbt-bad-soft); color: var(--dbbt-bad); border-color: transparent; }
+
+/* ---- 상단바 + 탭 (모든 admin 페이지 공통, base_site.html의 content_title) ---- */
+.dbbt-topbar { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
+.dbbt-topbar-left { min-width: 0; }
+.dbbt-topbar-brand { display: flex; align-items: center; gap: 8px; }
+.dbbt-topbar-brand img { height: 24px; width: auto; filter: var(--dbbt-logo-filter); }
+.dbbt-topbar-brand span { font-size: 10.5px; letter-spacing: 0.16em; color: var(--muted); font-weight: 700; }
+.dbbt-crumb { font-size: 12px; color: var(--muted); margin-top: 6px; }
+.dbbt-crumb .chev { margin: 0 4px; }
+#content h1 {
+  font-size: 22px; font-weight: 900; margin: 4px 0 0; color: var(--text); line-height: 1.3;
+}
+.dbbt-topbar-right { display: flex; align-items: center; gap: 14px; padding-top: 4px; }
+.dbbt-event-pill {
+  font-size: 12px; font-weight: 700; color: var(--dbbt-accent); background: var(--dbbt-accent-soft);
+  padding: 8px 14px; border-radius: 3px; white-space: nowrap; text-transform: uppercase;
+}
+/* 라이트/다크 토글 — EventsClean.html에 그려진 세그먼트 pill(해/달 두 옵션,
+   선택된 쪽만 accent-soft 배경) 그대로. 참가자 쪽 base.html의 .theme-toggle과
+   같은 구조/localStorage 키를 쓴다. */
+.dbbt-theme-toggle {
+  display: inline-flex; align-items: center; background: var(--surface); border: 1px solid var(--line);
+  border-radius: 20px; padding: 3px; gap: 2px; flex-shrink: 0;
+}
+.dbbt-theme-toggle-option {
+  width: 26px; height: 26px; border-radius: 14px; display: flex; align-items: center; justify-content: center;
+  border: none; background: none; color: var(--muted); cursor: pointer; padding: 0;
+}
+.dbbt-theme-toggle-option svg { display: block; fill: none; stroke: currentColor; }
+.dbbt-theme-toggle-option[data-theme-choice="dark"] svg { fill: currentColor; stroke: none; }
+
+.dbbt-theme-toggle-option[data-theme-choice="light"] { color: var(--dbbt-accent); background: var(--dbbt-accent-soft); }
+.dbbt-theme-toggle-option[data-theme-choice="dark"] { color: var(--muted); background: none; }
+@media (prefers-color-scheme: dark) {
+  html:not([data-theme="light"]) .dbbt-theme-toggle-option[data-theme-choice="light"] { color: var(--muted); background: none; }
+  html:not([data-theme="light"]) .dbbt-theme-toggle-option[data-theme-choice="dark"] { color: var(--dbbt-accent); background: var(--dbbt-accent-soft); }
+}
+html[data-theme="dark"] .dbbt-theme-toggle-option[data-theme-choice="light"] { color: var(--muted); background: none; }
+html[data-theme="dark"] .dbbt-theme-toggle-option[data-theme-choice="dark"] { color: var(--dbbt-accent); background: var(--dbbt-accent-soft); }
+html[data-theme="light"] .dbbt-theme-toggle-option[data-theme-choice="light"] { color: var(--dbbt-accent); background: var(--dbbt-accent-soft); }
+html[data-theme="light"] .dbbt-theme-toggle-option[data-theme-choice="dark"] { color: var(--muted); background: none; }
+
+.dbbt-user-email { font-size: 12px; color: var(--muted); white-space: nowrap; }
+#dbbt-logout-form { margin: 0; }
+.dbbt-logout-btn {
+  background: none; border: none; padding: 0; font: inherit; font-size: 12px; color: var(--muted);
+  cursor: pointer; text-decoration: underline; text-underline-offset: 2px;
+}
+.dbbt-logout-btn:hover { color: var(--text); }
+
+.dbbt-tabs { display: flex; margin-top: 22px; border-bottom: 1px solid var(--line); gap: 0; }
+.dbbt-tab {
+  padding: 10px 2px; margin-right: 22px; font-size: 13px; font-weight: 700; color: var(--muted);
+  text-decoration: none; border-bottom: 2px solid transparent; margin-bottom: -1px;
+}
+.dbbt-tab:hover { color: var(--text); }
+.dbbt-tab-active, .dbbt-tab-active:hover { color: var(--dbbt-accent); border-bottom-color: var(--dbbt-accent); }
+
+.dbbt-badge {
+  display: inline-block; padding: 4px 9px; border-radius: 3px; font-size: 10.5px; font-weight: 700;
+  white-space: nowrap; vertical-align: middle;
+}
+.dbbt-badge-ok { background: var(--dbbt-ok-soft); color: var(--dbbt-ok); }
+.dbbt-badge-warn { background: var(--dbbt-warn-soft); color: var(--dbbt-warn); }
+.dbbt-badge-bad { background: var(--dbbt-bad-soft); color: var(--dbbt-bad); }
+.dbbt-badge-neutral, .dbbt-badge-staff, .dbbt-badge-status-inactive {
+  background: var(--surface); color: var(--muted); border: 1px solid var(--line);
+}
+.dbbt-badge-accent, .dbbt-badge-op, .dbbt-badge-status-op { background: var(--dbbt-accent-soft); color: var(--dbbt-accent); }
+.dbbt-badge-super { background: var(--dbbt-accent); color: var(--bg); }
+.dbbt-badge-status-active { background: var(--dbbt-ok-soft); color: var(--dbbt-ok); }
+.dbbt-badge-status-invited { background: var(--dbbt-warn-soft); color: var(--dbbt-warn); }
+
+.dbbt-btn, .dbbt-pill {
+  display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+  padding: 9px 15px; border-radius: 3px; font-size: 12.5px; font-weight: 700; white-space: nowrap;
+  border: 1px solid transparent; cursor: pointer; font-family: inherit; text-decoration: none; line-height: 1.2;
+}
+.dbbt-btn-primary { background: var(--dbbt-accent); color: var(--bg); }
+.dbbt-btn-primary:hover { opacity: 0.9; color: var(--bg); }
+.dbbt-btn-outline, .dbbt-pill {
+  background: var(--surface); border-color: var(--line); color: var(--text);
+}
+.dbbt-btn-outline:hover, .dbbt-pill:hover { background: var(--surface2); color: var(--text); }
+.dbbt-pill { padding: 7px 12px; border-radius: 3px; font-size: 11.5px; font-weight: 700; color: var(--muted); }
+
+/* object-tools(장고 기본 "추가" 링크)를 탭 아래 우측에 붙는 CTA 버튼처럼 보이게 배치.
+   base.css의 .object-tools/.addlink가 float/backgournd-image/작은 글씨 같은
+   자기 스타일을 이미 갖고 있어서(같은 詳specificity라 로드 순서에 따라 우리
+   버튼이 안 보이거나 hover해야만 배경이 보이는 등 예측하기 어렵게 충돌했다),
+   버튼 자체는 !important로 확실히 우리 스타일이 이기게 고정한다. */
+.object-tools, .dbbt-header-action-row {
+  list-style: none; margin: -6px 0 14px; padding: 0; display: flex; justify-content: flex-end; float: none;
+}
+.object-tools li, .dbbt-object-tools-item { list-style: none; margin: 0; float: none; height: auto; }
+.change-form .object-tools { display: none; }
+.object-tools a.dbbt-btn, .dbbt-header-action-row a.dbbt-btn {
+  display: inline-flex !important; float: none !important; align-items: center; justify-content: center;
+  background: var(--dbbt-accent) !important; color: var(--bg) !important; padding: 9px 15px !important;
+  border-radius: 3px !important; font-size: 12.5px !important; font-weight: 700 !important;
+  text-transform: none !important; letter-spacing: normal !important; border: none !important;
+}
+.object-tools a.dbbt-btn:hover, .dbbt-header-action-row a.dbbt-btn:hover { opacity: 0.9; }
+
+/* ==========================================================================
+   회차/참가자 관리 changelist — 필터 사이드바를 상단 pill 토글로, 표를
+   목업의 카드형 표로 재구성.
+   ========================================================================== */
+.dbbt-stat-tiles {
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin: 14px 0 22px;
+}
+.dbbt-stat-tile { border: 1px solid var(--line); border-radius: 6px; padding: 16px 18px; background: var(--surface); }
+.dbbt-stat-label { font-size: 11px; color: var(--muted); font-weight: 700; }
+.dbbt-stat-label-warn { color: var(--dbbt-warn); }
+.dbbt-stat-label-ok { color: var(--dbbt-ok); }
+.dbbt-stat-value { font-size: 26px; font-weight: 900; margin-top: 6px; color: var(--text); }
+.dbbt-stat-value-warn { color: var(--dbbt-warn); }
+.dbbt-stat-value-ok { color: var(--dbbt-ok); }
+@media (max-width: 1024px) { .dbbt-stat-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* 참가자 관리: 필터 pill과 "+ 새 참가자 추가" 버튼을 같은 줄에 — 필터는
+   왼쪽에서 줄바꿈되며 채우고, 버튼은 오른쪽 끝에 고정. */
+.dbbt-filter-toolbar { order: 1; display: flex; align-items: flex-start; flex-wrap: wrap; gap: 12px; }
+.dbbt-filter-toolbar #changelist-filter { flex: 0 1 auto; order: 0; }
+/* margin-left:auto가 남는 공간을 전부 버튼 앞으로 밀어서, 필터가 늘어나
+   차지하는 대신 버튼이 항상 같은 줄 맨 오른쪽에 붙는다(공간이 정말 부족할
+   때만 다음 줄로 감). */
+.dbbt-filter-toolbar .dbbt-header-action-row { flex-shrink: 0; margin: 0 0 0 auto; }
+
+/* changelists.css(장고 기본, 우리 뒤에 로드됨)가 #changelist에
+   align-items:flex-start / justify-content:space-between을 주는데, 우리는
+   이 프로퍼티를 따로 선언한 적이 없어서 그 값이 그대로 이겨버린다 — 세로
+   flex 컨테이너에서 flex-start면 자식이 폭을 꽉 채우지 않고 내용물만큼만
+   줄어들어서, 필터 툴바 안의 margin-left:auto가 밀 공간 자체가 없었다.
+   stretch로 명시해서 자식(필터 툴바 등)이 항상 전체 폭을 채우게 한다. */
+#changelist {
+  display: flex; flex-direction: column; align-items: stretch !important; justify-content: flex-start !important;
+  border: none !important; background: none !important;
+}
+#changelist .changelist-form-container { order: 2; }
+#changelist-filter { order: 1; }
+
+/* 장고 기본 changelists.css가 회차/참가자 목록 페이지에서는 우리 dbbt_theme.css
+   "뒤에" 로드된다(change_list.html이 block.super로 우리 CSS를 먼저 넣고 그 다음
+   자기 changelists.css를 이어붙임) — 그래서 detail 명세가 같은 프로퍼티는 나중에
+   로드되는 changelists.css가 이긴다. 특히 changelists.css의
+   `#changelist-filter{flex:0 0 240px}`가 세로 flex 컨테이너 안에서는 "폭 240px"이
+   아니라 "높이 240px"로 해석돼서 필터 영역 위에 커다란 빈 칸이 생기고,
+   `details>summary::before{content:'→'/'↓'}`가 우리가 만든 화살표 위에 진짜
+   "→" 글자를 얹어버리는 원인이었다. 아래는 그 구체적인 프로퍼티들만
+   !important로 확실히 덮어써서 로드 순서와 무관하게 우리 스타일이 이기게 한다. */
+#changelist-filter {
+  display: flex !important; flex: none !important; flex-wrap: wrap; align-items: center; gap: 8px;
+  background: none !important; border: none !important; border-left: none !important;
+  padding: 0 0 12px !important; margin: 0 !important; width: auto; float: none;
+}
+#changelist-filter h2, #changelist-filter #changelist-filter-extra-actions { display: none !important; }
+#changelist-filter details {
+  position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: 3px;
+}
+#changelist-filter details summary {
+  list-style: none; cursor: pointer; display: flex !important; align-items: center; gap: 5px;
+  padding: 6px 9px !important; margin-bottom: 0 !important; font-size: 11.5px; color: var(--text);
+  font-weight: 400; white-space: nowrap;
+}
+/* <summary>의 기본/장고 마커를 전부 끄고 우리가 만든 화살표(아래 ::after)만 남긴다.
+   changelists.css는 ::before에 실제 문자 '→'/'↓'를 넣으므로 content부터 지워야 한다. */
+#changelist-filter details summary { list-style: none; }
+#changelist-filter details summary::before { content: none !important; display: none !important; }
+#changelist-filter details summary::marker { content: ""; display: none; }
+#changelist-filter details summary::-webkit-details-marker { display: none; }
+#changelist-filter details summary::after {
+  content: ""; width: 5px; height: 5px; border: solid var(--muted); border-width: 0 1.5px 1.5px 0;
+  display: inline-block; transform: rotate(45deg); margin-top: -3px;
+}
+#changelist-filter details[open] summary::after { transform: rotate(-135deg); margin-top: 2px; }
+#changelist-filter ul {
+  list-style: none !important; margin: 4px 0 0 !important; padding: 5px !important; position: absolute;
+  top: 100%; left: 0; z-index: 30; background: var(--surface); border: 1px solid var(--line);
+  border-radius: 6px; min-width: 160px; box-shadow: 0 10px 24px oklch(18% 0.008 60 / 0.16);
+  max-height: 300px; overflow-y: auto;
+}
+#changelist-filter li { list-style: none !important; margin: 0 !important; padding: 0 !important; }
+#changelist-filter li a {
+  display: block; padding: 5px 7px; border-radius: 4px; font-size: 11.5px; color: var(--text);
+  text-decoration: none; word-break: keep-all;
+}
+#changelist-filter li a:hover { background: var(--surface2); }
+#changelist-filter li.selected {
+  border-left: none !important; padding-left: 0 !important; margin-left: 0 !important;
+}
+#changelist-filter li.selected a { color: var(--dbbt-accent); font-weight: 700; }
+
+#toolbar { background: none; border: none; padding: 0 0 10px; margin: 0; }
+#toolbar form#changelist-search > div:first-child { display: flex; align-items: center; gap: 8px; }
+#toolbar label { margin: 0; }
+#toolbar label img { display: none; }
+#searchbar {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 3px; padding: 8px 12px 8px 12px;
+  font-size: 12px; color: var(--text); width: 240px; font-family: inherit;
+}
+#toolbar input[type="submit"] {
+  padding: 8px 13px; border-radius: 3px; font-size: 12px; font-weight: 700; background: var(--surface);
+  border: 1px solid var(--line); color: var(--text); cursor: pointer; font-family: inherit;
+}
+#toolbar .small.quiet { font-size: 11px; color: var(--muted); margin-left: 6px; }
+#toolbar .small.quiet a { color: var(--dbbt-accent); }
+
+.actions {
+  display: flex; align-items: center; gap: 8px; padding: 0 0 12px; background: none; border: none;
+  flex-wrap: wrap;
+}
+.actions select {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 3px; padding: 8px 11px;
+  font-size: 12px; color: var(--text); font-family: inherit;
+}
+.actions button, .actions .button {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 3px; padding: 8px 13px;
+  font-size: 12px; font-weight: 700; color: var(--text); cursor: pointer; font-family: inherit;
+}
+.actions .action-counter { font-size: 11px; color: var(--muted); }
+.dbbt-actions-bar { padding: 0 0 12px; }
+.dbbt-export-row { margin-top: 16px; border: 1px solid var(--line); border-radius: 6px; padding: 14px 18px; background: var(--surface); }
+.dbbt-export-row .dbbt-section-subtitle { margin-top: 0; }
+
+#changelist table {
+  border: 1px solid var(--line); border-radius: 6px; border-collapse: separate; border-spacing: 0;
+  width: 100%; overflow: hidden; background: var(--surface);
+}
+#changelist table thead th {
+  background: var(--surface2); border-bottom: 1px solid var(--line); border-top: none; border-left: none; border-right: none;
+  padding: 11px 14px; font-size: 10.5px; color: var(--muted); font-weight: 700; letter-spacing: 0.03em;
+  text-transform: none; white-space: nowrap;
+}
+#changelist table thead th:first-child { border-top-left-radius: 6px; }
+#changelist table thead th:last-child { border-top-right-radius: 6px; }
+#changelist table thead th a { color: inherit; }
+#changelist table thead th .sortoptions { margin-left: 4px; }
+#changelist table tbody td, #changelist table tbody th {
+  padding: 12px 14px; font-size: 12.5px; color: var(--text); border-bottom: 1px solid var(--line);
+  border-top: none; border-left: none; border-right: none; background: none;
+}
+#changelist table tbody tr:last-child td, #changelist table tbody tr:last-child th { border-bottom: none; }
+#changelist table tbody tr:hover td, #changelist table tbody tr:hover th { background: var(--surface2); }
+#changelist table tbody th a, #changelist table a { color: var(--text); text-decoration: none; font-weight: 700; }
+#changelist table tbody th a:hover { color: var(--dbbt-accent); }
+#changelist .action-checkbox-column, #changelist input[type="checkbox"] { accent-color: var(--dbbt-accent); }
+
+.paginator { color: var(--muted); font-size: 11.5px; padding: 12px 2px 0; border: none; }
+.paginator a { color: var(--dbbt-accent); padding: 4px 8px; }
+.paginator .this-page { padding: 4px 8px; font-weight: 700; color: var(--text); }
+
+/* ==========================================================================
+   Event / Participant 추가·상세 폼 — 섹션 카드 + 2열 그리드 (field-input 룩)
+   ========================================================================== */
+.change-form #content-main form > div > fieldset.module {
+  border: 1px solid var(--line); border-radius: 6px; padding: 18px 20px; margin: 14px 0 0;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 14px 20px; background: var(--surface);
+}
+.change-form fieldset.module .fieldset-heading {
+  grid-column: 1 / -1; font-size: 12.5px; font-weight: 900; color: var(--text); margin: 0 0 2px;
+}
+.change-form fieldset.module .form-row {
+  padding: 0; border: none; display: block;
+}
+.change-form fieldset.module .form-row.field-id,
+.change-form fieldset.module .form-row.hidden { display: none; }
+.change-form .flex-container { display: block; }
+.change-form label { float: none; display: block; width: auto; padding: 0; line-height: 1.3; }
+.change-form fieldset.module label:not(.vCheckboxLabel) {
+  font-size: 10.5px; color: var(--muted); font-weight: 700; margin-bottom: 5px;
+}
+.change-form fieldset.module input[type="text"],
+.change-form fieldset.module input[type="number"],
+.change-form fieldset.module input[type="url"],
+.change-form fieldset.module input[type="email"],
+.change-form fieldset.module input[type="password"],
+.change-form fieldset.module select,
+.change-form fieldset.module textarea {
+  width: 100%; background: var(--surface); border: 1px solid var(--line); border-radius: 4px;
+  padding: 9px 11px; font-size: 12.5px; color: var(--text); font-family: inherit; box-sizing: border-box;
+}
+.change-form fieldset.module select {
+  appearance: none; -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='9' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M3 4.5L6 7.5L9 4.5' stroke='%2350484A' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 11px center; padding-right: 28px;
+}
+.change-form fieldset.module .readonly {
+  background: var(--surface2); color: var(--muted); border: 1px solid var(--line); border-radius: 4px;
+  padding: 9px 11px; font-size: 11px; font-family: ui-monospace, "SF Mono", monospace; word-break: break-all;
+}
+.change-form fieldset.module .help {
+  margin: 4px 0 0; font-size: 10px; color: var(--muted); line-height: 1.5;
+}
+.change-form fieldset.module .help div { display: inline; }
+
+/* is_active 같은 체크박스: DOM은 [checkbox][label] 순인데, row-reverse로
+   목업의 "설명 텍스트 ... 토글" 좌우 배치를 그대로 재현한다. */
+.change-form fieldset.module .checkbox-row {
+  display: flex; flex-direction: row-reverse; align-items: center; justify-content: flex-end; gap: 10px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 4px; padding: 9px 11px;
+}
+.change-form fieldset.module .checkbox-row label {
+  margin: 0; flex: 1; font-size: 12.5px !important; color: var(--text) !important; font-weight: 400 !important;
+}
+.change-form fieldset.module input[type="checkbox"] {
+  appearance: none; -webkit-appearance: none; width: 34px; height: 19px; border-radius: 10px;
+  background: var(--line); position: relative; cursor: pointer; outline: none; flex-shrink: 0; margin: 0;
+  transition: background 0.15s;
+}
+.change-form fieldset.module input[type="checkbox"]::before {
+  content: ""; position: absolute; top: 2px; left: 2px; width: 15px; height: 15px; border-radius: 50%;
+  background: #fff; transition: left 0.15s; box-shadow: 0 1px 2px oklch(18% 0.008 60 / 0.3);
+}
+.change-form fieldset.module input[type="checkbox"]:checked { background: var(--dbbt-ok); }
+.change-form fieldset.module input[type="checkbox"]:checked::before { left: 17px; }
+
+.dbbt-section {
+  border: 1px solid var(--line); border-radius: 6px; padding: 18px 20px; margin: 14px 0 0; background: var(--surface);
+}
+.dbbt-section-disabled { background: var(--surface2); }
+.dbbt-section-title { font-size: 12.5px; font-weight: 900; color: var(--text); margin-bottom: 14px; }
+.dbbt-section-title-muted { color: var(--muted); }
+.dbbt-section-subtitle { margin-top: 14px; font-size: 11px; color: var(--muted); font-weight: 700; margin-bottom: 8px; }
+.dbbt-field-help { font-size: 11px; color: var(--muted); line-height: 1.6; }
+.dbbt-action-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.dbbt-action-row form { margin: 0; }
+
+.submit-row {
+  margin: 22px 0 0; padding: 0; background: none; border: none; display: flex; align-items: center;
+  justify-content: space-between; gap: 8px; flex-wrap: wrap;
+}
+.submit-row input[type="submit"], .submit-row .button {
+  padding: 9px 14px; border-radius: 4px; font-size: 12px; font-weight: 700; font-family: inherit;
+  border: 1px solid var(--line); background: var(--surface); color: var(--text); cursor: pointer;
+}
+.submit-row input[name="_save"] { background: var(--dbbt-accent); border-color: var(--dbbt-accent); color: var(--bg); }
+.submit-row .closelink {
+  font-size: 12.5px; color: var(--muted); text-decoration: none; padding: 9px 4px;
+}
+.submit-row .closelink:hover { color: var(--text); }
+.submit-row .deletelink {
+  font-size: 12.5px; font-weight: 700; color: var(--dbbt-bad); text-decoration: none; padding: 9px 14px;
+}
+.dbbt-password-reset { margin-top: 14px; }
+.dbbt-password-reset form { margin: 0; display: inline; }
+.dbbt-btn-link {
+  background: none; border: none; padding: 0; font: inherit; cursor: pointer;
+  color: var(--dbbt-accent); font-size: 12px; font-weight: 700; text-decoration: none;
+}
+.dbbt-btn-link:hover { text-decoration: underline; }
+
+/* 계정 수정 — "권한" 라디오를 카드형으로. 실제 input은 숨기고 label을
+   카드처럼 스타일링(참가/관람 탭 선택과 동일한 :has() 패턴). */
+.change-form fieldset.module .field-role { grid-column: 1 / -1; }
+.change-form fieldset.module .field-role label[for="id_role"] { display: none; }
+.change-form fieldset.module #id_role { display: flex; flex-direction: column; gap: 10px; }
+.change-form fieldset.module .field-role input[type="radio"] { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.change-form fieldset.module .field-role label {
+  display: flex; align-items: flex-start; gap: 10px; border: 1px solid var(--line); border-radius: 6px;
+  padding: 12px 14px; cursor: pointer; margin: 0; font-weight: 400;
+}
+.change-form fieldset.module .field-role label::before {
+  content: ""; width: 16px; height: 16px; border-radius: 50%; flex-shrink: 0; margin-top: 1px;
+  box-sizing: border-box; border: 1.5px solid var(--line); background: transparent;
+}
+.change-form fieldset.module .field-role label:has(input:checked) {
+  border-color: var(--dbbt-accent); background: var(--dbbt-accent-soft);
+}
+.change-form fieldset.module .field-role label:has(input:checked)::before {
+  border-color: var(--dbbt-accent);
+  background: radial-gradient(circle, var(--dbbt-accent) 0 4px, transparent 4.5px);
+}
+.change-form fieldset.module .field-role .role-name { display: block; font-size: 12.5px; font-weight: 700; color: var(--text); }
+.change-form fieldset.module .field-role .role-desc { display: block; font-size: 11px; color: var(--muted); margin-top: 3px; line-height: 1.6; }
+
+/* 계정 수정 화면은 목업처럼 저장/목록으로/계정 삭제만 — 저장 후 계속
+   편집 · 저장 후 새로 추가 버튼은 숨긴다. */
+.change-form.model-user .submit-row input[name="_continue"],
+.change-form.model-user .submit-row input[name="_addanother"],
+.change-form.model-user .submit-row input[name="_saveasnew"] { display: none; }
+
+.dbbt-delete-warning {
+  margin-top: 8px; background: var(--dbbt-bad-soft); color: var(--dbbt-bad); border-radius: 4px;
+  padding: 10px 12px; font-size: 11px; line-height: 1.6;
+}
+.errornote {
+  background: var(--dbbt-bad-soft); color: var(--dbbt-bad); border: none; border-radius: 6px;
+  padding: 10px 14px; font-size: 12.5px; margin: 0 0 14px;
+}
+
+/* ==========================================================================
+   계정 관리 (신규 커스텀 화면)
+   ========================================================================== */
+.dbbt-table-card { border: 1px solid var(--line); border-radius: 6px; overflow: hidden; background: var(--surface); }
+.dbbt-table-head, .dbbt-table-row { display: flex; align-items: center; padding: 14px; gap: 14px; }
+.dbbt-table-head { background: var(--surface2); border-bottom: 1px solid var(--line); padding: 11px 14px; }
+.dbbt-table-row { border-bottom: 1px solid var(--line); }
+.dbbt-table-row:last-child { border-bottom: none; }
+.dbbt-th { font-size: 10.5px; color: var(--muted); font-weight: 700; letter-spacing: 0.03em; }
+.dbbt-cell { font-size: 12.5px; color: var(--text); }
+.dbbt-cell-strong { font-weight: 700; }
+.dbbt-cell-muted { color: var(--muted); }
+.dbbt-cell-link { color: var(--dbbt-accent); font-weight: 700; font-size: 12.5px; text-decoration: none; }
+.dbbt-cell-link:hover { text-decoration: underline; }
+.dbbt-table-empty { padding: 24px 14px; text-align: center; color: var(--muted); font-size: 12.5px; }
+
+.dbbt-accounts-row > div:nth-child(1) { width: 130px; }
+.dbbt-accounts-row > div:nth-child(2) { width: 250px; }
+.dbbt-accounts-row > div:nth-child(3) { width: 110px; }
+.dbbt-accounts-row > div:nth-child(4) { width: 170px; }
+.dbbt-accounts-row > div:nth-child(5) { width: 90px; }
+.dbbt-accounts-row > div:nth-child(6) { width: 60px; }
+
+.dbbt-permission-guide { margin-top: 22px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+.dbbt-permission-card { border: 1px solid var(--line); border-radius: 6px; padding: 16px 18px; background: var(--surface); }
+.dbbt-permission-title { font-size: 12px; font-weight: 900; margin-bottom: 8px; color: var(--text); }
+.dbbt-permission-title-accent { color: var(--dbbt-accent); }
+.dbbt-permission-desc { font-size: 12px; color: var(--muted); line-height: 1.9; }
+
+/* ==========================================================================
+   스태프 로그인
+   ========================================================================== */
+.dbbt-login-wrap { display: flex; align-items: center; justify-content: center; min-height: calc(100vh - 60px); padding: 40px 20px; }
+.dbbt-login-card { width: 100%; max-width: 300px; }
+.dbbt-login-brand { display: flex; align-items: center; justify-content: center; gap: 8px; }
+.dbbt-login-brand img { height: 24px; width: auto; filter: var(--dbbt-logo-filter); }
+.dbbt-login-brand span { font-size: 11px; letter-spacing: 0.16em; color: var(--muted); font-weight: 700; }
+.dbbt-login-heading { text-align: center; margin-top: 22px; }
+.dbbt-login-title { font-size: 19px; font-weight: 900; color: var(--text); }
+.dbbt-login-sub { font-size: 12.5px; color: var(--muted); margin-top: 8px; line-height: 1.6; }
+.dbbt-field { margin-top: 16px; }
+.dbbt-field:first-of-type { margin-top: 28px; }
+.dbbt-field label { display: block; font-size: 11px; color: var(--muted); font-weight: 700; margin-bottom: 6px; }
+.dbbt-field .errorlist { color: var(--dbbt-bad); font-size: 11px; margin: 0 0 4px; padding: 0; list-style: none; }
+#login-form input[type="text"], #login-form input[type="password"] {
+  width: 100%; background: var(--surface); border: 1px solid var(--line); border-radius: 4px;
+  padding: 11px 12px; font-size: 13px; color: var(--text); font-family: inherit; box-sizing: border-box;
+}
+.dbbt-login-forgot { margin-top: 10px; text-align: right; }
+.dbbt-login-forgot a { font-size: 11.5px; color: var(--dbbt-accent); }
+.dbbt-login-submit {
+  margin-top: 22px; width: 100%; padding: 13px 0; background: var(--dbbt-accent); color: var(--bg);
+  font-weight: 700; font-size: 15px; border-radius: 4px; border: none; cursor: pointer; font-family: inherit;
+}
+.dbbt-login-submit:hover { opacity: 0.92; }
+.dbbt-login-help { margin-top: 16px; font-size: 10.5px; line-height: 1.6; color: var(--muted); text-align: center; }
+
+/* ==========================================================================
+   태블릿(834px 안팎)에서는 회차/참가자/계정 표를 좌우 스크롤 + 첫 열 고정으로.
+   ========================================================================== */
+@media (max-width: 1024px) {
+  #content { padding: 20px 18px 40px; }
+  .dbbt-topbar-right { width: 100%; justify-content: space-between; }
+  #changelist table, .dbbt-table-card { display: block; overflow-x: auto; }
+  #changelist table { white-space: nowrap; }
+  #changelist table thead th:first-child, #changelist table tbody td:first-child, #changelist table tbody th {
+    position: sticky; left: 0; z-index: 1; background: var(--surface); box-shadow: 2px 0 4px oklch(18% 0.008 60 / 0.08);
+  }
+  #changelist table thead th:first-child { background: var(--surface2); }
+  .dbbt-permission-guide, .grid2 { grid-template-columns: 1fr; }
+  .change-form fieldset.module { grid-template-columns: 1fr; }
+}
+@media (max-width: 720px) {
+  .dbbt-accounts-row { overflow-x: auto; }
+}

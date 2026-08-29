@@ -6,7 +6,7 @@
   <div class="card" style="text-align:center; padding:2.25rem 1.75rem;">
     <div class="center-brand">
       <img src="{% static 'checkin/logo.png' %}" alt="로고" />
-      <span>동방배틀 체크인</span>
+      <span>{% if participant %}동방배틀 VOL.{{ participant.event.volume }} 체크인{% else %}동방배틀 체크인{% endif %}</span>
     </div>
     <p class="muted" style="margin-top:1.1rem;">등록되지 않은 QR입니다.</p>
   </div>
@@ -14,7 +14,7 @@
   <div class="card" style="text-align:center; padding:2.25rem 1.75rem;">
     <div class="center-brand">
       <img src="{% static 'checkin/logo.png' %}" alt="로고" />
-      <span>동방배틀 체크인</span>
+      <span>{% if participant %}동방배틀 VOL.{{ participant.event.volume }} 체크인{% else %}동방배틀 체크인{% endif %}</span>
     </div>
 
     <h1 style="margin-top:0.9rem;">{{ participant.name }}</h1>
@@ -25,9 +25,13 @@
     {% endif %}
 
     {% if participant.checkin_status == "CHECKED_IN" %}
-      <p class="success" style="font-size:1.05rem; margin-top:1.5rem;">✓ 체크인 완료</p>
+      <svg width="34" height="34" viewBox="0 0 52 52" style="margin:1.1rem auto 0; display:block;">
+        <circle cx="26" cy="26" r="23" fill="var(--ok-soft)" stroke="var(--ok)" stroke-width="2.5"/>
+        <path d="M16 27 L23 34 L37 18" fill="none" stroke="var(--ok)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <p class="success" style="font-size:1.05rem; margin-top:0.6rem;">체크인 완료</p>
       {% if participant.checked_in_at %}
-        <p class="muted">{{ participant.checked_in_at }}</p>
+        <p class="muted">{{ participant.checked_in_at|date:"Y.m.d H:i" }}</p>
       {% endif %}
     {% else %}
       <p class="muted" style="margin-top:1.5rem;">아직 체크인되지 않았습니다.</p>
@@ -36,8 +40,7 @@
         <button type="submit" class="btn" style="width:100%;">체크인 확정</button>
       </form>
       <p class="fine" style="margin-top:0.9rem; line-height:1.6;">
-        (스태프 로그인이 필요합니다 — 로그인 화면이 뜨면 로그인 후 이 화면으로
-        돌아와서 "체크인 확정" 버튼을 다시 눌러주세요)
+        스태프 로그인이 필요합니다.<br />기기당 최초 1회만 입력하면 됩니다.
       </p>
     {% endif %}
   </div>

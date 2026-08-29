@@ -1,0 +1,69 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'admin/css/dbbt_theme.css' %}">{% endblock %}
+
+{% block bodyclass %}{{ block.super }} login dbbt-login{% endblock %}
+
+{% block usertools %}{% endblock %}
+{% block nav-global %}{% endblock %}
+{% block nav-sidebar %}{% endblock %}
+{% block content_title %}{% endblock %}
+{% block nav-breadcrumbs %}{% endblock %}
+
+{% block branding %}{% endblock %}
+
+{% block content %}
+<div class="dbbt-login-wrap">
+  <div class="dbbt-login-card">
+
+    <div class="dbbt-login-brand">
+      <img src="{% static 'checkin/logo.png' %}" alt="">
+      <span>DBBT STAFF</span>
+    </div>
+
+    <div class="dbbt-login-heading">
+      <div class="dbbt-login-title">스태프 로그인</div>
+      <div class="dbbt-login-sub">현장 체크인 스캐너와 운영진 대시보드는<br>스태프 계정으로만 접근할 수 있어요</div>
+    </div>
+
+    {% if form.errors and not form.non_field_errors %}
+      <p class="errornote">{% translate "Please correct the error below." %}</p>
+    {% endif %}
+    {% if form.non_field_errors %}
+      {% for error in form.non_field_errors %}<p class="errornote">{{ error }}</p>{% endfor %}
+    {% endif %}
+    {% if user.is_authenticated %}
+      <p class="errornote">
+        {% blocktranslate trimmed %}
+          You are authenticated as {{ username }}, but are not authorized to
+          access this page. Would you like to login to a different account?
+        {% endblocktranslate %}
+      </p>
+    {% endif %}
+
+    <form action="{{ app_path }}" method="post" id="login-form">{% csrf_token %}
+      <div class="dbbt-field">
+        <label for="{{ form.username.id_for_label }}">아이디</label>
+        {{ form.username.errors }}
+        {{ form.username }}
+      </div>
+      <div class="dbbt-field">
+        <label for="{{ form.password.id_for_label }}">비밀번호</label>
+        {{ form.password.errors }}
+        {{ form.password }}
+        <input type="hidden" name="next" value="{{ next }}">
+      </div>
+
+      {% url 'admin_password_reset' as password_reset_url %}
+      {% if password_reset_url %}
+        <div class="dbbt-login-forgot"><a href="{{ password_reset_url }}">{% translate 'Forgotten your login credentials?' %}</a></div>
+      {% endif %}
+
+      <button type="submit" class="dbbt-login-submit">로그인</button>
+    </form>
+
+    <div class="dbbt-login-help">기기당 최초 1회만 로그인하면 됩니다.<br>계정이 없다면 슈퍼유저에게 계정 초대를 요청해주세요.</div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,11 @@
+{% extends "admin/change_form.html" %}
+
+{% block after_field_sets %}
+{{ block.super }}
+{% if not original %}
+<div class="dbbt-section dbbt-section-disabled">
+  <div class="dbbt-section-title dbbt-section-title-muted">라벨 · QR · 체크인</div>
+  <div class="dbbt-field-help">저장 후 회차 관리의 "라벨 / QR 발급 실행"으로 자동 배정됩니다. 지금은 입력할 수 없습니다.</div>
+</div>
+{% endif %}
+{% endblock %}

@@ -5,14 +5,14 @@
 {% if not_found %}
   <div class="center-brand">
     <img src="{% static 'checkin/logo.png' %}" alt="로고" />
-    <span>동방배틀 체크인 QR</span>
+    <span>{% if participant %}동방배틀 VOL.{{ participant.event.volume }} 체크인 QR{% else %}동방배틀 체크인 QR{% endif %}</span>
   </div>
   <p class="muted" style="text-align:center; margin-top:1.1rem; line-height:1.8;">QR 정보를 찾을 수 없습니다.<br />링크가 정확한지 확인해주세요.</p>
 {% else %}
   <div style="text-align:center;">
     <div class="center-brand">
       <img src="{% static 'checkin/logo.png' %}" alt="로고" />
-      <span>동방배틀 체크인 QR</span>
+      <span>{% if participant %}동방배틀 VOL.{{ participant.event.volume }} 체크인 QR{% else %}동방배틀 체크인 QR{% endif %}</span>
     </div>
 
     <h1 style="margin-top:0.75rem;">{{ participant.name }}</h1>

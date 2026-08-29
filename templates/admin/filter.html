@@ -1,0 +1,10 @@
+{% load i18n %}
+<details data-filter-title="{{ title }}">
+  <summary>{{ title|capfirst }}: {% for choice in choices %}{% if choice.selected %}{{ choice.display }}{% endif %}{% endfor %}</summary>
+  <ul>
+  {% for choice in choices %}
+    <li{% if choice.selected %} class="selected"{% endif %}>
+    <a href="{{ choice.query_string|iriencode }}">{{ choice.display }}</a></li>
+  {% endfor %}
+  </ul>
+</details>

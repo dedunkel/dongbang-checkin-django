@@ -19,16 +19,17 @@
   <div class="corner tr"></div>
   <div class="corner bl"></div>
   <div class="corner br"></div>
+  <div id="scanLine" class="scan-line"></div>
   <div id="scanResult" class="overlay"></div>
 </div>
 <div id="cameraOffBox" class="camera-off-box" style="display:none;">
   카메라를 사용할 수 없습니다.<br />아래 수동 검색을 이용해주세요.
 </div>
-<p class="muted" style="text-align:center; margin-top:0.85rem;">QR을 화면 사각형 안에 비춰주세요</p>
+<p id="scanHint" class="muted" style="text-align:center; margin-top:0.85rem;">QR을 화면 사각형 안에 비춰주세요</p>
 
 <div class="divider-row">
   <div class="line"></div>
-  <div class="label">또는 직접 검색</div>
+  <div id="searchDividerLabel" class="label">또는 직접 검색</div>
   <div class="line"></div>
 </div>
 
@@ -82,10 +83,14 @@ function foundCardHtml(p) {
 function checkedInCardHtml(p) {
   const code = p.labelCode ? `<div class="code">${escapeHtml(p.labelCode)}</div>` : '';
   return `
+    <svg class="check-icon" width="34" height="34" viewBox="0 0 52 52">
+      <circle cx="26" cy="26" r="23" fill="var(--ok-soft)" stroke="var(--ok)" stroke-width="2.5"/>
+      <path d="M16 27 L23 34 L37 18" fill="none" stroke="var(--ok)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
     ${code}
     <div class="name">${escapeHtml(p.name)}</div>
     <div class="sub">${subInfo(p)}</div>
-    <div class="status ok">✓ 체크인 완료</div>
+    <div class="status ok">체크인 완료</div>
   `;
 }
 
@@ -128,6 +133,8 @@ async function startCamera() {
   } catch (e) {
     document.getElementById('viewfinder').style.display = 'none';
     document.getElementById('cameraOffBox').style.display = 'flex';
+    document.getElementById('scanHint').style.display = 'none';
+    document.getElementById('searchDividerLabel').textContent = '수동 검색';
   }
 }
 

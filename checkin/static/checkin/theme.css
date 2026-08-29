@@ -4,7 +4,7 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
 
-:root {
+:root, html[data-theme="light"] {
   --bg: oklch(99% 0.002 90);
   --surface: oklch(100% 0 0);
   --surface2: oklch(97% 0.003 90);
@@ -29,8 +29,11 @@
   --logo-filter: invert(1);
 }
 
+/* prefers-color-scheme은 테마를 명시적으로 고르지 않았을 때(=data-theme 속성이
+   없을 때)만 시스템 설정을 따르게 하고, 토글로 라이트를 명시했으면 시스템이
+   다크여도 라이트를 유지한다 — admin 쪽 dbbt_theme.css와 동일한 캐스케이드. */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --bg: oklch(15% 0.006 60);
     --surface: oklch(20% 0.008 60);
     --surface2: oklch(24% 0.01 60);
@@ -54,6 +57,29 @@
   }
 }
 
+html[data-theme="dark"] {
+  --bg: oklch(15% 0.006 60);
+  --surface: oklch(20% 0.008 60);
+  --surface2: oklch(24% 0.01 60);
+  --line: oklch(31% 0.012 60);
+  --text: oklch(96% 0.004 90);
+  --muted: oklch(66% 0.016 60);
+
+  --accent: oklch(74% 0.12 260);
+  --accent-soft: oklch(27% 0.05 260);
+
+  --ok: oklch(76% 0.13 155);
+  --ok-soft: oklch(27% 0.05 155);
+
+  --warn: oklch(78% 0.14 70);
+  --warn-soft: oklch(27% 0.05 70);
+
+  --bad: oklch(74% 0.16 25);
+  --bad-soft: oklch(27% 0.05 25);
+
+  --logo-filter: none;
+}
+
 * { box-sizing: border-box; }
 
 body {
@@ -66,7 +92,8 @@ main { flex: 1; max-width: 640px; margin: 0 auto; padding: 2.5rem 1.5rem; width:
 a { color: var(--accent); }
 
 .brand { display: flex; align-items: center; gap: 0.5rem; }
-.brand img { height: 15px; width: auto; filter: var(--logo-filter); }
+.brand img { height: 25px; width: auto; filter: var(--logo-filter); }
+.logo-hero { width: 190px; height: auto; filter: var(--logo-filter); display: block; }
 .brand span { font-size: 0.7rem; letter-spacing: 0.12em; color: var(--muted); font-weight: 700; }
 
 .topbar {
@@ -79,6 +106,32 @@ a { color: var(--accent); }
   border: 1px solid var(--line); border-radius: 3px; padding: 0.35rem 0.7rem; white-space: nowrap;
 }
 
+/* 라이트/다크 토글 — Main.html에 그려진 세그먼트 pill(해/달 두 옵션, 선택된
+   쪽만 accent-soft 배경) 그대로. admin 쪽 .dbbt-theme-toggle과 같은
+   localStorage 키('dbbt-theme')를 써서 한쪽에서 바꾸면 다른 쪽도 이어진다. */
+.theme-toggle {
+  position: fixed; top: 24px; right: 24px; z-index: 40;
+  display: inline-flex; align-items: center; background: var(--surface); border: 1px solid var(--line);
+  border-radius: 20px; padding: 3px; gap: 2px; box-shadow: 0 1px 3px oklch(18% 0.008 60 / 0.08);
+}
+.theme-toggle-option {
+  width: 28px; height: 28px; border-radius: 16px; display: flex; align-items: center; justify-content: center;
+  border: none; background: none; color: var(--muted); cursor: pointer; padding: 0;
+}
+.theme-toggle-option svg { display: block; fill: none; stroke: currentColor; }
+.theme-toggle-option[data-theme-choice="dark"] svg { fill: currentColor; stroke: none; }
+
+.theme-toggle-option[data-theme-choice="light"] { color: var(--accent); background: var(--accent-soft); }
+.theme-toggle-option[data-theme-choice="dark"] { color: var(--muted); background: none; }
+@media (prefers-color-scheme: dark) {
+  html:not([data-theme="light"]) .theme-toggle-option[data-theme-choice="light"] { color: var(--muted); background: none; }
+  html:not([data-theme="light"]) .theme-toggle-option[data-theme-choice="dark"] { color: var(--accent); background: var(--accent-soft); }
+}
+html[data-theme="dark"] .theme-toggle-option[data-theme-choice="light"] { color: var(--muted); background: none; }
+html[data-theme="dark"] .theme-toggle-option[data-theme-choice="dark"] { color: var(--accent); background: var(--accent-soft); }
+html[data-theme="light"] .theme-toggle-option[data-theme-choice="light"] { color: var(--accent); background: var(--accent-soft); }
+html[data-theme="light"] .theme-toggle-option[data-theme-choice="dark"] { color: var(--muted); background: none; }
+
 h1 { font-size: 1.25rem; font-weight: 900; margin-bottom: 1.5rem; }
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: 1rem; padding: 1.75rem; }
 
@@ -89,6 +142,23 @@ input[type=text], input[type=tel], input[type=email], select {
 }
 .radio-row { display: flex; gap: 1.25rem; margin-top: 0.35rem; }
 .radio-row label { display: flex; align-items: center; gap: 0.4rem; margin: 0; color: var(--text); font-weight: 400; }
+
+/* 참가/관람 선택: 라디오 자체는 숨기고 라벨을 탭처럼 스타일링 (기능은 그대로 라디오) */
+.entry-type-tabs ul { display: flex; gap: 0.5rem; list-style: none; padding: 0; margin: 0.35rem 0 0; }
+.entry-type-tabs li { flex: 1; }
+.entry-type-tabs input[type=radio] { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.entry-type-tabs label {
+  display: flex; align-items: center; justify-content: center; margin: 0; padding: 0.7rem 0;
+  border-radius: 0.4rem; border: 1px solid var(--line); background: var(--surface); color: var(--muted);
+  font-weight: 700; font-size: 0.95rem; cursor: pointer;
+}
+.entry-type-tabs label:has(input:checked) {
+  background: var(--accent-soft); color: var(--accent); border-color: var(--accent-soft);
+}
+
+/* 신청/성공/빈 상태 화면: 카드 없이 화면 중앙에 배치 */
+main:has(.empty-state) { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+.logo-standalone { height: 25px; width: auto; filter: var(--logo-filter); margin: 0 auto 1.4rem; display: block; }
 
 button, .btn {
   display: inline-block; margin-top: 1.5rem; padding: 0.75rem 1.2rem; border-radius: 0.6rem;
@@ -118,7 +188,7 @@ footer { text-align: center; padding: 1rem; font-size: 0.75rem; color: var(--mut
 
 /* 신청/QR/체크인 확인 화면 공통: 로고+타이틀 중앙 정렬 헤더 */
 .center-brand { display: flex; align-items: center; justify-content: center; gap: 0.5rem; }
-.center-brand img { height: 14px; width: auto; filter: var(--logo-filter); }
+.center-brand img { height: 24px; width: auto; filter: var(--logo-filter); }
 .center-brand span { font-size: 0.68rem; letter-spacing: 0.14em; color: var(--muted); font-weight: 700; }
 
 /* 라벨 코드(A-1 등) 큰 표시 */
@@ -138,6 +208,15 @@ footer { text-align: center; padding: 1rem; font-size: 0.75rem; color: var(--mut
 .viewfinder .corner.tr { top: 14px; right: 14px; border-top-width: 3px; border-right-width: 3px; }
 .viewfinder .corner.bl { bottom: 14px; left: 14px; border-bottom-width: 3px; border-left-width: 3px; }
 .viewfinder .corner.br { bottom: 14px; right: 14px; border-bottom-width: 3px; border-right-width: 3px; }
+.viewfinder .scan-line {
+  position: absolute; left: 14px; right: 14px; top: 50%; height: 2px; background: var(--accent);
+  z-index: 1; animation: dbbt-scan 2.2s ease-in-out infinite;
+}
+@keyframes dbbt-scan {
+  0%, 100% { top: 16%; opacity: 0.85; }
+  50% { top: 84%; opacity: 0.85; }
+}
+.result-card .check-icon { display: block; margin: 0 auto; }
 
 .viewfinder .overlay {
   position: absolute; inset: 0; background: oklch(18% 0.008 60 / 0.55);
