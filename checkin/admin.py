@@ -242,7 +242,7 @@ class ParticipantAdmin(admin.ModelAdmin):
         ("검수", {"fields": ("verification_status", "payment_status")}),
         (
             "라벨",
-            {"fields": ("label_group", "label_number", "label_code", "label_manual_override")},
+            {"fields": ("label_group", "label_number", "label_code")},
         ),
         ("QR / 체크인", {"fields": ("qr_token", "qr_sent_at", "checkin_status", "checked_in_at")}),
         ("기타", {"fields": ("id", "created_at")}),

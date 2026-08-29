@@ -82,7 +82,6 @@ class Participant(models.Model):
     label_group = models.CharField(max_length=4, null=True, blank=True)
     label_number = models.PositiveSmallIntegerField(null=True, blank=True)
     label_code = models.CharField(max_length=10, null=True, blank=True)
-    label_manual_override = models.BooleanField(default=False)
 
     # QR / 체크인
     qr_token = models.UUIDField(null=True, blank=True, unique=True)
