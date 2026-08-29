@@ -17,19 +17,12 @@ from openpyxl import Workbook
 from openpyxl.styles import Alignment, Font
 from openpyxl.utils import get_column_letter
 
-from checkin.models import Event, Participant
+from checkin.models import Event, Genre, Participant
 
 # 장르별 탭 순서 — 기존 공지 시트와 동일 (관람은 마지막, genre=None으로 구분).
-GENRE_TABS = [
-    ("Waacking", "왁킹"),
-    ("Popping", "팝핑"),
-    ("Locking", "락킹"),
-    ("House", "하우스"),
-    ("Krump", "크럼프"),
-    ("Hiphop", "힙합"),
-    ("Breaking", "브레이킹"),
-    (None, "관람"),
-]
+# 탭 목록은 Genre(모델)에서 그대로 가져온다 — 여기서 따로 문자열을 하드코딩하면
+# 모델의 실제 선택지와 어긋날 수 있어(#48), 단일 소스로 유지한다.
+GENRE_TABS = [(g.value, g.label) for g in Genre] + [(None, "관람")]
 
 HEADERS = ["번호", "이름", "연락처", "소속대학", "학적", "순서", "비고"]
 
