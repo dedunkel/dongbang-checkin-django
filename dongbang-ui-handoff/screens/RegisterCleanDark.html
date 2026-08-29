@@ -1,0 +1,77 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
+:root{
+  --bg: oklch(15% 0.006 60);
+  --surface: oklch(20% 0.008 60);
+  --line: oklch(31% 0.012 60);
+  --text: oklch(96% 0.004 90);
+  --muted: oklch(66% 0.016 60);
+  --accent: oklch(74% 0.12 260);
+  --accent-soft: oklch(27% 0.05 260);
+}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--bg);color:var(--text);font-family:'Noto Sans KR',system-ui,sans-serif;}
+</style>
+</helmet>
+<div style="width:390px;height:900px;background:var(--bg);padding:64px 28px 40px;overflow:hidden;">
+
+  <div style="display:flex;align-items:center;gap:8px;">
+    <img src="logo.png" alt="KOOKMIN UNIV DANCE CREW" style="height:13px;width:auto;"/>
+    <div style="font-size:11px;letter-spacing:0.16em;color:var(--muted);font-weight:700;">동방배틀 VOL.33</div>
+  </div>
+  <h1 style="font-family:'Noto Sans KR',sans-serif;font-weight:900;font-size:24px;margin:10px 0 28px;line-height:1.25;color:var(--text);">참가/관람 신청</h1>
+
+  <div style="font-size:12px;color:var(--muted);font-weight:700;margin-bottom:8px;">참가 / 관람</div>
+  <div style="display:flex;gap:8px;margin-bottom:24px;">
+    <div style="flex:1;text-align:center;padding:11px 0;background:var(--accent-soft);color:var(--accent);font-weight:700;font-size:14px;border-radius:3px;">참가</div>
+    <div style="flex:1;text-align:center;padding:11px 0;background:var(--surface);border:1px solid var(--line);color:var(--muted);font-weight:700;font-size:14px;border-radius:3px;">관람</div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:16px;">
+    <div>
+      <div style="font-size:12px;color:var(--muted);font-weight:700;margin-bottom:6px;">이름 / 댄서명</div>
+      <div style="background:var(--surface);border:1px solid var(--line);border-radius:3px;padding:12px 14px;font-size:14.5px;color:var(--text);">홍길동 (비보이 스파크)</div>
+    </div>
+    <div>
+      <div style="font-size:12px;color:var(--muted);font-weight:700;margin-bottom:6px;">연락처</div>
+      <div style="background:var(--surface);border:1px solid var(--line);border-radius:3px;padding:12px 14px;font-size:14.5px;color:var(--muted);">010-0000-0000</div>
+    </div>
+    <div style="display:flex;gap:12px;">
+      <div style="flex:1.4;">
+        <div style="font-size:12px;color:var(--muted);font-weight:700;margin-bottom:6px;">소속대학</div>
+        <div style="background:var(--surface);border:1px solid var(--line);border-radius:3px;padding:12px 14px;font-size:14.5px;color:var(--muted);">국민대학교</div>
+      </div>
+      <div style="flex:1;">
+        <div style="font-size:12px;color:var(--muted);font-weight:700;margin-bottom:6px;">학적 (재학/휴학)</div>
+        <div style="background:var(--surface);border:1px solid var(--line);border-radius:3px;padding:12px 14px;font-size:14.5px;color:var(--muted);">재학</div>
+      </div>
+    </div>
+    <div>
+      <div style="font-size:12px;color:var(--muted);font-weight:700;margin-bottom:6px;">참가 장르</div>
+      <div style="background:var(--surface);border:1px solid var(--accent);border-radius:3px;padding:12px 14px;font-size:14.5px;display:flex;justify-content:space-between;align-items:center;color:var(--text);">
+        <span>Breaking</span>
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:32px;text-align:center;padding:15px 0;background:var(--accent);color:oklch(15% 0.006 60);font-weight:700;font-size:15.5px;border-radius:3px;">
+    신청하기
+  </div>
+
+  <div style="margin-top:16px;text-align:center;font-size:11px;color:var(--muted);">
+    검수 후 QR 링크를 문자로 보내드립니다
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

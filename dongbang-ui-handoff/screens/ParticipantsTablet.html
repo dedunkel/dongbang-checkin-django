@@ -1,0 +1,184 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
+:root{
+  --bg: oklch(99% 0.002 90);
+  --surface: oklch(100% 0 0);
+  --surface2: oklch(97% 0.003 90);
+  --line: oklch(88% 0.004 60);
+  --text: oklch(18% 0.008 60);
+  --muted: oklch(50% 0.008 60);
+  --accent: oklch(40% 0.09 260);
+  --accent-soft: oklch(94% 0.02 260);
+  --ok: oklch(52% 0.11 155);
+  --ok-soft: oklch(94% 0.03 155);
+  --warn: oklch(55% 0.14 70);
+  --warn-soft: oklch(94% 0.04 70);
+  --bad: oklch(52% 0.17 25);
+  --bad-soft: oklch(94% 0.04 25);
+}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--bg);color:var(--text);font-family:'Noto Sans KR',system-ui,sans-serif;}
+.badge{display:inline-block;padding:4px 9px;border-radius:3px;font-size:10.5px;font-weight:700;white-space:nowrap;}
+.badge-ok{background:var(--ok-soft);color:var(--ok);}
+.badge-warn{background:var(--warn-soft);color:var(--warn);}
+.badge-bad{background:var(--bad-soft);color:var(--bad);}
+.badge-neutral{background:var(--surface);color:var(--muted);border:1px solid var(--line);}
+.cell{font-size:12px;color:var(--text);display:flex;align-items:center;}
+.th{font-size:10px;color:var(--muted);font-weight:700;letter-spacing:0.02em;display:flex;align-items:center;}
+.filter{display:flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:3px;padding:7px 10px;font-size:11.5px;color:var(--text);}
+.btn{padding:8px 13px;border-radius:3px;font-size:12px;font-weight:700;white-space:nowrap;}
+.btn-outline{background:var(--surface);border:1px solid var(--line);color:var(--text);}
+.tab{padding:10px 2px;margin-right:18px;font-size:12.5px;font-weight:700;color:var(--muted);}
+.tab-active{color:var(--accent);border-bottom:2px solid var(--accent);}
+.sticky-col{position:sticky;background:var(--surface);z-index:1;}
+</style>
+</helmet>
+<div style="width:834px;height:1194px;background:var(--bg);padding:24px 20px;overflow:hidden;">
+
+  <!-- device frame label -->
+  <div style="display:flex;align-items:center;gap:6px;margin-bottom:14px;">
+    <div style="font-size:10px;font-weight:700;color:var(--muted);background:var(--surface2);border:1px solid var(--line);border-radius:3px;padding:4px 8px;">iPad · 834px 폭 참고용</div>
+  </div>
+
+  <!-- top bar -->
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;">
+    <div>
+      <div style="display:flex;align-items:center;gap:7px;">
+        <img src="logo.png" alt="KOOKMIN UNIV DANCE CREW" style="height:12px;width:auto;filter:invert(1);"/>
+        <div style="font-size:10px;letter-spacing:0.14em;color:var(--muted);font-weight:700;">DBBT STAFF</div>
+      </div>
+      <h1 style="font-size:19px;font-weight:900;margin:5px 0 0;">참가자 관리</h1>
+    </div>
+    <div style="font-size:11px;font-weight:700;color:var(--accent);background:var(--accent-soft);padding:7px 12px;border-radius:3px;">동방배틀 VOL.33</div>
+  </div>
+
+  <!-- tabs -->
+  <div style="display:flex;margin-top:18px;border-bottom:1px solid var(--line);">
+    <div class="tab">회차 관리</div>
+    <div class="tab tab-active">참가자 관리</div>
+    <div class="tab">계정 관리</div>
+  </div>
+
+  <!-- stat tiles: 2 columns on tablet -->
+  <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:18px;">
+    <div style="border:1px solid var(--line);border-radius:6px;padding:13px 15px;">
+      <div style="font-size:10.5px;color:var(--muted);font-weight:700;">총 신청</div>
+      <div style="font-size:21px;font-weight:900;margin-top:5px;">128명</div>
+    </div>
+    <div style="border:1px solid var(--line);border-radius:6px;padding:13px 15px;">
+      <div style="font-size:10.5px;color:var(--warn);font-weight:700;">학적검수 대기</div>
+      <div style="font-size:21px;font-weight:900;margin-top:5px;color:var(--warn);">12명</div>
+    </div>
+    <div style="border:1px solid var(--line);border-radius:6px;padding:13px 15px;">
+      <div style="font-size:10.5px;color:var(--muted);font-weight:700;">입금 대기</div>
+      <div style="font-size:21px;font-weight:900;margin-top:5px;">8명</div>
+    </div>
+    <div style="border:1px solid var(--line);border-radius:6px;padding:13px 15px;">
+      <div style="font-size:10.5px;color:var(--ok);font-weight:700;">체크인 완료</div>
+      <div style="font-size:21px;font-weight:900;margin-top:5px;color:var(--ok);">64 / 128</div>
+    </div>
+  </div>
+
+  <!-- toolbar wraps naturally -->
+  <div style="margin-top:18px;display:flex;align-items:center;gap:7px;flex-wrap:wrap;">
+    <div style="background:var(--surface);border:1px solid var(--line);border-radius:3px;padding:7px 11px;font-size:11.5px;color:var(--muted);width:160px;">이름 / 전화번호 검색</div>
+    <div class="filter">회차: VOL.33</div>
+    <div class="filter">구분: 전체</div>
+    <div class="filter">장르: 전체</div>
+    <div class="filter">검수: 전체</div>
+    <div class="filter">입금: 전체</div>
+    <div class="filter">체크인: 전체</div>
+  </div>
+  <div style="margin-top:8px;display:flex;align-items:center;gap:7px;flex-wrap:wrap;">
+    <div class="btn btn-outline">학적검수 승인</div>
+    <div class="btn btn-outline">입금 확인</div>
+    <div class="btn btn-outline">라벨 맞바꾸기</div>
+  </div>
+
+  <!-- responsive table: horizontal scroll, first 2 columns pinned -->
+  <div style="margin-top:16px;font-size:10.5px;color:var(--muted);">← 옆으로 스크롤하면 나머지 항목이 보여요 (이름 열은 고정)</div>
+  <div style="margin-top:8px;border:1px solid var(--line);border-radius:6px;overflow-x:auto;overflow-y:hidden;position:relative;">
+    <div style="display:flex;min-width:1040px;">
+
+      <!-- pinned columns -->
+      <div style="display:flex;flex-direction:column;flex-shrink:0;">
+        <div class="th sticky-col" style="left:0;width:60px;padding:10px 8px;background:var(--surface2);border-bottom:1px solid var(--line);border-right:1px solid var(--line);">회차</div>
+        <div class="cell sticky-col" style="left:0;width:60px;padding:11px 8px;border-bottom:1px solid var(--line);border-right:1px solid var(--line);color:var(--muted);">vol.33</div>
+        <div class="cell sticky-col" style="left:0;width:60px;padding:11px 8px;border-bottom:1px solid var(--line);border-right:1px solid var(--line);color:var(--muted);">vol.33</div>
+        <div class="cell sticky-col" style="left:0;width:60px;padding:11px 8px;border-bottom:1px solid var(--line);border-right:1px solid var(--line);color:var(--muted);">vol.33</div>
+        <div class="cell sticky-col" style="left:0;width:60px;padding:11px 8px;border-right:1px solid var(--line);color:var(--muted);">vol.33</div>
+      </div>
+      <div style="display:flex;flex-direction:column;flex-shrink:0;">
+        <div class="th sticky-col" style="left:60px;width:84px;padding:10px 8px;background:var(--surface2);border-bottom:1px solid var(--line);border-right:1px solid var(--line);box-shadow:2px 0 4px oklch(18% 0.008 60 / 0.05);">이름</div>
+        <div class="cell sticky-col" style="left:60px;width:84px;padding:11px 8px;border-bottom:1px solid var(--line);border-right:1px solid var(--line);font-weight:700;box-shadow:2px 0 4px oklch(18% 0.008 60 / 0.05);">김민지</div>
+        <div class="cell sticky-col" style="left:60px;width:84px;padding:11px 8px;border-bottom:1px solid var(--line);border-right:1px solid var(--line);font-weight:700;box-shadow:2px 0 4px oklch(18% 0.008 60 / 0.05);">이수연</div>
+        <div class="cell sticky-col" style="left:60px;width:84px;padding:11px 8px;border-bottom:1px solid var(--line);border-right:1px solid var(--line);font-weight:700;box-shadow:2px 0 4px oklch(18% 0.008 60 / 0.05);">박준혁</div>
+        <div class="cell sticky-col" style="left:60px;width:84px;padding:11px 8px;border-right:1px solid var(--line);font-weight:700;box-shadow:2px 0 4px oklch(18% 0.008 60 / 0.05);">최유진</div>
+      </div>
+
+      <!-- scrolling columns -->
+      <div style="display:flex;flex-direction:column;flex-shrink:0;">
+        <div class="th" style="width:118px;padding:10px 8px;background:var(--surface2);border-bottom:1px solid var(--line);">연락처</div>
+        <div class="cell" style="width:118px;padding:11px 8px;border-bottom:1px solid var(--line);color:var(--muted);">010-1234-5678</div>
+        <div class="cell" style="width:118px;padding:11px 8px;border-bottom:1px solid var(--line);color:var(--muted);">010-9876-5432</div>
+        <div class="cell" style="width:118px;padding:11px 8px;border-bottom:1px solid var(--line);color:var(--muted);">010-2222-3333</div>
+        <div class="cell" style="width:118px;padding:11px 8px;color:var(--muted);">010-4444-5555</div>
+      </div>
+      <div style="display:flex;flex-direction:column;flex-shrink:0;">
+        <div class="th" style="width:104px;padding:10px 8px;background:var(--surface2);border-bottom:1px solid var(--line);">소속대학</div>
+        <div class="cell" style="width:104px;padding:11px 8px;border-bottom:1px solid var(--line);color:var(--muted);">국민대학교</div>
+        <div class="cell" style="width:104px;padding:11px 8px;border-bottom:1px solid var(--line);color:var(--muted);">국민대학교</div>
+        <div class="cell" style="width:104px;padding:11px 8px;border-bottom:1px solid var(--line);color:var(--muted);">국민대학교</div>
+        <div class="cell" style="width:104px;padding:11px 8px;color:var(--muted);">홍익대학교</div>
+      </div>
+      <div style="display:flex;flex-direction:column;flex-shrink:0;">
+        <div class="th" style="width:84px;padding:10px 8px;background:var(--surface2);border-bottom:1px solid var(--line);">장르</div>
+        <div class="cell" style="width:84px;padding:11px 8px;border-bottom:1px solid var(--line);">Breaking</div>
+        <div class="cell" style="width:84px;padding:11px 8px;border-bottom:1px solid var(--line);">Waacking</div>
+        <div class="cell" style="width:84px;padding:11px 8px;border-bottom:1px solid var(--line);">Locking</div>
+        <div class="cell" style="width:84px;padding:11px 8px;color:var(--muted);">—</div>
+      </div>
+      <div style="display:flex;flex-direction:column;flex-shrink:0;">
+        <div class="th" style="width:76px;padding:10px 8px;background:var(--surface2);border-bottom:1px solid var(--line);">검수</div>
+        <div style="width:76px;padding:11px 8px;border-bottom:1px solid var(--line);"><span class="badge badge-ok">승인</span></div>
+        <div style="width:76px;padding:11px 8px;border-bottom:1px solid var(--line);"><span class="badge badge-warn">검수대기</span></div>
+        <div style="width:76px;padding:11px 8px;border-bottom:1px solid var(--line);"><span class="badge badge-ok">승인</span></div>
+        <div style="width:76px;padding:11px 8px;"><span class="badge badge-neutral">해당없음</span></div>
+      </div>
+      <div style="display:flex;flex-direction:column;flex-shrink:0;">
+        <div class="th" style="width:82px;padding:10px 8px;background:var(--surface2);border-bottom:1px solid var(--line);">체크인</div>
+        <div style="width:82px;padding:11px 8px;border-bottom:1px solid var(--line);"><span class="badge badge-ok">체크인완료</span></div>
+        <div style="width:82px;padding:11px 8px;border-bottom:1px solid var(--line);"><span class="badge badge-neutral">체크인전</span></div>
+        <div style="width:82px;padding:11px 8px;border-bottom:1px solid var(--line);"><span class="badge badge-neutral">체크인전</span></div>
+        <div style="width:82px;padding:11px 8px;"><span class="badge badge-neutral">체크인전</span></div>
+      </div>
+      <div style="display:flex;flex-direction:column;flex-shrink:0;">
+        <div class="th" style="width:52px;padding:10px 8px;background:var(--surface2);border-bottom:1px solid var(--line);">관리</div>
+        <div class="cell" style="width:52px;padding:11px 8px;border-bottom:1px solid var(--line);color:var(--accent);font-weight:700;">보기</div>
+        <div class="cell" style="width:52px;padding:11px 8px;border-bottom:1px solid var(--line);color:var(--accent);font-weight:700;">보기</div>
+        <div class="cell" style="width:52px;padding:11px 8px;border-bottom:1px solid var(--line);color:var(--accent);font-weight:700;">보기</div>
+        <div class="cell" style="width:52px;padding:11px 8px;color:var(--accent);font-weight:700;">보기</div>
+      </div>
+
+    </div>
+  </div>
+
+  <div style="margin-top:14px;font-size:11px;color:var(--muted);line-height:1.7;">
+    노트북(1280px 이상)에서는 기존 화면처럼 표 전체가 한 번에 보이고,<br/>
+    아이패드처럼 화면이 좁아지면 이름 열까지는 고정된 채로 나머지 항목만 옆으로 스크롤됩니다.<br/>
+    같은 방식이 회차 관리 · 계정 관리 화면에도 동일하게 적용돼요.
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

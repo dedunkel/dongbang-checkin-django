@@ -1,0 +1,122 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
+:root{
+  --bg: oklch(99% 0.002 90);
+  --surface: oklch(100% 0 0);
+  --surface2: oklch(97% 0.003 90);
+  --line: oklch(88% 0.004 60);
+  --text: oklch(18% 0.008 60);
+  --muted: oklch(50% 0.008 60);
+  --accent: oklch(40% 0.09 260);
+  --accent-soft: oklch(94% 0.02 260);
+  --ok: oklch(52% 0.11 155);
+  --ok-soft: oklch(94% 0.03 155);
+  --bad: oklch(52% 0.17 25);
+  --bad-soft: oklch(94% 0.04 25);
+}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--bg);color:var(--text);font-family:'Noto Sans KR',system-ui,sans-serif;}
+.section{border:1px solid var(--line);border-radius:6px;padding:18px 20px;margin-top:14px;}
+.section-title{font-size:12.5px;font-weight:900;color:var(--text);margin-bottom:14px;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px 20px;}
+.field-label{font-size:10.5px;color:var(--muted);font-weight:700;margin-bottom:5px;}
+.field-input{background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:9px 11px;font-size:12.5px;color:var(--text);display:flex;align-items:center;justify-content:space-between;}
+.field-input.readonly{background:var(--surface2);color:var(--muted);}
+.field-help{font-size:10px;color:var(--muted);margin-top:4px;line-height:1.5;}
+.toggle{width:34px;height:19px;border-radius:10px;background:var(--ok);position:relative;flex-shrink:0;}
+.toggle-dot{position:absolute;top:2px;right:2px;width:15px;height:15px;border-radius:50%;background:white;}
+.btn{padding:9px 14px;border-radius:4px;font-size:12px;font-weight:700;white-space:nowrap;}
+.btn-primary{background:var(--accent);color:oklch(99% 0.002 90);}
+.btn-outline{background:var(--surface);border:1px solid var(--line);color:var(--text);}
+.pill{padding:7px 12px;border-radius:3px;font-size:11.5px;font-weight:700;background:var(--surface2);color:var(--muted);border:1px solid var(--line);}
+.badge-ok{display:inline-block;padding:4px 9px;border-radius:3px;font-size:10.5px;font-weight:700;background:var(--ok-soft);color:var(--ok);}
+</style>
+</helmet>
+<div style="width:1280px;height:1220px;background:var(--bg);padding:30px 36px 50px;overflow:hidden;">
+
+  <!-- top bar -->
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+    <div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <img src="logo.png" alt="KOOKMIN UNIV DANCE CREW" style="height:13px;width:auto;filter:invert(1);"/>
+        <div style="font-size:10.5px;letter-spacing:0.16em;color:var(--muted);font-weight:700;">DBBT STAFF</div>
+      </div>
+      <div style="font-size:12px;color:var(--muted);margin-top:6px;">회차 관리 <span style="margin:0 4px;">›</span> 동방배틀 vol.33</div>
+      <h1 style="font-size:22px;font-weight:900;margin:4px 0 0;">동방배틀 vol.33 <span class="badge-ok" style="margin-left:6px;">활성</span></h1>
+    </div>
+    <div style="font-size:12px;color:var(--muted);">staff@dongbangbattle.kr</div>
+  </div>
+
+  <!-- 기본 -->
+  <div class="section">
+    <div class="section-title">기본 정보</div>
+    <div class="grid2">
+      <div><div class="field-label">회차 번호</div><div class="field-input">33</div></div>
+      <div><div class="field-label">회차 이름</div><div class="field-input">동방배틀 vol.33</div></div>
+      <div>
+        <div class="field-label">신규 신청 활성화</div>
+        <div class="field-input"><span>현재 신청을 받는 회차입니다</span><div class="toggle"><div class="toggle-dot"></div></div></div>
+        <div class="field-help">활성 회차는 항상 하나뿐이라, 이 회차를 켜면 다른 회차는 자동으로 꺼집니다.</div>
+      </div>
+      <div>
+        <div class="field-label">점수 시트 연동 URL <span style="font-weight:400;">(선택)</span></div>
+        <div class="field-input readonly">script.google.com/macros/s/AKfyc.../exec</div>
+        <div class="field-help">이 회차 점수 시트에 배포한 SheetSync.gs 주소입니다. 비워두면 시트 반영 기능만 꺼집니다.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 현황 -->
+  <div class="section">
+    <div class="section-title">현황</div>
+    <div class="grid2">
+      <div><div class="field-label">신청자 수</div><div class="field-input readonly">128명</div></div>
+      <div><div class="field-label">생성일</div><div class="field-input readonly">2026-08-01 09:12</div></div>
+    </div>
+  </div>
+
+  <!-- 이 회차 작업 -->
+  <div class="section">
+    <div class="section-title">이 회차 작업</div>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+      <div class="btn btn-outline">④ 라벨 / QR 발급 실행</div>
+      <div class="btn btn-outline">⑤ 점수 시트 순서 반영</div>
+    </div>
+    <div style="margin-top:14px;font-size:11px;color:var(--muted);font-weight:700;margin-bottom:8px;">내보내기</div>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+      <div class="pill">신청 확인용 명단</div>
+      <div class="pill">공지용 명단 (마스킹)</div>
+      <div class="pill">QR 발송용 명단 · 운영진</div>
+      <div class="pill">점수표 · 운영진</div>
+      <div class="pill">CSV 백업 · 운영진</div>
+    </div>
+  </div>
+
+  <!-- submit row -->
+  <div style="margin-top:22px;display:flex;align-items:center;justify-content:space-between;">
+    <div style="display:flex;align-items:center;gap:8px;">
+      <div class="btn btn-primary">저장</div>
+      <div class="btn btn-outline">저장 후 계속 편집</div>
+      <div style="font-size:12.5px;color:var(--muted);margin-left:6px;">목록으로</div>
+    </div>
+    <div style="text-align:right;">
+      <div style="font-size:12.5px;font-weight:700;color:var(--bad);">삭제</div>
+    </div>
+  </div>
+  <div style="margin-top:8px;background:var(--bad-soft);color:var(--bad);border-radius:4px;padding:10px 12px;font-size:11px;line-height:1.6;">
+    삭제 시 이 회차의 참가자 128명 데이터가 함께 삭제됩니다. 삭제 전 CSV 백업을 받아두지 않았다면 복구할 수 없습니다.
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

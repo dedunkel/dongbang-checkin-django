@@ -1,47 +1,19 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>{% block title %}동방배틀 체크인{% endblock %}</title>
-  <style>
-    :root { color-scheme: dark; }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0; min-height: 100vh; display: flex; flex-direction: column;
-      background: #0a0a0a; color: #ededed;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
-    }
-    main { flex: 1; max-width: 640px; margin: 0 auto; padding: 2.5rem 1.5rem; width: 100%; }
-    a { color: #818cf8; }
-    h1 { font-size: 1.25rem; font-weight: 700; margin-bottom: 1.5rem; }
-    .card { background: #171717; border-radius: 1.25rem; padding: 1.75rem; }
-    label { display: block; font-size: 0.85rem; color: #a3a3a3; margin: 1rem 0 0.35rem; }
-    input[type=text], input[type=tel], input[type=email], select {
-      width: 100%; padding: 0.65rem 0.8rem; border-radius: 0.6rem; border: 1px solid #333;
-      background: #0a0a0a; color: #ededed; font-size: 0.95rem;
-    }
-    .radio-row { display: flex; gap: 1.25rem; margin-top: 0.35rem; }
-    .radio-row label { display: flex; align-items: center; gap: 0.4rem; margin: 0; color: #ededed; }
-    button, .btn {
-      display: inline-block; margin-top: 1.5rem; padding: 0.7rem 1.2rem; border-radius: 0.6rem;
-      border: none; background: #6366f1; color: white; font-weight: 600; font-size: 0.95rem; cursor: pointer;
-      text-decoration: none;
-    }
-    button:disabled { opacity: 0.5; cursor: default; }
-    .errorlist { color: #f87171; font-size: 0.85rem; margin: 0.25rem 0 0; padding: 0; list-style: none; }
-    .muted { color: #a3a3a3; font-size: 0.85rem; }
-    .success { color: #34d399; }
-    footer { text-align: center; padding: 1rem; font-size: 0.75rem; color: #525252; }
-  </style>
+  <link rel="stylesheet" href="{% static 'checkin/theme.css' %}" />
+  {% block extra_head %}{% endblock %}
 </head>
 <body>
   <main>
     {% if messages %}
-      <ul style="list-style:none; padding:0; margin:0 0 1rem;">
+      <ul class="message-list">
         {% for message in messages %}
-          <li style="padding:0.6rem 0.9rem; border-radius:0.6rem; margin-bottom:0.5rem; font-size:0.85rem;
-                     background:{% if message.tags == 'success' %}#064e3b{% elif message.tags == 'error' %}#7f1d1d{% else %}#1e293b{% endif %};">
+          <li class="message-item {% if message.tags == 'success' %}success{% elif message.tags == 'error' %}error{% else %}info{% endif %}">
             {{ message }}
           </li>
         {% endfor %}

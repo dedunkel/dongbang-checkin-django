@@ -1,0 +1,38 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
+:root{
+  --bg: oklch(99% 0.002 90);
+  --surface: oklch(100% 0 0);
+  --line: oklch(88% 0.004 60);
+  --text: oklch(18% 0.008 60);
+  --muted: oklch(50% 0.008 60);
+  --ok: oklch(52% 0.11 155);
+  --ok-soft: oklch(94% 0.03 155);
+}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--bg);color:var(--text);font-family:'Noto Sans KR',system-ui,sans-serif;}
+</style>
+</helmet>
+<div style="width:390px;height:900px;background:var(--bg);display:flex;align-items:center;justify-content:center;overflow:hidden;">
+  <div style="width:300px;text-align:center;">
+    <img src="logo.png" alt="KOOKMIN UNIV DANCE CREW" style="height:15px;width:auto;filter:invert(1);margin:0 auto 22px;display:block;"/>
+    <svg width="52" height="52" viewBox="0 0 52 52" style="margin:0 auto;display:block;">
+      <circle cx="26" cy="26" r="23" fill="var(--ok-soft)" stroke="var(--ok)" stroke-width="2.5"/>
+      <path d="M16 27 L23 34 L37 18" fill="none" stroke="var(--ok)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <div style="font-size:19px;font-weight:900;margin-top:18px;color:var(--text);">신청이 접수되었습니다</div>
+    <div style="font-size:13px;color:var(--muted);margin-top:12px;line-height:1.7;">검수 후 QR 링크를<br/>문자로 보내드립니다</div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

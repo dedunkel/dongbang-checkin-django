@@ -1,14 +1,23 @@
 {% extends "checkin/base.html" %}
+{% load static %}
 {% block title %}참가/관람 신청{% endblock %}
 {% block content %}
-<h1>{{ event.name }} 참가/관람 신청</h1>
+<div class="brand">
+  <img src="{% static 'checkin/logo.png' %}" alt="로고" />
+  <span>{% if event %}동방배틀 VOL.{{ event.volume }}{% else %}동방배틀{% endif %}</span>
+</div>
+<h1 style="margin-top:0.7rem;">참가/관람 신청</h1>
 
 {% if no_active_event %}
   <div class="card"><p class="muted">현재 신청을 받는 회차가 없습니다. 운영진에게 문의해주세요.</p></div>
 {% elif success %}
-  <div class="card">
-    <p class="success">신청이 접수되었습니다.</p>
-    <p class="muted">검수 후 QR 링크를 문자로 보내드립니다.</p>
+  <div class="card" style="text-align:center; padding:2.5rem 1.75rem;">
+    <svg width="48" height="48" viewBox="0 0 52 52" style="margin:0 auto; display:block;">
+      <circle cx="26" cy="26" r="23" fill="var(--ok-soft)" stroke="var(--ok)" stroke-width="2.5"/>
+      <path d="M16 27 L23 34 L37 18" fill="none" stroke="var(--ok)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <p class="success" style="font-size:1.05rem; margin-top:1rem;">신청이 접수되었습니다</p>
+    <p class="muted" style="margin-top:0.6rem; line-height:1.7;">검수 후 QR 링크를 문자로 보내드립니다.</p>
   </div>
 {% else %}
   <div class="card">
@@ -26,17 +35,22 @@
       {{ form.phone }}
       {{ form.phone.errors }}
 
-      <label for="{{ form.school.id_for_label }}">{{ form.school.label }}</label>
-      {{ form.school }}
-
-      <label for="{{ form.academic_status.id_for_label }}">{{ form.academic_status.label }}</label>
-      {{ form.academic_status }}
+      <div style="display:flex; gap:1rem;">
+        <div style="flex:1.4;">
+          <label for="{{ form.school.id_for_label }}">{{ form.school.label }}</label>
+          {{ form.school }}
+        </div>
+        <div style="flex:1;">
+          <label for="{{ form.academic_status.id_for_label }}">{{ form.academic_status.label }}</label>
+          {{ form.academic_status }}
+        </div>
+      </div>
 
       <label for="{{ form.genre.id_for_label }}">{{ form.genre.label }}</label>
       {{ form.genre }}
       {{ form.genre.errors }}
 
-      <button type="submit">신청하기</button>
+      <button type="submit" style="width:100%;">신청하기</button>
     </form>
   </div>
 {% endif %}

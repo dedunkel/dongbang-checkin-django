@@ -1,0 +1,53 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
+:root{
+  --bg: oklch(99% 0.002 90);
+  --surface: oklch(100% 0 0);
+  --line: oklch(88% 0.004 60);
+  --text: oklch(18% 0.008 60);
+  --muted: oklch(50% 0.008 60);
+  --accent: oklch(40% 0.09 260);
+  --accent-soft: oklch(94% 0.02 260);
+}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--bg);color:var(--text);font-family:'Noto Sans KR',system-ui,sans-serif;}
+</style>
+</helmet>
+<div style="width:390px;height:900px;background:var(--bg);display:flex;align-items:center;justify-content:center;overflow:hidden;">
+
+  <div style="width:314px;background:var(--surface);border:1px solid var(--line);border-radius:8px;box-shadow:0 4px 18px oklch(18% 0.008 60 / 0.08);padding:34px 28px;text-align:center;">
+
+    <div style="display:flex;align-items:center;justify-content:center;gap:8px;">
+      <img src="logo.png" alt="KOOKMIN UNIV DANCE CREW" style="height:13px;width:auto;filter:invert(1);"/>
+      <div style="font-size:11px;letter-spacing:0.16em;color:var(--muted);font-weight:700;">동방배틀 VOL.33 체크인</div>
+    </div>
+
+    <div style="font-size:22px;font-weight:900;margin-top:14px;color:var(--text);">홍길동</div>
+    <div style="font-size:13px;color:var(--muted);margin-top:4px;">참가 · Breaking</div>
+    <div style="font-size:13px;color:var(--muted);margin-top:2px;">국민대학교</div>
+
+    <div style="font-family:'Noto Sans KR',sans-serif;font-weight:900;font-size:42px;margin-top:18px;color:var(--accent);">B-4</div>
+
+    <div style="margin-top:26px;font-size:13px;color:var(--muted);">아직 체크인되지 않았습니다.</div>
+
+    <div style="margin-top:16px;padding:14px 0;background:var(--accent);color:oklch(99% 0.002 90);font-weight:700;font-size:16px;border-radius:4px;">
+      체크인 확정
+    </div>
+
+    <div style="margin-top:16px;font-size:10.5px;line-height:1.6;color:var(--muted);">
+      스태프 로그인이 필요합니다.<br/>기기당 최초 1회만 입력하면 됩니다.
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

@@ -1,0 +1,101 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
+:root{
+  --bg: oklch(15% 0.006 60);
+  --surface: oklch(20% 0.008 60);
+  --line: oklch(31% 0.012 60);
+  --text: oklch(96% 0.004 90);
+  --muted: oklch(66% 0.016 60);
+  --accent: oklch(74% 0.12 260);
+  --accent-soft: oklch(27% 0.05 260);
+  --ok: oklch(76% 0.13 155);
+  --ok-soft: oklch(27% 0.05 155);
+}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--bg);color:var(--text);font-family:'Noto Sans KR',system-ui,sans-serif;}
+</style>
+</helmet>
+<div style="width:390px;height:900px;background:var(--bg);overflow:hidden;">
+
+  <!-- header -->
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 22px;border-bottom:1px solid var(--line);">
+    <div style="display:flex;align-items:center;gap:9px;">
+      <img src="logo.png" alt="KOOKMIN UNIV DANCE CREW" style="height:16px;width:auto;"/>
+      <div style="font-size:14px;font-weight:900;color:var(--text);">동방배틀 vol.33 체크인</div>
+    </div>
+    <div style="font-size:11px;font-weight:700;color:var(--muted);border:1px solid var(--line);border-radius:3px;padding:6px 11px;">관리자 모드</div>
+  </div>
+
+  <div style="padding:0 24px;">
+
+    <!-- camera viewfinder -->
+    <div style="margin:22px auto 0;width:100%;height:290px;background:oklch(19% 0.006 60);border:1px solid var(--line);border-radius:6px;position:relative;">
+
+      <!-- scan frame corners -->
+      <div style="position:absolute;top:30px;left:30px;width:30px;height:30px;border-top:3px solid var(--accent);border-left:3px solid var(--accent);"></div>
+      <div style="position:absolute;top:30px;right:30px;width:30px;height:30px;border-top:3px solid var(--accent);border-right:3px solid var(--accent);"></div>
+      <div style="position:absolute;bottom:30px;left:30px;width:30px;height:30px;border-bottom:3px solid var(--accent);border-left:3px solid var(--accent);"></div>
+      <div style="position:absolute;bottom:30px;right:30px;width:30px;height:30px;border-bottom:3px solid var(--accent);border-right:3px solid var(--accent);"></div>
+
+      <!-- scan line -->
+      <div style="position:absolute;left:30px;right:30px;top:140px;height:2px;background:var(--accent);"></div>
+
+      <!-- result overlay, confined to the viewfinder -->
+      <div style="position:absolute;inset:0;background:oklch(4% 0.006 60 / 0.65);display:flex;align-items:center;justify-content:center;border-radius:6px;">
+        <div style="width:250px;background:var(--surface);border:1px solid var(--line);border-radius:8px;box-shadow:0 10px 26px oklch(0% 0 0 / 0.45);padding:18px 16px;text-align:center;">
+          <svg width="34" height="34" viewBox="0 0 52 52" style="margin:0 auto;display:block;">
+            <circle cx="26" cy="26" r="23" fill="var(--ok-soft)" stroke="var(--ok)" stroke-width="2.5"/>
+            <path d="M16 27 L23 34 L37 18" fill="none" stroke="var(--ok)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <div style="font-family:'Noto Sans KR',sans-serif;font-weight:900;font-size:24px;margin-top:8px;color:var(--accent);">B-4</div>
+          <div style="font-size:14px;font-weight:900;margin-top:6px;color:var(--text);">홍길동</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px;">참가 · Breaking · 국민대학교</div>
+          <div style="margin-top:8px;font-size:11.5px;color:var(--ok);font-weight:700;">체크인 완료</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="text-align:center;font-size:12px;color:var(--muted);margin-top:14px;">QR을 화면 사각형 안에 비춰주세요</div>
+
+    <div style="display:flex;align-items:center;gap:12px;margin-top:28px;">
+      <div style="flex:1;height:1px;background:var(--line);"></div>
+      <div style="font-size:11px;color:var(--muted);font-weight:700;">또는 직접 검색</div>
+      <div style="flex:1;height:1px;background:var(--line);"></div>
+    </div>
+
+    <div style="margin-top:18px;">
+      <div style="font-size:12px;color:var(--muted);font-weight:700;margin-bottom:6px;">이름 / 전화번호로 검색</div>
+      <div style="background:var(--surface);border:1px solid var(--line);border-radius:3px;padding:11px 14px;font-size:13.5px;color:var(--muted);">김민지</div>
+    </div>
+
+    <div style="margin-top:8px;display:flex;flex-direction:column;">
+      <div style="border-top:1px solid var(--line);padding:13px 2px;display:flex;justify-content:space-between;align-items:center;">
+        <div style="font-size:13.5px;">
+          <span style="font-weight:700;color:var(--text);">김민지</span>
+          <span style="color:var(--muted);"> · 010-1234-5678 · A-2</span>
+        </div>
+        <div style="padding:6px 13px;background:var(--accent);color:oklch(15% 0.006 60);font-size:11.5px;font-weight:700;border-radius:3px;">체크인</div>
+      </div>
+      <div style="border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:13px 2px;display:flex;justify-content:space-between;align-items:center;">
+        <div style="font-size:13.5px;">
+          <span style="font-weight:700;color:var(--text);">김서연</span>
+          <span style="color:var(--muted);"> · 010-9876-5432 · B-7</span>
+        </div>
+        <div style="font-size:11.5px;color:var(--muted);font-weight:700;">체크인됨</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

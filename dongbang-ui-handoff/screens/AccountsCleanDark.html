@@ -1,0 +1,147 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
+:root{
+  --bg: oklch(15% 0.006 60);
+  --surface: oklch(20% 0.008 60);
+  --surface2: oklch(24% 0.01 60);
+  --line: oklch(31% 0.012 60);
+  --text: oklch(96% 0.004 90);
+  --muted: oklch(66% 0.016 60);
+  --accent: oklch(74% 0.12 260);
+  --accent-soft: oklch(27% 0.05 260);
+  --ok: oklch(76% 0.13 155);
+  --ok-soft: oklch(27% 0.05 155);
+  --warn: oklch(78% 0.14 70);
+  --warn-soft: oklch(27% 0.05 70);
+}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--bg);color:var(--text);font-family:'Noto Sans KR',system-ui,sans-serif;}
+.badge{display:inline-block;padding:4px 9px;border-radius:3px;font-size:10.5px;font-weight:700;white-space:nowrap;}
+.badge-ok{background:var(--ok-soft);color:var(--ok);}
+.badge-warn{background:var(--warn-soft);color:var(--warn);}
+.badge-op{background:var(--accent-soft);color:var(--accent);}
+.badge-super{background:var(--accent);color:oklch(15% 0.006 60);}
+.badge-neutral{background:var(--surface);color:var(--muted);border:1px solid var(--line);}
+.cell{font-size:12.5px;color:var(--text);display:flex;align-items:center;}
+.th{font-size:10.5px;color:var(--muted);font-weight:700;letter-spacing:0.03em;display:flex;align-items:center;}
+.btn{padding:9px 15px;border-radius:3px;font-size:12.5px;font-weight:700;white-space:nowrap;}
+.btn-primary{background:var(--accent);color:oklch(15% 0.006 60);}
+.btn-outline{background:var(--surface);border:1px solid var(--line);color:var(--text);}
+.tab{padding:10px 2px;margin-right:22px;font-size:13px;font-weight:700;color:var(--muted);}
+.tab-active{color:var(--accent);border-bottom:2px solid var(--accent);}
+</style>
+</helmet>
+<div style="width:1280px;height:1020px;background:var(--bg);padding:30px 36px;overflow:hidden;">
+
+  <!-- top bar -->
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+    <div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <img src="logo.png" alt="KOOKMIN UNIV DANCE CREW" style="height:13px;width:auto;"/>
+        <div style="font-size:10.5px;letter-spacing:0.16em;color:var(--muted);font-weight:700;">DBBT STAFF</div>
+      </div>
+      <h1 style="font-size:22px;font-weight:900;margin:6px 0 0;">계정 관리</h1>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div class="btn btn-primary">+ 계정 초대</div>
+      <div style="font-size:12px;color:var(--muted);">staff@dongbangbattle.kr</div>
+    </div>
+  </div>
+
+  <!-- tabs -->
+  <div style="display:flex;margin-top:22px;border-bottom:1px solid var(--line);">
+    <div class="tab">회차 관리</div>
+    <div class="tab">참가자 관리</div>
+    <div class="tab tab-active">계정 관리</div>
+  </div>
+
+  <!-- table -->
+  <div style="margin-top:22px;border:1px solid var(--line);border-radius:6px;overflow:hidden;">
+
+    <div style="display:flex;background:var(--surface2);border-bottom:1px solid var(--line);padding:11px 14px;gap:14px;">
+      <div class="th" style="width:130px;">이름</div>
+      <div class="th" style="width:250px;">이메일</div>
+      <div class="th" style="width:110px;">권한</div>
+      <div class="th" style="width:170px;">최근 로그인</div>
+      <div class="th" style="width:90px;">상태</div>
+      <div class="th" style="width:60px;">관리</div>
+    </div>
+
+    <div style="display:flex;align-items:center;padding:14px 14px;gap:14px;border-bottom:1px solid var(--line);">
+      <div class="cell" style="width:130px;font-weight:700;">강다은</div>
+      <div class="cell" style="width:250px;color:var(--muted);">dongbang.staff@gmail.com</div>
+      <div style="width:110px;"><span class="badge badge-super">슈퍼유저</span></div>
+      <div class="cell" style="width:170px;color:var(--muted);">2026-08-29 14:02</div>
+      <div style="width:90px;"><span class="badge badge-ok">활성</span></div>
+      <div class="cell" style="width:60px;color:var(--accent);font-weight:700;">수정</div>
+    </div>
+
+    <div style="display:flex;align-items:center;padding:14px 14px;gap:14px;border-bottom:1px solid var(--line);">
+      <div class="cell" style="width:130px;font-weight:700;">김도현</div>
+      <div class="cell" style="width:250px;color:var(--muted);">kim.dohyun@gmail.com</div>
+      <div style="width:110px;"><span class="badge badge-op">운영진</span></div>
+      <div class="cell" style="width:170px;color:var(--muted);">2026-08-28 19:40</div>
+      <div style="width:90px;"><span class="badge badge-ok">활성</span></div>
+      <div class="cell" style="width:60px;color:var(--accent);font-weight:700;">수정</div>
+    </div>
+
+    <div style="display:flex;align-items:center;padding:14px 14px;gap:14px;border-bottom:1px solid var(--line);">
+      <div class="cell" style="width:130px;font-weight:700;">이서준</div>
+      <div class="cell" style="width:250px;color:var(--muted);">lee.seojun@gmail.com</div>
+      <div style="width:110px;"><span class="badge badge-neutral">스태프</span></div>
+      <div class="cell" style="width:170px;color:var(--muted);">2026-08-20 10:15</div>
+      <div style="width:90px;"><span class="badge badge-ok">활성</span></div>
+      <div class="cell" style="width:60px;color:var(--accent);font-weight:700;">수정</div>
+    </div>
+
+    <div style="display:flex;align-items:center;padding:14px 14px;gap:14px;">
+      <div class="cell" style="width:130px;font-weight:700;">박현우</div>
+      <div class="cell" style="width:250px;color:var(--muted);">park.hw@gmail.com</div>
+      <div style="width:110px;"><span class="badge badge-neutral">스태프</span></div>
+      <div class="cell" style="width:170px;color:var(--muted);">로그인 기록 없음</div>
+      <div style="width:90px;"><span class="badge badge-warn">초대됨</span></div>
+      <div class="cell" style="width:60px;color:var(--accent);font-weight:700;">수정</div>
+    </div>
+
+  </div>
+
+  <!-- permission guide -->
+  <div style="margin-top:22px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;">
+    <div style="border:1px solid var(--line);border-radius:6px;padding:16px 18px;">
+      <div style="font-size:12px;font-weight:900;margin-bottom:8px;">스태프</div>
+      <div style="font-size:12px;color:var(--muted);line-height:1.9;">
+        현장 QR 체크인 스캐너만 사용 가능<br/>
+        회차 · 참가자 관리 화면에는 들어갈 수 없음
+      </div>
+    </div>
+    <div style="border:1px solid var(--line);border-radius:6px;padding:16px 18px;">
+      <div style="font-size:12px;font-weight:900;margin-bottom:8px;color:var(--accent);">운영진</div>
+      <div style="font-size:12px;color:var(--muted);line-height:1.9;">
+        회차 · 참가자 관리 열람 및 수정<br/>
+        학적검수 승인 · 입금 확인 · 라벨 맞바꾸기<br/>
+        라벨 / QR 발급 실행 · 점수 시트 순서 반영<br/>
+        모든 명단 다운로드 (QR 발송용 · 점수표 ·<br/>CSV 백업 등 마스킹 없는 파일 포함)
+      </div>
+    </div>
+    <div style="border:1px solid var(--line);border-radius:6px;padding:16px 18px;">
+      <div style="font-size:12px;font-weight:900;margin-bottom:8px;color:var(--accent);">슈퍼유저</div>
+      <div style="font-size:12px;color:var(--muted);line-height:1.9;">
+        운영진 권한 전부 포함<br/>
+        스태프 · 운영진 계정 초대 · 권한 변경 · 비활성화
+      </div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

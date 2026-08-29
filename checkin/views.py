@@ -25,7 +25,8 @@ UUID_RE = re.compile(
 
 
 def home(request):
-    return render(request, "checkin/home.html")
+    active_event = Event.objects.filter(is_active=True).first()
+    return render(request, "checkin/home.html", {"event": active_event})
 
 
 # --------------------------------------------------------------------------

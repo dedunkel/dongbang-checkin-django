@@ -1,0 +1,133 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
+:root{
+  --bg: oklch(15% 0.006 60);
+  --surface: oklch(20% 0.008 60);
+  --surface2: oklch(24% 0.01 60);
+  --line: oklch(31% 0.012 60);
+  --text: oklch(96% 0.004 90);
+  --muted: oklch(66% 0.016 60);
+  --accent: oklch(74% 0.12 260);
+  --accent-soft: oklch(27% 0.05 260);
+  --ok: oklch(76% 0.13 155);
+  --ok-soft: oklch(27% 0.05 155);
+}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--bg);color:var(--text);font-family:'Noto Sans KR',system-ui,sans-serif;}
+.badge{display:inline-block;padding:4px 9px;border-radius:3px;font-size:10.5px;font-weight:700;white-space:nowrap;}
+.badge-ok{background:var(--ok-soft);color:var(--ok);}
+.badge-neutral{background:var(--surface);color:var(--muted);border:1px solid var(--line);}
+.cell{font-size:12.5px;color:var(--text);display:flex;align-items:center;}
+.th{font-size:10.5px;color:var(--muted);font-weight:700;letter-spacing:0.03em;display:flex;align-items:center;}
+.filter{display:flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:3px;padding:8px 11px;font-size:12px;color:var(--text);}
+.btn{padding:9px 15px;border-radius:3px;font-size:12.5px;font-weight:700;white-space:nowrap;}
+.btn-primary{background:var(--accent);color:oklch(15% 0.006 60);}
+.btn-outline{background:var(--surface);border:1px solid var(--line);color:var(--text);}
+.pill{padding:7px 12px;border-radius:3px;font-size:11.5px;font-weight:700;background:var(--surface2);color:var(--muted);border:1px solid var(--line);}
+.tab{padding:10px 2px;margin-right:22px;font-size:13px;font-weight:700;color:var(--muted);}
+.tab-active{color:var(--accent);border-bottom:2px solid var(--accent);}
+</style>
+</helmet>
+<div style="width:1280px;height:960px;background:var(--bg);padding:30px 36px;overflow:hidden;">
+
+  <!-- top bar -->
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+    <div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <img src="logo.png" alt="KOOKMIN UNIV DANCE CREW" style="height:13px;width:auto;"/>
+        <div style="font-size:10.5px;letter-spacing:0.16em;color:var(--muted);font-weight:700;">DBBT STAFF</div>
+      </div>
+      <h1 style="font-size:22px;font-weight:900;margin:6px 0 0;">회차 관리</h1>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div class="btn btn-primary">+ 새 회차 추가</div>
+      <div style="font-size:12px;color:var(--muted);">staff@dongbangbattle.kr</div>
+    </div>
+  </div>
+
+  <!-- tabs -->
+  <div style="display:flex;margin-top:22px;border-bottom:1px solid var(--line);">
+    <div class="tab tab-active">회차 관리</div>
+    <div class="tab">참가자 관리</div>
+    <div class="tab">계정 관리</div>
+  </div>
+
+  <!-- toolbar -->
+  <div style="margin-top:22px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+    <div class="filter">활성 여부: 전체 <svg width="9" height="9" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="var(--muted)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+      <div class="btn btn-outline">④ 라벨 / QR 발급 실행</div>
+      <div class="btn btn-outline">⑤ 점수 시트 순서 반영</div>
+    </div>
+  </div>
+
+  <!-- table -->
+  <div style="margin-top:16px;border:1px solid var(--line);border-radius:6px;overflow:hidden;">
+
+    <div style="display:flex;background:var(--surface2);border-bottom:1px solid var(--line);padding:11px 14px;gap:14px;">
+      <div style="width:20px;"></div>
+      <div class="th" style="width:220px;">이름</div>
+      <div class="th" style="width:70px;">회차</div>
+      <div class="th" style="width:90px;">활성 여부</div>
+      <div class="th" style="width:100px;">신청자 수</div>
+      <div class="th" style="width:130px;">생성일</div>
+      <div class="th" style="width:60px;">관리</div>
+    </div>
+
+    <div style="display:flex;align-items:center;padding:14px 14px;gap:14px;border-bottom:1px solid var(--line);">
+      <div style="width:20px;height:14px;border:1.5px solid var(--line);border-radius:2px;"></div>
+      <div class="cell" style="width:220px;font-weight:700;">동방배틀 vol.33</div>
+      <div class="cell" style="width:70px;color:var(--muted);">33</div>
+      <div style="width:90px;"><span class="badge badge-ok">활성</span></div>
+      <div class="cell" style="width:100px;color:var(--muted);">128명</div>
+      <div class="cell" style="width:130px;color:var(--muted);">2026-08-01</div>
+      <div class="cell" style="width:60px;color:var(--accent);font-weight:700;">보기</div>
+    </div>
+
+    <div style="display:flex;align-items:center;padding:14px 14px;gap:14px;border-bottom:1px solid var(--line);">
+      <div style="width:20px;height:14px;border:1.5px solid var(--line);border-radius:2px;"></div>
+      <div class="cell" style="width:220px;font-weight:700;">동방배틀 vol.32</div>
+      <div class="cell" style="width:70px;color:var(--muted);">32</div>
+      <div style="width:90px;"><span class="badge badge-neutral">비활성</span></div>
+      <div class="cell" style="width:100px;color:var(--muted);">142명</div>
+      <div class="cell" style="width:130px;color:var(--muted);">2025-10-02</div>
+      <div class="cell" style="width:60px;color:var(--accent);font-weight:700;">보기</div>
+    </div>
+
+    <div style="display:flex;align-items:center;padding:14px 14px;gap:14px;">
+      <div style="width:20px;height:14px;border:1.5px solid var(--line);border-radius:2px;"></div>
+      <div class="cell" style="width:220px;font-weight:700;">동방배틀 vol.31</div>
+      <div class="cell" style="width:70px;color:var(--muted);">31</div>
+      <div style="width:90px;"><span class="badge badge-neutral">비활성</span></div>
+      <div class="cell" style="width:100px;color:var(--muted);">119명</div>
+      <div class="cell" style="width:130px;color:var(--muted);">2025-04-15</div>
+      <div class="cell" style="width:60px;color:var(--accent);font-weight:700;">보기</div>
+    </div>
+
+  </div>
+
+  <!-- exports -->
+  <div style="margin-top:22px;border:1px solid var(--line);border-radius:6px;padding:14px 18px;">
+    <div style="font-size:11px;color:var(--muted);font-weight:700;margin-bottom:10px;">선택 회차 내보내기</div>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+      <div class="pill">신청 확인용 명단</div>
+      <div class="pill">공지용 명단 (마스킹)</div>
+      <div class="pill">QR 발송용 명단 · 운영진</div>
+      <div class="pill">점수표 · 운영진</div>
+      <div class="pill">CSV 백업 · 운영진</div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>
