@@ -6,6 +6,7 @@ import qrcode
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
+from django.db import IntegrityError
 from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -255,26 +256,33 @@ def google_form_import(request):
         if entry_type != "참가":
             genre = None
 
-        Participant.objects.create(
-            event=active_event,
-            external_ref=external_ref,
-            entry_type=entry_type,
-            name=name,
-            phone=phone,
-            school=school,
-            academic_status=academic_status,
-            genre=genre,
-            payer_name=(row.get("payerName") or "").strip() or None,
-            # 이메일은 구글 폼에도 예비 신청 폼(RegisterForm)에도 문항이 없어서
-            # 항상 빈 값 — 학적증명서 파일 업로드 때문에 응답 시 구글 로그인이
-            # 필요해 별도로 안 받기로 함. email 필드 자체는 모델에 남겨뒀지만
-            # 지금은 어느 신청 경로로도 채워지지 않는다.
-            # 폼의 "입금확인" 체크 여부와 무관하게 항상 PENDING에서 시작합니다.
-            # 실제 확인은 운영진이 /admin에서 합니다 (예전 Apps Script 버전과 동일한 정책).
-            verification_status="N_A" if entry_type == "관람" else "PENDING",
-            payment_status="PENDING",
-            checkin_status="NOT_CHECKED_IN",
-        )
+        try:
+            Participant.objects.create(
+                event=active_event,
+                external_ref=external_ref,
+                entry_type=entry_type,
+                name=name,
+                phone=phone,
+                school=school,
+                academic_status=academic_status,
+                genre=genre,
+                payer_name=(row.get("payerName") or "").strip() or None,
+                # 이메일은 구글 폼에도 예비 신청 폼(RegisterForm)에도 문항이 없어서
+                # 항상 빈 값 — 학적증명서 파일 업로드 때문에 응답 시 구글 로그인이
+                # 필요해 별도로 안 받기로 함. email 필드 자체는 모델에 남겨뒀지만
+                # 지금은 어느 신청 경로로도 채워지지 않는다.
+                # 폼의 "입금확인" 체크 여부와 무관하게 항상 PENDING에서 시작합니다.
+                # 실제 확인은 운영진이 /admin에서 합니다 (예전 Apps Script 버전과 동일한 정책).
+                verification_status="N_A" if entry_type == "관람" else "PENDING",
+                payment_status="PENDING",
+                checkin_status="NOT_CHECKED_IN",
+            )
+        except IntegrityError:
+            # 위의 .exists() 체크와 여기 create() 사이에 동시 요청이 끼어들어
+            # 같은 external_ref로 먼저 저장된 경우 — 원래 의도(멱등하게 건너뛰기)
+            # 그대로 skipped로 처리한다 (#20).
+            skipped += 1
+            continue
         imported += 1
 
     return JsonResponse(
