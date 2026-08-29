@@ -100,8 +100,16 @@ def export_announcement_excel(modeladmin, request, queryset):
     return response
 
 
-@admin.action(description="선택 회차: 점수표 엑셀 다운로드 (마스킹 없음, 스태프 내부용)")
+@admin.action(description="선택 회차: 점수표 엑셀 다운로드 (마스킹 없음, 슈퍼유저 전용)")
 def export_score_sheet_excel(modeladmin, request, queryset):
+    # 이름/연락처를 마스킹 없이 그대로 내보내는 유일한 액션이라, 지금 있는
+    # 슈퍼유저/일반 스태프 구분 중 슈퍼유저로만 제한한다 (#28). get_actions에서
+    # 일반 스태프에게는 드롭다운에서 아예 안 보이게 숨기지만, 직접 폼을
+    # 조작해서 요청을 보내는 경우까지 막으려고 여기서도 한 번 더 확인한다.
+    if not request.user.is_superuser:
+        messages.error(request, "점수표 다운로드는 슈퍼유저만 실행할 수 있습니다.")
+        return
+
     event = queryset.first()
     if queryset.count() > 1:
         messages.warning(request, "점수표는 한 번에 회차 하나씩만 가능합니다. 첫 번째로 선택한 회차만 내려받습니다.")
@@ -153,6 +161,12 @@ class EventAdmin(admin.ModelAdmin):
     @admin.display(description="신청자 수")
     def participant_count(self, obj):
         return obj.participants.count()
+
+    def get_actions(self, request):
+        actions = super().get_actions(request)
+        if not request.user.is_superuser:
+            actions.pop("export_score_sheet_excel", None)
+        return actions
 
     def delete_queryset(self, request, queryset):
         for event in queryset:
