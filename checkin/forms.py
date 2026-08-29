@@ -8,7 +8,7 @@ class RegisterForm(forms.ModelForm):
 
     class Meta:
         model = Participant
-        fields = ["entry_type", "name", "phone", "school", "academic_status", "genre", "email"]
+        fields = ["entry_type", "name", "phone", "school", "academic_status", "genre"]
         widgets = {
             "entry_type": forms.RadioSelect,
         }
@@ -19,7 +19,6 @@ class RegisterForm(forms.ModelForm):
             "school": "소속대학",
             "academic_status": "학적 (재학/휴학)",
             "genre": "참가 장르",
-            "email": "이메일 주소",
         }
 
     def clean(self):
