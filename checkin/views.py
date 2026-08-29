@@ -177,7 +177,10 @@ def participant_search_api(request):
 @require_POST
 def manual_checkin_api(request, participant_id):
     participant = get_object_or_404(Participant, pk=participant_id)
-    _mark_checked_in(participant)
+    # scan_confirm과 마찬가지로 이미 체크인된 사람은 다시 마킹하지 않는다 —
+    # 안 그러면 최초 도착 시각이 나중에 눌린 시각으로 덮어써진다 (#19).
+    if participant.checkin_status != "CHECKED_IN":
+        _mark_checked_in(participant)
     return JsonResponse({"status": "success", "data": _participant_dto(participant)})
 
 
