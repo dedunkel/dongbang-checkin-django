@@ -16,18 +16,19 @@ from openpyxl.styles import Font
 from openpyxl.utils import get_column_letter
 
 from checkin.models import Event
-from checkin.services.announcement_export import GENRE_TABS, participants_for_tab
+from checkin.services.announcement_export import GENRE_TABS, participants_for_tab, write_title_row
 
 HEADERS = ["번호", "이름", "연락처", "소속대학", "학적", "순서", "입금 여부", "도착 여부", "점수"]
 
 CHECK_MARK = "O"
 
 
-def _write_sheet(wb: Workbook, sheet_title: str, participants: list) -> None:
+def _write_sheet(wb: Workbook, event: Event, sheet_title: str, participants: list) -> None:
     ws = wb.create_sheet(title=sheet_title)
+    write_title_row(ws, event, sheet_title, len(HEADERS))
 
     for col, header in enumerate(HEADERS, start=1):
-        cell = ws.cell(row=1, column=col, value=header)
+        cell = ws.cell(row=2, column=col, value=header)
         cell.font = Font(bold=True)
 
     for i, p in enumerate(participants, start=1):
@@ -54,7 +55,7 @@ def build_score_sheet_workbook(event: Event) -> Workbook:
     wb.remove(wb.active)
 
     for genre, tab_name in GENRE_TABS:
-        _write_sheet(wb, tab_name, participants_for_tab(event, genre))
+        _write_sheet(wb, event, tab_name, participants_for_tab(event, genre))
 
     return wb
 

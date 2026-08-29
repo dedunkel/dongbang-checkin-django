@@ -76,18 +76,23 @@ def participants_for_tab(event: Event, genre: str | None) -> list[Participant]:
     )
 
 
-def _write_sheet(wb: Workbook, event: Event, sheet_title: str, participants: list[Participant]) -> None:
-    ws = wb.create_sheet(title=sheet_title)
+def write_title_row(ws, event: Event, sheet_title: str, num_columns: int) -> None:
+    """탭 맨 위에 "동방배틀 Vol.N {장르} 참가자 명단"(관람은 "관람자 명단") 제목
+    행을 병합 셀로 넣는다. 공지용 명단/점수표 둘 다 같은 제목 형식을 쓴다."""
     title_text = (
         f"동방배틀 Vol.{event.volume} 관람자 명단"
         if sheet_title == "관람"
         else f"동방배틀 Vol.{event.volume} {sheet_title} 참가자 명단"
     )
-
-    ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=len(HEADERS))
+    ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=num_columns)
     title_cell = ws.cell(row=1, column=1, value=title_text)
     title_cell.font = Font(bold=True, size=13)
     title_cell.alignment = Alignment(horizontal="center")
+
+
+def _write_sheet(wb: Workbook, event: Event, sheet_title: str, participants: list[Participant]) -> None:
+    ws = wb.create_sheet(title=sheet_title)
+    write_title_row(ws, event, sheet_title, len(HEADERS))
 
     for col, header in enumerate(HEADERS, start=1):
         cell = ws.cell(row=2, column=col, value=header)
