@@ -15,6 +15,10 @@ from .services.application_confirmation_export import build_application_confirma
 from .services.assign_labels import assign_labels_and_tokens
 from .services.score_sheet_export import build_score_sheet_file
 
+admin.site.site_header = "DBBT STAFF"
+admin.site.site_title = "DBBT STAFF"
+admin.site.index_title = "운영진 대시보드"
+
 
 @admin.action(description="④ 선택 회차: 승인자 라벨/QR 발급 실행")
 def run_label_assign(modeladmin, request, queryset):

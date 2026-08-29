@@ -1,0 +1,142 @@
+/* Django 기본 admin의 색상 변수(base.css / dark_mode.css)를 dongbang-ui-handoff/
+   tokens.css 팔레트로 덮어쓰는 얇은 리스킨. 레이아웃/기능은 전부 Django 기본
+   admin 그대로 두고, 색상·폰트만 우리 브랜드에 맞춘다. */
+
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
+
+:root, html[data-theme="light"] {
+  --primary: oklch(94% 0.02 260);
+  --secondary: oklch(40% 0.09 260);
+  --accent: oklch(40% 0.09 260);
+  --primary-fg: oklch(99% 0.002 90);
+
+  --body-fg: oklch(18% 0.008 60);
+  --body-bg: oklch(99% 0.002 90);
+  --body-quiet-color: oklch(50% 0.008 60);
+  --body-medium-color: oklch(18% 0.008 60);
+  --body-loud-color: oklch(18% 0.008 60);
+
+  --header-color: oklch(99% 0.002 90);
+  --header-branding-color: oklch(99% 0.002 90);
+  --header-bg: oklch(40% 0.09 260);
+  --header-link-color: oklch(99% 0.002 90);
+
+  --breadcrumbs-fg: oklch(94% 0.02 260);
+  --breadcrumbs-link-fg: oklch(99% 0.002 90);
+  --breadcrumbs-bg: oklch(40% 0.09 260);
+
+  --link-fg: oklch(40% 0.09 260);
+  --link-hover-color: oklch(30% 0.09 260);
+  --link-selected-fg: oklch(40% 0.09 260);
+
+  --hairline-color: oklch(88% 0.004 60);
+  --border-color: oklch(88% 0.004 60);
+
+  --error-fg: oklch(52% 0.17 25);
+  --message-success-bg: oklch(94% 0.03 155);
+  --message-warning-bg: oklch(94% 0.04 70);
+  --message-error-bg: oklch(94% 0.04 25);
+
+  --darkened-bg: oklch(97% 0.003 90);
+  --selected-bg: oklch(94% 0.02 260);
+  --selected-row: oklch(94% 0.04 70);
+
+  --button-fg: oklch(99% 0.002 90);
+  --button-bg: oklch(40% 0.09 260);
+  --button-hover-bg: oklch(30% 0.09 260);
+  --default-button-bg: oklch(30% 0.09 260);
+  --default-button-hover-bg: oklch(40% 0.09 260);
+
+  --font-family-primary: 'Noto Sans KR', "Segoe UI", system-ui, Roboto, "Helvetica Neue", Arial, sans-serif;
+
+  /* logo.png는 어두운 배경 전제의 흰색 로고. 라이트 테마에서는 헤더 배경이
+     진한 파랑이라 로고를 그대로(흰색) 두고, 다크 테마에서는 헤더 배경이
+     밝은 라벤더색으로 뒤집히므로 로고도 invert해서 검게 보이게 한다
+     (본문 배경 밝기와는 반대 방향이라 별도 변수로 관리). */
+  --header-logo-filter: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  html:not([data-theme="light"]) {
+    --header-logo-filter: invert(1);
+    --primary: oklch(27% 0.05 260);
+    --secondary: oklch(74% 0.12 260);
+    --accent: oklch(74% 0.12 260);
+    --primary-fg: oklch(15% 0.006 60);
+
+    --body-fg: oklch(96% 0.004 90);
+    --body-bg: oklch(15% 0.006 60);
+    --body-quiet-color: oklch(66% 0.016 60);
+    --body-medium-color: oklch(96% 0.004 90);
+    --body-loud-color: oklch(100% 0 0);
+
+    --header-color: oklch(15% 0.006 60);
+    --header-branding-color: oklch(15% 0.006 60);
+    --header-bg: oklch(74% 0.12 260);
+    --header-link-color: oklch(15% 0.006 60);
+
+    --breadcrumbs-fg: oklch(27% 0.05 260);
+    --breadcrumbs-link-fg: oklch(96% 0.004 90);
+    --breadcrumbs-bg: oklch(27% 0.05 260);
+
+    --link-fg: oklch(74% 0.12 260);
+    --link-hover-color: oklch(84% 0.1 260);
+    --link-selected-fg: oklch(74% 0.12 260);
+
+    --hairline-color: oklch(31% 0.012 60);
+    --border-color: oklch(31% 0.012 60);
+
+    --error-fg: oklch(74% 0.16 25);
+    --darkened-bg: oklch(20% 0.008 60);
+    --selected-bg: oklch(24% 0.01 60);
+
+    --button-fg: oklch(15% 0.006 60);
+    --button-bg: oklch(74% 0.12 260);
+    --button-hover-bg: oklch(84% 0.1 260);
+    --default-button-bg: oklch(60% 0.1 260);
+    --default-button-hover-bg: oklch(74% 0.12 260);
+  }
+}
+
+html[data-theme="dark"] {
+  --header-logo-filter: invert(1);
+  --primary: oklch(27% 0.05 260);
+  --secondary: oklch(74% 0.12 260);
+  --accent: oklch(74% 0.12 260);
+  --primary-fg: oklch(15% 0.006 60);
+
+  --body-fg: oklch(96% 0.004 90);
+  --body-bg: oklch(15% 0.006 60);
+  --body-quiet-color: oklch(66% 0.016 60);
+  --body-medium-color: oklch(96% 0.004 90);
+  --body-loud-color: oklch(100% 0 0);
+
+  --header-color: oklch(15% 0.006 60);
+  --header-branding-color: oklch(15% 0.006 60);
+  --header-bg: oklch(74% 0.12 260);
+  --header-link-color: oklch(15% 0.006 60);
+
+  --breadcrumbs-fg: oklch(27% 0.05 260);
+  --breadcrumbs-link-fg: oklch(96% 0.004 90);
+  --breadcrumbs-bg: oklch(27% 0.05 260);
+
+  --link-fg: oklch(74% 0.12 260);
+  --link-hover-color: oklch(84% 0.1 260);
+  --link-selected-fg: oklch(74% 0.12 260);
+
+  --hairline-color: oklch(31% 0.012 60);
+  --border-color: oklch(31% 0.012 60);
+
+  --error-fg: oklch(74% 0.16 25);
+  --darkened-bg: oklch(20% 0.008 60);
+  --selected-bg: oklch(24% 0.01 60);
+
+  --button-fg: oklch(15% 0.006 60);
+  --button-bg: oklch(74% 0.12 260);
+  --button-hover-bg: oklch(84% 0.1 260);
+  --default-button-bg: oklch(60% 0.1 260);
+  --default-button-hover-bg: oklch(74% 0.12 260);
+}
+
+#branding img { height: 15px; width: auto; vertical-align: middle; margin-right: 8px; filter: var(--header-logo-filter); }
+#branding .brand-sub { font-size: 0.65rem; letter-spacing: 0.1em; opacity: 0.85; margin-left: 6px; }
