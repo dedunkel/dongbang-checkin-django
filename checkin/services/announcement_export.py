@@ -65,6 +65,17 @@ def mask_phone(raw_phone: str) -> str:
     return f"{digits[:3]}-****-{digits[7:]}"
 
 
+def participants_for_tab(event: Event, genre: str | None) -> list[Participant]:
+    """탭 하나(장르 또는 관람)에 들어갈 참가자를, 그 탭에서 보여줄 순서로 정렬해 반환.
+    장르 탭은 라벨 코드(조+번호) 기준, 관람 탭은 신청 순서(생성일시) 기준."""
+    if genre is None:
+        return list(Participant.objects.filter(event=event, entry_type="관람").order_by("created_at"))
+    return sorted(
+        Participant.objects.filter(event=event, entry_type="참가", genre=genre, label_code__isnull=False),
+        key=lambda p: (p.label_group, p.label_number),
+    )
+
+
 def _write_sheet(wb: Workbook, event: Event, sheet_title: str, participants: list[Participant]) -> None:
     ws = wb.create_sheet(title=sheet_title)
     title_text = (
@@ -104,16 +115,7 @@ def build_announcement_workbook(event: Event) -> Workbook:
     wb.remove(wb.active)  # 기본으로 생기는 빈 시트 제거
 
     for genre, tab_name in GENRE_TABS:
-        if genre is None:
-            participants = list(
-                Participant.objects.filter(event=event, entry_type="관람").order_by("created_at")
-            )
-        else:
-            participants = sorted(
-                Participant.objects.filter(event=event, entry_type="참가", genre=genre, label_code__isnull=False),
-                key=lambda p: (p.label_group, p.label_number),
-            )
-        _write_sheet(wb, event, tab_name, participants)
+        _write_sheet(wb, event, tab_name, participants_for_tab(event, genre))
 
     return wb
 
