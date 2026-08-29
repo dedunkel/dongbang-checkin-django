@@ -27,10 +27,19 @@ function resultBox(html, ok) {
   el.style.color = ok === undefined ? '' : (ok ? '#34d399' : '#f87171');
 }
 
+// 참가자 이름/학교/장르 등은 신청자가 직접 입력한 값이라, innerHTML에 넣기
+// 전에 반드시 이스케이프해야 함 (안 그러면 이름에 스크립트를 넣어 스태프
+// 세션에서 실행시키는 스토어드 XSS가 가능해짐).
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, (c) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  }[c]));
+}
+
 function participantInfoHtml(p) {
-  return `<b>${p.name}</b> (${p.entryType}${p.genre ? ' · ' + p.genre : ''})<br>` +
-         `${p.school ? p.school + '<br>' : ''}` +
-         `<span style="font-size:1.6rem;font-weight:800;">${p.labelCode || ''}</span>`;
+  return `<b>${escapeHtml(p.name)}</b> (${escapeHtml(p.entryType)}${p.genre ? ' · ' + escapeHtml(p.genre) : ''})<br>` +
+         `${p.school ? escapeHtml(p.school) + '<br>' : ''}` +
+         `<span style="font-size:1.6rem;font-weight:800;">${escapeHtml(p.labelCode || '')}</span>`;
 }
 
 async function lookupQr(text) {
@@ -118,10 +127,10 @@ searchBox.addEventListener('input', () => {
     const data = await res.json();
     searchResults.innerHTML = data.results.map(p => `
       <div style="display:flex; justify-content:space-between; align-items:center; padding:0.5rem 0; border-top:1px solid #262626;">
-        <span>${p.name} · ${p.phone} ${p.labelCode ? '· ' + p.labelCode : ''}</span>
+        <span>${escapeHtml(p.name)} · ${escapeHtml(p.phone)} ${p.labelCode ? '· ' + escapeHtml(p.labelCode) : ''}</span>
         ${p.checkinStatus === 'CHECKED_IN'
           ? '<span class="muted">체크인됨</span>'
-          : `<button data-id="${p.id}" class="manualBtn" style="margin:0;padding:0.35rem 0.7rem;font-size:0.8rem;">체크인</button>`}
+          : `<button data-id="${escapeHtml(p.id)}" class="manualBtn" style="margin:0;padding:0.35rem 0.7rem;font-size:0.8rem;">체크인</button>`}
       </div>
     `).join('') || '<p class="muted">검색 결과가 없습니다.</p>';
   }, 250);
