@@ -38,8 +38,10 @@ _PHONE_DIGITS_RE = re.compile(r"\D")
 
 def _mask_middle(s: str) -> str:
     s = s.strip()
-    if len(s) <= 1:
+    if len(s) == 0:
         return s
+    if len(s) == 1:
+        return "*"
     if len(s) == 2:
         return s[0] + "*"
     return s[0] + "*" * (len(s) - 2) + s[-1]
