@@ -10,7 +10,10 @@
  *      → 참가자 전원의 라벨 코드를 해당 탭의 "순서"에 한 번에 반영
  *
  * 설치 방법
- * 1) 이 점수 시트 파일을 엽니다 (구글 폼 응답 시트 아님).
+ * 1) 이 점수 시트 파일을 엽니다 (구글 폼 응답 시트 아님). admin의 "점수표 엑셀
+ *    다운로드" 액션으로 받은 파일을 그대로 구글 시트로 업로드해서 쓰는 걸
+ *    기준으로 합니다 — 탭별로 1행은 제목, 2행이 컬럼 헤더, 3행부터 데이터인
+ *    구조를 그대로 가정합니다 (아래 HEADER_ROW 참고).
  * 2) 확장 프로그램 > Apps Script.
  * 3) 기본 Code.gs 내용을 지우고 이 파일 내용을 통째로 붙여넣습니다.
  * 4) 아래 CONFIG의 SECRET을 아무 랜덤 문자열로 채우고, Django 쪽 .env의
@@ -123,6 +126,12 @@ function normalizePhone_(v) {
   return String(v || '').replace(/[^0-9]/g, '');
 }
 
+// 점수표 엑셀 다운로드(admin의 "점수표 엑셀 다운로드" 액션) 그대로 구글 시트에
+// 업로드해서 쓰는 걸 기준으로 함 — 1행은 "동방배틀 Vol.N {장르} 참가자 명단"
+// 제목 병합 셀이고, 실제 컬럼 헤더는 2행부터 시작한다.
+const HEADER_ROW = 2;
+const DATA_START_ROW = HEADER_ROW + 1;
+
 /**
  * 이름+연락처가 일치하는 행을 찾아 지정한 컬럼(colHeaderName)에 value를 씀.
  * 찾으면 true, 못 찾으면 false.
@@ -130,15 +139,15 @@ function normalizePhone_(v) {
 function writeToColumn_(sheet, name, phone, colHeaderName, value) {
   const lastRow = sheet.getLastRow();
   const lastCol = sheet.getLastColumn();
-  if (lastRow < 2) return false;
+  if (lastRow < DATA_START_ROW) return false;
 
-  const header = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+  const header = sheet.getRange(HEADER_ROW, 1, 1, lastCol).getValues()[0];
   const nameCol = header.indexOf(CONFIG.COLS.name);
   const phoneCol = header.indexOf(CONFIG.COLS.phone);
   const targetCol = header.indexOf(colHeaderName);
   if (nameCol === -1 || phoneCol === -1 || targetCol === -1) return false;
 
-  const values = sheet.getRange(2, 1, lastRow - 1, lastCol).getValues();
+  const values = sheet.getRange(DATA_START_ROW, 1, lastRow - HEADER_ROW, lastCol).getValues();
   const targetPhone = normalizePhone_(phone);
   const targetName = String(name || '').trim();
 
@@ -148,7 +157,7 @@ function writeToColumn_(sheet, name, phone, colHeaderName, value) {
       // 이름은 "본명/댄서네임" 형식이라 완전 일치가 아니라 포함 여부로 느슨하게 확인.
       const rowName = String(values[i][nameCol] || '').trim();
       if (!rowName || rowName.includes(targetName) || targetName.includes(rowName)) {
-        sheet.getRange(i + 2, targetCol + 1).setValue(value);
+        sheet.getRange(i + DATA_START_ROW, targetCol + 1).setValue(value);
         return true;
       }
     }
