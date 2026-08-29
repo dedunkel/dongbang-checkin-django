@@ -65,6 +65,17 @@ def mask_phone(raw_phone: str) -> str:
     return f"{digits[:3]}-****-{digits[7:]}"
 
 
+def remarks_for(p: Participant) -> str:
+    """미입금/학적 인증 미승인 상태를 "미입금/학적 인증 필요" 식으로 합쳐서
+    반환. 둘 다 문제없으면 빈 문자열."""
+    notes = []
+    if p.payment_status != "PAID":
+        notes.append("미입금")
+    if p.entry_type == "참가" and p.verification_status != "APPROVED":
+        notes.append("학적 인증 필요")
+    return "/".join(notes)
+
+
 def participants_for_tab(event: Event, genre: str | None) -> list[Participant]:
     """탭 하나(장르 또는 관람)에 들어갈 참가자를, 그 탭에서 보여줄 순서로 정렬해 반환.
     장르 탭은 라벨 코드(조+번호) 기준, 관람 탭은 신청 순서(생성일시) 기준."""
@@ -129,7 +140,7 @@ def _write_sheet(wb: Workbook, event: Event, sheet_title: str, participants: lis
                 p.school or "",
                 p.academic_status or "",
                 p.label_code or "",
-                "",
+                remarks_for(p),
             ]
         )
 
