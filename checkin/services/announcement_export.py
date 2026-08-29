@@ -44,7 +44,12 @@ def _mask_middle(s: str) -> str:
         return "*"
     if len(s) == 2:
         return s[0] + "*"
-    return s[0] + "*" * (len(s) - 2) + s[-1]
+    if len(s) == 3:
+        return s[0] + "*" + s[-1]
+    # 4글자 이상은 글자 수에 비례해서 별표를 늘리지 않고, 앞 2글자만 남기고
+    # 그다음 두 글자를 고정으로 별표 2개로 가린 뒤 나머지는 그대로 둔다
+    # (예: "zaliij" -> "za**ij").
+    return s[:2] + "**" + s[4:]
 
 
 def mask_name(raw_name: str) -> str:
