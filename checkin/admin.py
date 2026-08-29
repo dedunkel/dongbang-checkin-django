@@ -52,7 +52,7 @@ def export_event_csv(modeladmin, request, queryset):
     writer = csv.writer(response)
     writer.writerow(
         [
-            "이름", "연락처", "구분", "장르", "학교", "학적", "이메일", "입금자명",
+            "이름", "연락처", "구분", "장르", "학교", "학적", "입금자명",
             "학적검수", "입금상태", "라벨코드", "체크인상태", "체크인시각", "신청시각",
         ]
     )
@@ -60,7 +60,7 @@ def export_event_csv(modeladmin, request, queryset):
         writer.writerow(
             [
                 p.name, p.phone, p.entry_type, p.genre or "", p.school or "", p.academic_status or "",
-                p.email or "", p.payer_name or "",
+                p.payer_name or "",
                 p.verification_status, p.payment_status, p.label_code or "",
                 p.checkin_status, p.checked_in_at or "", p.created_at,
             ]
@@ -229,7 +229,7 @@ class ParticipantAdmin(admin.ModelAdmin):
         "verification_status", "payment_status", "label_code_display", "checkin_status",
     )
     list_filter = ("event", "entry_type", "verification_status", "payment_status", "checkin_status", "genre")
-    search_fields = ("name", "phone", "email", "school")
+    search_fields = ("name", "phone", "school")
     actions = [approve_verification, mark_paid, swap_labels]
     readonly_fields = ("id", "qr_token", "created_at")
 
@@ -251,7 +251,7 @@ class ParticipantAdmin(admin.ModelAdmin):
         return obj.label_code
 
     fieldsets = (
-        (None, {"fields": ("event", "entry_type", "name", "phone", "email")}),
+        (None, {"fields": ("event", "entry_type", "name", "phone")}),
         ("신청 정보", {"fields": ("school", "academic_status", "genre", "payer_name", "external_ref")}),
         ("검수", {"fields": ("verification_status", "payment_status")}),
         (
