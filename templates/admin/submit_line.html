@@ -8,7 +8,7 @@
 {% url opts|admin_urlname:'changelist' as changelist_url %}
 {% if show_close %}
     <a href="{% add_preserved_filters changelist_url %}" class="closelink">{% translate 'Close' %}</a>
-{% else %}
+{% elif not is_popup %}
     <a href="{% add_preserved_filters changelist_url %}" class="closelink">목록으로</a>
 {% endif %}
 {% if show_delete_link and original %}
