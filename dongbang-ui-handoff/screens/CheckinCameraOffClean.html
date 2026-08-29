@@ -1,0 +1,70 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
+:root{
+  --bg: oklch(99% 0.002 90);
+  --surface: oklch(100% 0 0);
+  --line: oklch(88% 0.004 60);
+  --text: oklch(18% 0.008 60);
+  --muted: oklch(50% 0.008 60);
+  --accent: oklch(40% 0.09 260);
+}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--bg);color:var(--text);font-family:'Noto Sans KR',system-ui,sans-serif;}
+</style>
+</helmet>
+<div style="width:390px;height:900px;background:var(--bg);overflow:hidden;">
+
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 22px;border-bottom:1px solid var(--line);">
+    <div style="display:flex;align-items:center;gap:9px;">
+      <img src="logo.png" alt="KOOKMIN UNIV DANCE CREW" style="height:16px;width:auto;filter:invert(1);"/>
+      <div style="font-size:14px;font-weight:900;color:var(--text);">동방배틀 vol.33 체크인</div>
+    </div>
+    <div style="font-size:11px;font-weight:700;color:var(--muted);border:1px solid var(--line);border-radius:3px;padding:6px 11px;">관리자 모드</div>
+  </div>
+
+  <div style="padding:0 24px;">
+    <div style="margin:22px auto 0;width:100%;height:200px;background:var(--surface);border:1px dashed var(--line);border-radius:6px;display:flex;align-items:center;justify-content:center;text-align:center;padding:0 30px;">
+      <div style="font-size:12.5px;color:var(--muted);line-height:1.7;">카메라를 사용할 수 없습니다.<br/>아래 수동 검색을 이용해주세요.</div>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:12px;margin-top:26px;">
+      <div style="flex:1;height:1px;background:var(--line);"></div>
+      <div style="font-size:11px;color:var(--muted);font-weight:700;">수동 검색</div>
+      <div style="flex:1;height:1px;background:var(--line);"></div>
+    </div>
+
+    <div style="margin-top:18px;">
+      <div style="font-size:12px;color:var(--muted);font-weight:700;margin-bottom:6px;">이름 / 전화번호로 검색</div>
+      <div style="background:var(--surface);border:1px solid var(--line);border-radius:3px;padding:11px 14px;font-size:13.5px;color:var(--muted);">김민지</div>
+    </div>
+
+    <div style="margin-top:8px;display:flex;flex-direction:column;">
+      <div style="border-top:1px solid var(--line);padding:13px 2px;display:flex;justify-content:space-between;align-items:center;">
+        <div style="font-size:13.5px;">
+          <span style="font-weight:700;color:var(--text);">김민지</span>
+          <span style="color:var(--muted);"> · 010-1234-5678 · A-2</span>
+        </div>
+        <div style="padding:6px 13px;background:var(--accent);color:oklch(99% 0.002 90);font-size:11.5px;font-weight:700;border-radius:3px;">체크인</div>
+      </div>
+      <div style="border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:13px 2px;display:flex;justify-content:space-between;align-items:center;">
+        <div style="font-size:13.5px;">
+          <span style="font-weight:700;color:var(--text);">김서연</span>
+          <span style="color:var(--muted);"> · 010-9876-5432 · B-7</span>
+        </div>
+        <div style="font-size:11.5px;color:var(--muted);font-weight:700;">체크인됨</div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

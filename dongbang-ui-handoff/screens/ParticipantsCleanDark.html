@@ -1,0 +1,236 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
+:root{
+  --bg: oklch(15% 0.006 60);
+  --surface: oklch(20% 0.008 60);
+  --surface2: oklch(24% 0.01 60);
+  --line: oklch(31% 0.012 60);
+  --text: oklch(96% 0.004 90);
+  --muted: oklch(66% 0.016 60);
+  --accent: oklch(74% 0.12 260);
+  --accent-soft: oklch(27% 0.05 260);
+  --ok: oklch(76% 0.13 155);
+  --ok-soft: oklch(27% 0.05 155);
+  --warn: oklch(78% 0.14 70);
+  --warn-soft: oklch(27% 0.05 70);
+  --bad: oklch(74% 0.16 25);
+  --bad-soft: oklch(27% 0.05 25);
+}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--bg);color:var(--text);font-family:'Noto Sans KR',system-ui,sans-serif;}
+.badge{display:inline-block;padding:4px 9px;border-radius:3px;font-size:10.5px;font-weight:700;white-space:nowrap;}
+.badge-ok{background:var(--ok-soft);color:var(--ok);}
+.badge-warn{background:var(--warn-soft);color:var(--warn);}
+.badge-bad{background:var(--bad-soft);color:var(--bad);}
+.badge-neutral{background:var(--surface);color:var(--muted);border:1px solid var(--line);}
+.cell{font-size:12px;color:var(--text);display:flex;align-items:center;}
+.th{font-size:10px;color:var(--muted);font-weight:700;letter-spacing:0.02em;display:flex;align-items:center;}
+.filter{display:flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:3px;padding:8px 11px;font-size:12px;color:var(--text);}
+.btn{padding:9px 15px;border-radius:3px;font-size:12.5px;font-weight:700;white-space:nowrap;}
+.btn-primary{background:var(--accent);color:oklch(99% 0.002 90);}
+.btn-outline{background:var(--surface);border:1px solid var(--line);color:var(--text);}
+.tab{padding:10px 2px;margin-right:22px;font-size:13px;font-weight:700;color:var(--muted);}
+.tab-active{color:var(--accent);border-bottom:2px solid var(--accent);}
+</style>
+</helmet>
+<div style="width:1280px;height:960px;background:var(--bg);padding:30px 36px;overflow:hidden;">
+
+  <!-- top bar -->
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+    <div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <img src="logo.png" alt="KOOKMIN UNIV DANCE CREW" style="height:13px;width:auto;"/>
+        <div style="font-size:10.5px;letter-spacing:0.16em;color:var(--muted);font-weight:700;">DBBT STAFF</div>
+      </div>
+      <h1 style="font-size:22px;font-weight:900;margin:6px 0 0;">참가자 관리</h1>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div style="font-size:12px;font-weight:700;color:var(--accent);background:var(--accent-soft);padding:8px 14px;border-radius:3px;">동방배틀 VOL.33 · 신청 진행중</div>
+      <div style="font-size:12px;color:var(--muted);">staff@dongbangbattle.kr</div>
+    </div>
+  </div>
+
+  <!-- tabs -->
+  <div style="display:flex;margin-top:22px;border-bottom:1px solid var(--line);">
+    <div class="tab">회차 관리</div>
+    <div class="tab tab-active">참가자 관리</div>
+    <div class="tab">계정 관리</div>
+  </div>
+
+  <!-- stat tiles -->
+  <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-top:22px;">
+    <div style="border:1px solid var(--line);border-radius:6px;padding:16px 18px;">
+      <div style="font-size:11px;color:var(--muted);font-weight:700;">총 신청</div>
+      <div style="font-size:26px;font-weight:900;margin-top:6px;">128명</div>
+    </div>
+    <div style="border:1px solid var(--line);border-radius:6px;padding:16px 18px;">
+      <div style="font-size:11px;color:var(--warn);font-weight:700;">학적검수 대기</div>
+      <div style="font-size:26px;font-weight:900;margin-top:6px;color:var(--warn);">12명</div>
+    </div>
+    <div style="border:1px solid var(--line);border-radius:6px;padding:16px 18px;">
+      <div style="font-size:11px;color:var(--muted);font-weight:700;">입금 대기</div>
+      <div style="font-size:26px;font-weight:900;margin-top:6px;">8명</div>
+    </div>
+    <div style="border:1px solid var(--line);border-radius:6px;padding:16px 18px;">
+      <div style="font-size:11px;color:var(--ok);font-weight:700;">체크인 완료</div>
+      <div style="font-size:26px;font-weight:900;margin-top:6px;color:var(--ok);">64 / 128</div>
+    </div>
+  </div>
+
+  <!-- participant toolbar -->
+  <div style="margin-top:22px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+      <div style="background:var(--surface);border:1px solid var(--line);border-radius:3px;padding:8px 12px;font-size:12px;color:var(--muted);width:200px;">이름 / 전화번호 / 학교 검색</div>
+      <div class="filter">회차: VOL.33 <svg width="9" height="9" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="var(--muted)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div class="filter">구분: 전체 <svg width="9" height="9" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="var(--muted)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div class="filter">장르: 전체 <svg width="9" height="9" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="var(--muted)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div class="filter">검수: 전체 <svg width="9" height="9" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="var(--muted)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div class="filter">입금: 전체 <svg width="9" height="9" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="var(--muted)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div class="filter">체크인: 전체 <svg width="9" height="9" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="var(--muted)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <div class="btn btn-outline">학적검수 승인</div>
+      <div class="btn btn-outline">입금 확인</div>
+      <div class="btn btn-outline">라벨 맞바꾸기</div>
+    </div>
+  </div>
+
+  <!-- table -->
+  <div style="margin-top:14px;border:1px solid var(--line);border-radius:6px;overflow:hidden;">
+
+    <div style="display:flex;background:var(--surface2);border-bottom:1px solid var(--line);padding:10px 14px;gap:8px;">
+      <div style="width:18px;"></div>
+      <div class="th" style="width:52px;">회차</div>
+      <div class="th" style="width:74px;">이름</div>
+      <div class="th" style="width:108px;">연락처</div>
+      <div class="th" style="width:98px;">소속대학</div>
+      <div class="th" style="width:42px;">학적</div>
+      <div class="th" style="width:40px;">구분</div>
+      <div class="th" style="width:78px;">장르</div>
+      <div class="th" style="width:72px;">검수</div>
+      <div class="th" style="width:68px;">입금</div>
+      <div class="th" style="width:76px;">입금자명</div>
+      <div class="th" style="width:44px;">라벨</div>
+      <div class="th" style="width:78px;">체크인</div>
+      <div class="th" style="width:38px;">관리</div>
+    </div>
+
+    <div style="display:flex;align-items:center;padding:11px 14px;gap:8px;border-bottom:1px solid var(--line);">
+      <div style="width:18px;height:14px;border:1.5px solid var(--line);border-radius:2px;"></div>
+      <div class="cell" style="width:52px;color:var(--muted);">vol.33</div>
+      <div class="cell" style="width:74px;font-weight:700;">김민지</div>
+      <div class="cell" style="width:108px;color:var(--muted);">010-1234-5678</div>
+      <div class="cell" style="width:98px;color:var(--muted);">국민대학교</div>
+      <div class="cell" style="width:42px;color:var(--muted);">재학</div>
+      <div class="cell" style="width:40px;color:var(--muted);">참가</div>
+      <div class="cell" style="width:78px;">Breaking</div>
+      <div style="width:72px;"><span class="badge badge-ok">승인</span></div>
+      <div style="width:68px;"><span class="badge badge-ok">입금완료</span></div>
+      <div class="cell" style="width:76px;color:var(--muted);">김민지</div>
+      <div class="cell" style="width:44px;font-weight:700;">A-2</div>
+      <div style="width:78px;"><span class="badge badge-ok">체크인완료</span></div>
+      <div class="cell" style="width:38px;color:var(--accent);font-weight:700;">보기</div>
+    </div>
+
+    <div style="display:flex;align-items:center;padding:11px 14px;gap:8px;border-bottom:1px solid var(--line);">
+      <div style="width:18px;height:14px;border:1.5px solid var(--line);border-radius:2px;"></div>
+      <div class="cell" style="width:52px;color:var(--muted);">vol.33</div>
+      <div class="cell" style="width:74px;font-weight:700;">이수연</div>
+      <div class="cell" style="width:108px;color:var(--muted);">010-9876-5432</div>
+      <div class="cell" style="width:98px;color:var(--muted);">국민대학교</div>
+      <div class="cell" style="width:42px;color:var(--muted);">재학</div>
+      <div class="cell" style="width:40px;color:var(--muted);">참가</div>
+      <div class="cell" style="width:78px;">Waacking</div>
+      <div style="width:72px;"><span class="badge badge-warn">검수대기</span></div>
+      <div style="width:68px;"><span class="badge badge-neutral">대기</span></div>
+      <div class="cell" style="width:76px;color:var(--muted);">—</div>
+      <div class="cell" style="width:44px;color:var(--muted);">—</div>
+      <div style="width:78px;"><span class="badge badge-neutral">체크인전</span></div>
+      <div class="cell" style="width:38px;color:var(--accent);font-weight:700;">보기</div>
+    </div>
+
+    <div style="display:flex;align-items:center;padding:11px 14px;gap:8px;border-bottom:1px solid var(--line);">
+      <div style="width:18px;height:14px;border:1.5px solid var(--line);border-radius:2px;"></div>
+      <div class="cell" style="width:52px;color:var(--muted);">vol.33</div>
+      <div class="cell" style="width:74px;font-weight:700;">박준혁</div>
+      <div class="cell" style="width:108px;color:var(--muted);">010-2222-3333</div>
+      <div class="cell" style="width:98px;color:var(--muted);">국민대학교</div>
+      <div class="cell" style="width:42px;color:var(--muted);">휴학</div>
+      <div class="cell" style="width:40px;color:var(--muted);">참가</div>
+      <div class="cell" style="width:78px;">Locking</div>
+      <div style="width:72px;"><span class="badge badge-ok">승인</span></div>
+      <div style="width:68px;"><span class="badge badge-ok">입금완료</span></div>
+      <div class="cell" style="width:76px;color:var(--muted);">김영희</div>
+      <div class="cell" style="width:44px;font-weight:700;">B-7</div>
+      <div style="width:78px;"><span class="badge badge-neutral">체크인전</span></div>
+      <div class="cell" style="width:38px;color:var(--accent);font-weight:700;">보기</div>
+    </div>
+
+    <div style="display:flex;align-items:center;padding:11px 14px;gap:8px;border-bottom:1px solid var(--line);">
+      <div style="width:18px;height:14px;border:1.5px solid var(--line);border-radius:2px;"></div>
+      <div class="cell" style="width:52px;color:var(--muted);">vol.33</div>
+      <div class="cell" style="width:74px;font-weight:700;">최유진</div>
+      <div class="cell" style="width:108px;color:var(--muted);">010-4444-5555</div>
+      <div class="cell" style="width:98px;color:var(--muted);">홍익대학교</div>
+      <div class="cell" style="width:42px;color:var(--muted);">재학</div>
+      <div class="cell" style="width:40px;color:var(--muted);">관람</div>
+      <div class="cell" style="width:78px;color:var(--muted);">—</div>
+      <div style="width:72px;"><span class="badge badge-neutral">해당없음</span></div>
+      <div style="width:68px;"><span class="badge badge-neutral">대기</span></div>
+      <div class="cell" style="width:76px;color:var(--muted);">—</div>
+      <div class="cell" style="width:44px;color:var(--muted);">—</div>
+      <div style="width:78px;"><span class="badge badge-neutral">체크인전</span></div>
+      <div class="cell" style="width:38px;color:var(--accent);font-weight:700;">보기</div>
+    </div>
+
+    <div style="display:flex;align-items:center;padding:11px 14px;gap:8px;border-bottom:1px solid var(--line);">
+      <div style="width:18px;height:14px;border:1.5px solid var(--line);border-radius:2px;"></div>
+      <div class="cell" style="width:52px;color:var(--muted);">vol.33</div>
+      <div class="cell" style="width:74px;font-weight:700;">정하늘</div>
+      <div class="cell" style="width:108px;color:var(--muted);">010-6666-7777</div>
+      <div class="cell" style="width:98px;color:var(--muted);">국민대학교</div>
+      <div class="cell" style="width:42px;color:var(--muted);">재학</div>
+      <div class="cell" style="width:40px;color:var(--muted);">참가</div>
+      <div class="cell" style="width:78px;">Popping</div>
+      <div style="width:72px;"><span class="badge badge-bad">반려</span></div>
+      <div style="width:68px;"><span class="badge badge-neutral">대기</span></div>
+      <div class="cell" style="width:76px;color:var(--muted);">—</div>
+      <div class="cell" style="width:44px;color:var(--muted);">—</div>
+      <div style="width:78px;"><span class="badge badge-neutral">체크인전</span></div>
+      <div class="cell" style="width:38px;color:var(--accent);font-weight:700;">보기</div>
+    </div>
+
+    <div style="display:flex;align-items:center;padding:11px 14px;gap:8px;">
+      <div style="width:18px;height:14px;border:1.5px solid var(--line);border-radius:2px;"></div>
+      <div class="cell" style="width:52px;color:var(--muted);">vol.33</div>
+      <div class="cell" style="width:74px;font-weight:700;">오세훈</div>
+      <div class="cell" style="width:108px;color:var(--muted);">010-8888-9999</div>
+      <div class="cell" style="width:98px;color:var(--muted);">국민대학교</div>
+      <div class="cell" style="width:42px;color:var(--muted);">재학</div>
+      <div class="cell" style="width:40px;color:var(--muted);">참가</div>
+      <div class="cell" style="width:78px;">Hiphop</div>
+      <div style="width:72px;"><span class="badge badge-ok">승인</span></div>
+      <div style="width:68px;"><span class="badge badge-ok">입금완료</span></div>
+      <div class="cell" style="width:76px;color:var(--muted);">오세훈</div>
+      <div class="cell" style="width:44px;font-weight:700;">C-1</div>
+      <div style="width:78px;"><span class="badge badge-ok">체크인완료</span></div>
+      <div class="cell" style="width:38px;color:var(--accent);font-weight:700;">보기</div>
+    </div>
+
+  </div>
+
+  <div style="margin-top:12px;font-size:11.5px;color:var(--muted);">128명 중 1–6번째 표시</div>
+
+</div>
+</x-dc>
+</body>
+</html>

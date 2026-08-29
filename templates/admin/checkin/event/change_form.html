@@ -1,0 +1,71 @@
+{% extends "admin/change_form.html" %}
+{% load admin_modify %}
+
+{% block after_field_sets %}
+{{ block.super }}
+{% if original %}
+<div class="dbbt-section">
+  <div class="dbbt-section-title">이 회차 작업</div>
+  <div class="dbbt-action-row">
+    <form method="post" action="{% url 'admin:checkin_event_changelist' %}">
+      {% csrf_token %}
+      <input type="hidden" name="_selected_action" value="{{ original.pk }}">
+      <input type="hidden" name="action" value="run_label_assign">
+      <button type="submit" class="dbbt-btn dbbt-btn-outline">④ 라벨 / QR 발급 실행</button>
+    </form>
+    <form method="post" action="{% url 'admin:checkin_event_changelist' %}">
+      {% csrf_token %}
+      <input type="hidden" name="_selected_action" value="{{ original.pk }}">
+      <input type="hidden" name="action" value="push_order_to_sheet">
+      <button type="submit" class="dbbt-btn dbbt-btn-outline">⑤ 점수 시트 순서 반영</button>
+    </form>
+  </div>
+
+  <div class="dbbt-section-subtitle">내보내기</div>
+  <div class="dbbt-action-row">
+    <form method="post" action="{% url 'admin:checkin_event_changelist' %}">
+      {% csrf_token %}
+      <input type="hidden" name="_selected_action" value="{{ original.pk }}">
+      <input type="hidden" name="action" value="export_application_confirmation_excel">
+      <button type="submit" class="dbbt-pill">신청 확인용 명단</button>
+    </form>
+    <form method="post" action="{% url 'admin:checkin_event_changelist' %}">
+      {% csrf_token %}
+      <input type="hidden" name="_selected_action" value="{{ original.pk }}">
+      <input type="hidden" name="action" value="export_announcement_excel">
+      <button type="submit" class="dbbt-pill">공지용 명단 (마스킹)</button>
+    </form>
+    {% if perms.checkin.export_sensitive_data %}
+    <form method="post" action="{% url 'admin:checkin_event_changelist' %}">
+      {% csrf_token %}
+      <input type="hidden" name="_selected_action" value="{{ original.pk }}">
+      <input type="hidden" name="action" value="export_qr_send_list">
+      <button type="submit" class="dbbt-pill">QR 발송용 명단 · 운영진</button>
+    </form>
+    <form method="post" action="{% url 'admin:checkin_event_changelist' %}">
+      {% csrf_token %}
+      <input type="hidden" name="_selected_action" value="{{ original.pk }}">
+      <input type="hidden" name="action" value="export_score_sheet_excel">
+      <button type="submit" class="dbbt-pill">점수표 · 운영진</button>
+    </form>
+    <form method="post" action="{% url 'admin:checkin_event_changelist' %}">
+      {% csrf_token %}
+      <input type="hidden" name="_selected_action" value="{{ original.pk }}">
+      <input type="hidden" name="action" value="export_event_csv">
+      <button type="submit" class="dbbt-pill">CSV 백업 · 운영진</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block submit_buttons_bottom %}
+{% submit_row %}
+{% if original and has_delete_permission %}
+<div class="dbbt-delete-warning">
+  삭제 시 이 회차의 참가자 {{ original.participants.count }}명 데이터가 함께 삭제됩니다.
+  삭제 전 CSV 백업을 받아두지 않았다면 복구할 수 없습니다.
+</div>
+{% endif %}
+{% endblock %}

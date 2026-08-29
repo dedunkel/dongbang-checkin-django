@@ -1,17 +1,50 @@
 {% extends "checkin/base.html" %}
+{% load static %}
 {% block title %}동방배틀 체크인 시스템{% endblock %}
 {% block content %}
-<h1>동방배틀 체크인 시스템</h1>
-<div class="card">
-  <p class="muted">신청 접수는 기존 구글 폼을 그대로 이용해주세요. 아래는 운영진용 링크입니다.</p>
-  <p style="margin-top:1.25rem;">
-    <a class="btn" href="/admin/">운영진 대시보드 (/admin)</a>
-  </p>
-  <p style="margin-top:0.75rem;">
-    <a href="{% url 'checkin:checkin' %}">현장 체크인 스캐너 →</a>
-  </p>
-  <p style="margin-top:0.5rem;">
-    <a href="{% url 'checkin:register' %}">예비 신청 폼 (구글 폼 미사용 시) →</a>
-  </p>
+<img src="{% static 'checkin/logo.png' %}" class="logo-hero" alt="로고" />
+
+<h1 style="font-size:2.1rem; margin-top:1.4rem;">동방배틀</h1>
+
+{% if event %}
+  <div style="margin-top:1rem; display:flex; align-items:center; gap:0.6rem;">
+    <span class="pill" style="color:var(--accent); background:var(--accent-soft); border-color:var(--accent-soft); font-weight:900;">VOL.{{ event.volume }}</span>
+    {% if event.event_date or event.location %}
+      <span class="muted">{% if event.event_date %}{{ event.event_date|date:"Y.m.d" }}{% endif %}{% if event.event_date and event.location %} · {% endif %}{{ event.location }}</span>
+    {% else %}
+      <span class="muted">{{ event.name }}</span>
+    {% endif %}
+  </div>
+{% endif %}
+
+<div style="margin-top:1.75rem; border-top:1px solid var(--line);"></div>
+
+<p class="muted" style="margin-top:1.25rem; line-height:1.7;">
+  신청 접수는 기존 구글 폼을 그대로 이용해주세요.<br />아래는 운영진용 링크입니다.
+</p>
+
+<div style="margin-top:0.5rem; display:flex; flex-direction:column;">
+  <a href="{% url 'checkin:checkin' %}" style="border-top:1px solid var(--line); padding:1.1rem 0.1rem; display:flex; justify-content:space-between; align-items:center; color:var(--text); text-decoration:none;">
+    <div>
+      <div class="fine" style="letter-spacing:0.08em; font-weight:700;">STAFF</div>
+      <div style="font-size:1rem; font-weight:700; margin-top:0.25rem;">현장 체크인 스캐너</div>
+    </div>
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 3L11 8L6 13" stroke="var(--muted)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </a>
+  <a href="/admin/" style="border-top:1px solid var(--line); border-bottom:1px solid var(--line); padding:1.1rem 0.1rem; display:flex; justify-content:space-between; align-items:center; color:var(--text); text-decoration:none;">
+    <div>
+      <div class="fine" style="letter-spacing:0.08em; font-weight:700;">STAFF</div>
+      <div style="font-size:1rem; font-weight:700; margin-top:0.25rem;">운영진 대시보드</div>
+    </div>
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 3L11 8L6 13" stroke="var(--muted)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </a>
+  <a href="{% url 'checkin:register' %}" style="padding:1.1rem 0.9rem; margin-top:0.5rem; display:flex; justify-content:space-between; align-items:center; background:var(--accent-soft); border-radius:0.5rem; color:var(--text); text-decoration:none;">
+    <div>
+      <div class="fine" style="letter-spacing:0.08em; font-weight:700; color:var(--accent);">참가자</div>
+      <div style="font-size:1rem; font-weight:700; margin-top:0.25rem;">예비 신청 폼</div>
+      <div class="fine" style="margin-top:0.15rem;">구글 폼 미사용 시</div>
+    </div>
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 3L11 8L6 13" stroke="var(--accent)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </a>
 </div>
 {% endblock %}

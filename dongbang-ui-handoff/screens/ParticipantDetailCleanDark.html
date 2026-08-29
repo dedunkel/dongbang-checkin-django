@@ -1,0 +1,147 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
+:root{
+  --bg: oklch(15% 0.006 60);
+  --surface: oklch(20% 0.008 60);
+  --surface2: oklch(24% 0.01 60);
+  --line: oklch(31% 0.012 60);
+  --text: oklch(96% 0.004 90);
+  --muted: oklch(66% 0.016 60);
+  --accent: oklch(74% 0.12 260);
+  --accent-soft: oklch(27% 0.05 260);
+  --ok: oklch(76% 0.13 155);
+  --ok-soft: oklch(27% 0.05 155);
+  --warn: oklch(78% 0.14 70);
+  --bad: oklch(74% 0.16 25);
+  --bad-soft: oklch(27% 0.05 25);
+}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--bg);color:var(--text);font-family:'Noto Sans KR',system-ui,sans-serif;}
+.section{border:1px solid var(--line);border-radius:6px;padding:18px 20px;margin-top:14px;}
+.section-title{font-size:12.5px;font-weight:900;color:var(--text);margin-bottom:14px;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px 20px;}
+.field-label{font-size:10.5px;color:var(--muted);font-weight:700;margin-bottom:5px;}
+.field-input{background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:9px 11px;font-size:12.5px;color:var(--text);display:flex;align-items:center;justify-content:space-between;}
+.field-input.readonly{background:var(--surface2);color:var(--muted);font-family:ui-monospace,'SF Mono',monospace;font-size:11px;}
+.field-help{font-size:10px;color:var(--muted);margin-top:4px;line-height:1.5;}
+.chev{opacity:0.55;}
+.btn{padding:10px 16px;border-radius:4px;font-size:12.5px;font-weight:700;white-space:nowrap;}
+.btn-primary{background:var(--accent);color:oklch(15% 0.006 60);}
+.btn-outline{background:var(--surface);border:1px solid var(--line);color:var(--text);}
+.btn-danger{color:var(--bad);}
+.badge{display:inline-block;padding:4px 9px;border-radius:3px;font-size:10.5px;font-weight:700;white-space:nowrap;background:var(--accent-soft);color:var(--accent);}
+</style>
+</helmet>
+<div style="width:1280px;height:1520px;background:var(--bg);padding:30px 36px 50px;overflow:hidden;">
+
+  <!-- top bar -->
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+    <div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <img src="logo.png" alt="KOOKMIN UNIV DANCE CREW" style="height:13px;width:auto;"/>
+        <div style="font-size:10.5px;letter-spacing:0.16em;color:var(--muted);font-weight:700;">DBBT STAFF</div>
+      </div>
+      <div style="font-size:12px;color:var(--muted);margin-top:6px;">참가자 관리 <span style="margin:0 4px;">›</span> 박준혁</div>
+      <h1 style="font-size:22px;font-weight:900;margin:4px 0 0;">박준혁 <span class="badge" style="margin-left:6px;">B-7</span></h1>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div style="font-size:12px;color:var(--muted);">staff@dongbangbattle.kr</div>
+    </div>
+  </div>
+
+  <!-- 기본 -->
+  <div class="section">
+    <div class="section-title">기본 정보</div>
+    <div class="grid2">
+      <div><div class="field-label">회차</div><div class="field-input">동방배틀 vol.33 <svg class="chev" width="9" height="9" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="var(--muted)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div>
+      <div><div class="field-label">구분</div><div class="field-input">참가 <svg class="chev" width="9" height="9" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="var(--muted)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div>
+      <div><div class="field-label">이름</div><div class="field-input">박준혁</div></div>
+      <div><div class="field-label">연락처</div><div class="field-input">010-2222-3333</div></div>
+    </div>
+  </div>
+
+  <!-- 신청 정보 -->
+  <div class="section">
+    <div class="section-title">신청 정보</div>
+    <div class="grid2">
+      <div><div class="field-label">소속대학</div><div class="field-input">국민대학교</div></div>
+      <div><div class="field-label">학적</div><div class="field-input">휴학 <svg class="chev" width="9" height="9" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="var(--muted)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div>
+      <div><div class="field-label">참가 장르</div><div class="field-input">Locking <svg class="chev" width="9" height="9" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="var(--muted)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div>
+      <div><div class="field-label">입금자명</div><div class="field-input">김영희</div>
+        <div class="field-help">본인 명의가 아닌 경우 입금 내역 대조용으로 사용합니다.</div>
+      </div>
+      <div>
+        <div class="field-label">신청 연동 참조값 (external_ref)</div>
+        <div class="field-input readonly">gform-row-142</div>
+        <div class="field-help">구글 폼 응답 시트의 행 번호입니다. 직접 수정하지 마세요.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 검수 -->
+  <div class="section">
+    <div class="section-title">검수</div>
+    <div class="grid2">
+      <div><div class="field-label">학적검수</div><div class="field-input">승인 <svg class="chev" width="9" height="9" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="var(--muted)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div>
+      <div><div class="field-label">입금 상태</div><div class="field-input">입금 완료 <svg class="chev" width="9" height="9" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="var(--muted)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div>
+    </div>
+  </div>
+
+  <!-- 라벨 -->
+  <div class="section">
+    <div class="section-title">라벨</div>
+    <div class="grid2">
+      <div><div class="field-label">라벨 그룹</div><div class="field-input">B</div></div>
+      <div><div class="field-label">라벨 번호</div><div class="field-input">7</div></div>
+      <div>
+        <div class="field-label">라벨 코드</div>
+        <div class="field-input readonly">B-7</div>
+        <div class="field-help">그룹·번호로부터 자동 계산됩니다. 직접 수정할 수 없습니다.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- QR/체크인 -->
+  <div class="section">
+    <div class="section-title">QR / 체크인</div>
+    <div class="grid2">
+      <div><div class="field-label">QR 토큰</div><div class="field-input readonly">7f3a1c2e-88b1-4a09-9e21-0c5d6f8a11d4</div></div>
+      <div><div class="field-label">QR 발송 일시</div><div class="field-input readonly">2026-08-20 11:14</div></div>
+      <div><div class="field-label">체크인 상태</div><div class="field-input">체크인 전 <svg class="chev" width="9" height="9" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="var(--muted)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div>
+      <div><div class="field-label">체크인 시각</div><div class="field-input readonly">—</div></div>
+    </div>
+  </div>
+
+  <!-- 기타 -->
+  <div class="section">
+    <div class="section-title">기타</div>
+    <div class="grid2">
+      <div><div class="field-label">ID</div><div class="field-input readonly">a1e9f0d2-3b44-4c1a-8f7e-2d9b6a0c5e17</div></div>
+      <div><div class="field-label">신청 일시</div><div class="field-input readonly">2026-08-18 21:47</div></div>
+    </div>
+  </div>
+
+  <!-- submit row -->
+  <div style="margin-top:22px;display:flex;align-items:center;justify-content:space-between;">
+    <div style="display:flex;align-items:center;gap:8px;">
+      <div class="btn btn-primary">저장</div>
+      <div class="btn btn-outline">저장 후 계속 편집</div>
+      <div class="btn btn-outline">저장 후 새로 추가</div>
+      <div style="font-size:12.5px;color:var(--muted);margin-left:6px;">목록으로</div>
+    </div>
+    <div class="btn-danger" style="font-size:12.5px;font-weight:700;">삭제</div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

@@ -1,0 +1,13 @@
+{% load i18n admin_urls %}
+{% block object-tools-items %}
+  {% if has_add_permission %}
+    {% url cl.opts|admin_urlname:'add' as add_url %}
+    <li class="dbbt-object-tools-item">
+      <a href="{% add_preserved_filters add_url is_popup to_field %}" class="dbbt-btn dbbt-btn-primary dbbt-header-action">
+        {% if cl.opts.model_name == 'event' %}+ 새 회차 추가
+        {% elif cl.opts.model_name == 'participant' %}+ 새 참가자 추가
+        {% else %}+ {% blocktranslate with cl.opts.verbose_name as name %}Add {{ name }}{% endblocktranslate %}{% endif %}
+      </a>
+    </li>
+  {% endif %}
+{% endblock %}

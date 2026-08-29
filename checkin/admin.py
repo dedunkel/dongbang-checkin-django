@@ -6,14 +6,122 @@ from django.db.models import CharField, Value
 from django.db.models.functions import Cast, Concat, LPad
 from django.http import HttpResponse
 from django.urls import reverse
+from django.utils.html import format_html
 from django.utils.http import content_disposition_header
 
-from .models import Event, Participant
+from .models import CheckinStatus, Event, Genre, Participant, PaymentStatus, VerificationStatus
 from .services import sheet_sync
 from .services.announcement_export import build_announcement_file, find_duplicate_labels
 from .services.application_confirmation_export import build_application_confirmation_file
 from .services.assign_labels import assign_labels_and_tokens
 from .services.score_sheet_export import build_score_sheet_file
+
+# 계정 관리 → 계정 수정 화면(User/Group 기반 커스텀 UserAdmin)을 등록한다.
+# Django의 admin 자동탐색은 각 앱의 admin.py만 임포트하므로, 별도 파일인
+# auth_admin.py는 여기서 명시적으로 임포트해줘야 등록 코드가 실행된다.
+from . import auth_admin  # noqa: F401,E402
+
+admin.site.site_header = "DBBT STAFF"
+admin.site.site_title = "DBBT STAFF"
+admin.site.index_title = "운영진 대시보드"
+
+# 폼/목록에 노출되는 라벨을 목업 문구에 맞추는 표시용 조정. verbose_name은
+# 스키마에 영향을 주지 않는 메타데이터라 마이그레이션 없이 바꿔도 안전하다.
+_EVENT_LABELS = {
+    "volume": "회차 번호",
+    "name": "회차 이름",
+    "event_date": "행사 날짜",
+    "location": "행사 장소",
+    "is_active": "신규 신청 활성화",
+    "sheet_sync_url": "점수 시트 연동 URL",
+    "created_at": "생성일",
+}
+for _field, _label in _EVENT_LABELS.items():
+    Event._meta.get_field(_field).verbose_name = _label
+
+_PARTICIPANT_LABELS = {
+    "event": "회차",
+    "entry_type": "구분",
+    "name": "이름",
+    "phone": "연락처",
+    "school": "소속대학",
+    "academic_status": "학적",
+    "genre": "참가 장르",
+    "payer_name": "입금자명",
+    "external_ref": "신청 연동 참조값 (external_ref)",
+    "verification_status": "학적검수",
+    "payment_status": "입금 상태",
+    "label_group": "라벨 그룹",
+    "label_number": "라벨 번호",
+    "label_code": "라벨 코드",
+    "qr_token": "QR 토큰",
+    "qr_sent_at": "QR 발송 일시",
+    "checkin_status": "체크인 상태",
+    "checked_in_at": "체크인 시각",
+    "id": "ID",
+    "created_at": "신청 일시",
+}
+for _field, _label in _PARTICIPANT_LABELS.items():
+    Participant._meta.get_field(_field).verbose_name = _label
+
+
+# list_filter의 필터 pill 문구는 위 verbose_name(폼 라벨)보다 짧게 — 목업
+# 툴바가 "검수: 전체"/"입금: 전체"처럼 축약된 이름을 쓰기 때문에 필드
+# verbose_name과 별도로 title을 지정할 수 있는 커스텀 필터가 필요하다.
+class _ChoiceFilter(admin.SimpleListFilter):
+    field_name = None
+    choices_source = None
+
+    def lookups(self, request, model_admin):
+        return self.choices_source
+
+    def queryset(self, request, queryset):
+        if self.value():
+            return queryset.filter(**{self.field_name: self.value()})
+        return queryset
+
+
+class GenreFilter(_ChoiceFilter):
+    title = "장르"
+    parameter_name = "genre"
+    field_name = "genre"
+    choices_source = Genre.choices
+
+
+class VerificationFilter(_ChoiceFilter):
+    title = "검수"
+    parameter_name = "verification_status"
+    field_name = "verification_status"
+    choices_source = VerificationStatus.choices
+
+
+class PaymentFilter(_ChoiceFilter):
+    title = "입금"
+    parameter_name = "payment_status"
+    field_name = "payment_status"
+    choices_source = PaymentStatus.choices
+
+
+class CheckinFilter(_ChoiceFilter):
+    title = "체크인"
+    parameter_name = "checkin_status"
+    field_name = "checkin_status"
+    choices_source = CheckinStatus.choices
+
+
+class ActiveFilter(admin.SimpleListFilter):
+    title = "활성 여부"
+    parameter_name = "is_active"
+
+    def lookups(self, request, model_admin):
+        return (("1", "활성"), ("0", "비활성"))
+
+    def queryset(self, request, queryset):
+        if self.value() == "1":
+            return queryset.filter(is_active=True)
+        if self.value() == "0":
+            return queryset.filter(is_active=False)
+        return queryset
 
 
 @admin.action(description="④ 선택 회차: 승인자 라벨/QR 발급 실행")
@@ -191,8 +299,8 @@ def export_application_confirmation_excel(modeladmin, request, queryset):
 
 @admin.register(Event)
 class EventAdmin(admin.ModelAdmin):
-    list_display = ("name", "volume", "is_active", "participant_count", "created_at")
-    list_filter = ("is_active",)
+    list_display = ("name", "volume", "is_active_badge", "participant_count", "created_at")
+    list_filter = (ActiveFilter,)
     ordering = ("-volume",)
     actions = [
         run_label_assign,
@@ -204,9 +312,33 @@ class EventAdmin(admin.ModelAdmin):
         export_score_sheet_excel,
     ]
 
+    @admin.display(description="활성 여부", ordering="is_active")
+    def is_active_badge(self, obj):
+        if obj.is_active:
+            return format_html('<span class="dbbt-badge dbbt-badge-ok">활성</span>')
+        return format_html('<span class="dbbt-badge dbbt-badge-neutral">비활성</span>')
+
     @admin.display(description="신청자 수")
     def participant_count(self, obj):
-        return obj.participants.count()
+        return f'{obj.participants.count()}명'
+
+    @admin.display(description="신청자 수")
+    def participant_count_display(self, obj):
+        return f'{obj.participants.count()}명' if obj and obj.pk else "—"
+
+    def get_fieldsets(self, request, obj=None):
+        base = ("기본 정보", {"fields": ("volume", "name", "event_date", "location", "is_active", "sheet_sync_url")})
+        if obj is None:
+            return (base,)
+        return (
+            base,
+            ("현황", {"fields": ("participant_count_display", "created_at")}),
+        )
+
+    def get_readonly_fields(self, request, obj=None):
+        if obj is None:
+            return ()
+        return ("participant_count_display", "created_at")
 
     def get_actions(self, request):
         actions = super().get_actions(request)
@@ -274,12 +406,64 @@ def swap_labels(modeladmin, request, queryset):
 class ParticipantAdmin(admin.ModelAdmin):
     list_display = (
         "name", "phone", "school", "academic_status", "event", "entry_type", "genre",
-        "verification_status", "payment_status", "label_code_display", "checkin_status",
+        "verification_status_badge", "payment_status_badge", "payer_name", "label_code_display",
+        "checkin_status_badge",
     )
-    list_filter = ("event", "entry_type", "verification_status", "payment_status", "checkin_status", "genre")
+    list_filter = ("event", "entry_type", VerificationFilter, PaymentFilter, CheckinFilter, GenreFilter)
     search_fields = ("name", "phone", "school")
     actions = [approve_verification, mark_paid, swap_labels]
-    readonly_fields = ("id", "qr_token", "created_at")
+    # label_code는 save()에서 항상 label_group/label_number로부터 다시 계산되므로
+    # (models.py 참고) 폼에서 직접 수정할 수 있게 두면 값이 저장돼도 무시되어
+    # 혼란만 준다 — 목업(ParticipantDetailClean)도 이 필드를 읽기 전용으로 보여준다.
+    readonly_fields = ("id", "qr_token", "created_at", "label_code")
+
+    def changelist_view(self, request, extra_context=None):
+        # ParticipantsClean 목업 상단의 통계 타일(총 신청/학적검수 대기/입금 대기/
+        # 체크인 완료)이 보여줄 "기준 회차"를 정한다: 화면에 회차 필터가 걸려있으면
+        # 그 회차를, 아니면 활성 회차를, 그것도 없으면(예: 아직 아무 회차도
+        # 활성화한 적이 없는 상태) 가장 최근 회차를 쓴다 — 활성 회차가 없다고
+        # 통계 타일 자체가 통째로 사라지면 화면이 목업과 달라 보이고 헷갈린다.
+        extra_context = extra_context or {}
+        target_event = None
+        event_filter_value = request.GET.get("event__id__exact")
+        if event_filter_value:
+            target_event = Event.objects.filter(pk=event_filter_value).first()
+        if target_event is None:
+            target_event = Event.objects.filter(is_active=True).first()
+        if target_event is None:
+            target_event = Event.objects.order_by("-volume").first()
+
+        if target_event is not None:
+            participants = target_event.participants
+            extra_context["dbbt_active_event"] = target_event
+            extra_context["dbbt_stat_total"] = participants.count()
+            extra_context["dbbt_stat_pending_verification"] = participants.filter(verification_status="PENDING").count()
+            extra_context["dbbt_stat_pending_payment"] = participants.filter(payment_status="PENDING").count()
+            extra_context["dbbt_stat_checked_in"] = participants.filter(checkin_status="CHECKED_IN").count()
+        return super().changelist_view(request, extra_context=extra_context)
+
+    _STATUS_BADGE_CLASS = {
+        "APPROVED": "ok", "PAID": "ok", "CHECKED_IN": "ok",
+        "PENDING": "warn",
+        "REJECTED": "bad",
+        "N_A": "neutral", "NOT_CHECKED_IN": "neutral",
+    }
+
+    def _status_badge(self, value, label):
+        css = self._STATUS_BADGE_CLASS.get(value, "neutral")
+        return format_html('<span class="dbbt-badge dbbt-badge-{}">{}</span>', css, label)
+
+    @admin.display(description="검수", ordering="verification_status")
+    def verification_status_badge(self, obj):
+        return self._status_badge(obj.verification_status, obj.get_verification_status_display())
+
+    @admin.display(description="입금", ordering="payment_status")
+    def payment_status_badge(self, obj):
+        return self._status_badge(obj.payment_status, obj.get_payment_status_display())
+
+    @admin.display(description="체크인", ordering="checkin_status")
+    def checkin_status_badge(self, obj):
+        return self._status_badge(obj.checkin_status, obj.get_checkin_status_display())
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
@@ -298,14 +482,18 @@ class ParticipantAdmin(admin.ModelAdmin):
     def label_code_display(self, obj):
         return obj.label_code
 
-    fieldsets = (
-        (None, {"fields": ("event", "entry_type", "name", "phone")}),
-        ("신청 정보", {"fields": ("school", "academic_status", "genre", "payer_name", "external_ref")}),
-        ("검수", {"fields": ("verification_status", "payment_status")}),
-        (
-            "라벨",
-            {"fields": ("label_group", "label_number", "label_code")},
-        ),
-        ("QR / 체크인", {"fields": ("qr_token", "qr_sent_at", "checkin_status", "checked_in_at")}),
-        ("기타", {"fields": ("id", "created_at")}),
-    )
+    def get_fieldsets(self, request, obj=None):
+        base = (
+            ("기본 정보", {"fields": ("event", "entry_type", "name", "phone")}),
+            ("신청 정보", {"fields": ("school", "academic_status", "genre", "payer_name", "external_ref")}),
+            ("검수", {"fields": ("verification_status", "payment_status")}),
+        )
+        if obj is None:
+            # 저장 전에는 라벨/QR/체크인 영역이 아직 존재하지 않는다 — 회차 관리의
+            # "라벨 / QR 발급 실행"에서 일괄 배정되기 때문 (assign_labels_and_tokens).
+            return base
+        return base + (
+            ("라벨", {"fields": ("label_group", "label_number", "label_code")}),
+            ("QR / 체크인", {"fields": ("qr_token", "qr_sent_at", "checkin_status", "checked_in_at")}),
+            ("기타", {"fields": ("id", "created_at")}),
+        )

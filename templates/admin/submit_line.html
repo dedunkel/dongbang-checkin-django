@@ -13,7 +13,7 @@
 {% endif %}
 {% if show_delete_link and original %}
     {% url opts|admin_urlname:'delete' original.pk|admin_urlquote as delete_url %}
-    <a href="{% add_preserved_filters delete_url %}" class="deletelink">{% translate "Delete" %}</a>
+    <a href="{% add_preserved_filters delete_url %}" class="deletelink">{% if opts.model_name == 'user' %}계정 삭제{% else %}{% translate "Delete" %}{% endif %}</a>
 {% endif %}
 {% endblock %}
 </div>

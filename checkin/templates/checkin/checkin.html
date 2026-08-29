@@ -1,31 +1,48 @@
 {% extends "checkin/base.html" %}
+{% load static %}
 {% block title %}현장 체크인{% endblock %}
 {% block content %}
-<h1>현장 체크인{% if event %} · {{ event.name }}{% endif %}</h1>
+<div class="topbar">
+  <div class="brand">
+    <img src="{% static 'checkin/logo.png' %}" alt="로고" />
+    <span class="title" style="color:var(--text); letter-spacing:normal;">동방배틀{% if event %} {{ event.name }}{% endif %} 체크인</span>
+  </div>
+  <span class="pill">관리자 모드</span>
+</div>
 
 {% csrf_token %}
 
-<div class="card">
-  <video id="video" autoplay playsinline muted style="width:100%; border-radius:0.75rem; background:#000;"></video>
+<div id="viewfinder" class="viewfinder">
+  <video id="video" autoplay playsinline muted></video>
   <canvas id="canvas" style="display:none;"></canvas>
-  <div id="scanResult" style="margin-top:1rem; min-height:3rem;"></div>
+  <div class="corner tl"></div>
+  <div class="corner tr"></div>
+  <div class="corner bl"></div>
+  <div class="corner br"></div>
+  <div id="scanLine" class="scan-line"></div>
+  <div id="scanResult" class="overlay"></div>
+</div>
+<div id="cameraOffBox" class="camera-off-box" style="display:none;">
+  카메라를 사용할 수 없습니다.<br />아래 수동 검색을 이용해주세요.
+</div>
+<p id="scanHint" class="muted" style="text-align:center; margin-top:0.85rem;">QR을 화면 사각형 안에 비춰주세요</p>
+
+<div class="divider-row">
+  <div class="line"></div>
+  <div id="searchDividerLabel" class="label">또는 직접 검색</div>
+  <div class="line"></div>
 </div>
 
-<div class="card" style="margin-top:1.25rem;">
+<div style="margin-top:1.1rem;">
   <label for="searchBox">이름/전화번호로 수동 검색</label>
   <input type="text" id="searchBox" placeholder="이름 또는 전화번호" />
-  <div id="searchResults" style="margin-top:0.75rem;"></div>
+  <div id="searchResults" style="margin-top:0.5rem;"></div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 <script>
 const csrfToken = document.querySelector('input[name=csrfmiddlewaretoken]').value;
-
-function resultBox(html, ok) {
-  const el = document.getElementById('scanResult');
-  el.innerHTML = html;
-  el.style.color = ok === undefined ? '' : (ok ? '#34d399' : '#f87171');
-}
+const overlay = document.getElementById('scanResult');
 
 // 참가자 이름/학교/장르 등은 신청자가 직접 입력한 값이라, innerHTML에 넣기
 // 전에 반드시 이스케이프해야 함 (안 그러면 이름에 스크립트를 넣어 스태프
@@ -36,10 +53,45 @@ function escapeHtml(value) {
   }[c]));
 }
 
-function participantInfoHtml(p) {
-  return `<b>${escapeHtml(p.name)}</b> (${escapeHtml(p.entryType)}${p.genre ? ' · ' + escapeHtml(p.genre) : ''})<br>` +
-         `${p.school ? escapeHtml(p.school) + '<br>' : ''}` +
-         `<span style="font-size:1.6rem;font-weight:800;">${escapeHtml(p.labelCode || '')}</span>`;
+function subInfo(p) {
+  return [p.entryType, p.genre, p.school].filter(Boolean).map(escapeHtml).join(' · ');
+}
+
+function showOverlay(html) {
+  overlay.innerHTML = `<div class="result-card">${html}</div>`;
+  overlay.classList.add('show');
+}
+
+function hideOverlay() {
+  overlay.classList.remove('show');
+  overlay.innerHTML = '';
+}
+
+function foundCardHtml(p) {
+  const code = p.labelCode ? `<div class="code">${escapeHtml(p.labelCode)}</div>` : '';
+  const already = p.checkinStatus === 'CHECKED_IN';
+  return `
+    ${code}
+    <div class="name">${escapeHtml(p.name)}</div>
+    <div class="sub">${subInfo(p)}</div>
+    ${already
+      ? '<div class="status bad">이미 체크인됨</div>'
+      : `<button data-id="${escapeHtml(p.id)}" id="confirmCheckinBtn">체크인 확정</button>`}
+  `;
+}
+
+function checkedInCardHtml(p) {
+  const code = p.labelCode ? `<div class="code">${escapeHtml(p.labelCode)}</div>` : '';
+  return `
+    <svg class="check-icon" width="34" height="34" viewBox="0 0 52 52">
+      <circle cx="26" cy="26" r="23" fill="var(--ok-soft)" stroke="var(--ok)" stroke-width="2.5"/>
+      <path d="M16 27 L23 34 L37 18" fill="none" stroke="var(--ok)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    ${code}
+    <div class="name">${escapeHtml(p.name)}</div>
+    <div class="sub">${subInfo(p)}</div>
+    <div class="status ok">체크인 완료</div>
+  `;
 }
 
 async function lookupQr(text) {
@@ -50,26 +102,20 @@ async function lookupQr(text) {
   });
   const data = await res.json();
   if (data.status !== 'FOUND') {
-    resultBox('등록되지 않은 QR입니다.', false);
+    showOverlay('<div class="status bad">등록되지 않은 QR입니다.</div>');
     return;
   }
-  const p = data.data;
-  const info = participantInfoHtml(p);
-  if (p.checkinStatus === 'CHECKED_IN') {
-    resultBox(`${info}<br>이미 체크인됨`, false);
-  } else {
-    resultBox(`${info}<br><button data-id="${p.id}" id="confirmCheckinBtn" style="margin-top:0.5rem;">체크인 확정</button>`);
-  }
+  showOverlay(foundCardHtml(data.data));
 }
 
-document.getElementById('scanResult').addEventListener('click', async (e) => {
+overlay.addEventListener('click', async (e) => {
   if (e.target.id !== 'confirmCheckinBtn') return;
   const id = e.target.dataset.id;
   const res = await fetch(`/api/participants/${id}/manual-checkin/`, {
     method: 'POST', headers: { 'X-CSRFToken': csrfToken },
   });
   const data = await res.json();
-  resultBox(`${participantInfoHtml(data.data)}<br>체크인 완료`, true);
+  showOverlay(checkedInCardHtml(data.data));
 });
 
 // --- 카메라 QR 스캔 ---
@@ -85,13 +131,16 @@ async function startCamera() {
     video.srcObject = stream;
     requestAnimationFrame(tick);
   } catch (e) {
-    resultBox('카메라를 사용할 수 없습니다. 아래 수동 검색을 이용해주세요.', false);
+    document.getElementById('viewfinder').style.display = 'none';
+    document.getElementById('cameraOffBox').style.display = 'flex';
+    document.getElementById('scanHint').style.display = 'none';
+    document.getElementById('searchDividerLabel').textContent = '수동 검색';
   }
 }
 
 function tick() {
   if (typeof jsQR !== 'function') {
-    resultBox('QR 인식 라이브러리를 불러오지 못했습니다. 페이지를 새로고침해주세요.', false);
+    showOverlay('<div class="status bad">QR 인식 라이브러리를 불러오지 못했습니다.<br/>페이지를 새로고침해주세요.</div>');
     return;
   }
   if (video.readyState === video.HAVE_ENOUGH_DATA) {
@@ -107,6 +156,8 @@ function tick() {
         lastAt = now;
         lookupQr(code.data);
       }
+    } else if (overlay.classList.contains('show') && Date.now() - lastAt > 4000) {
+      hideOverlay();
     }
   }
   requestAnimationFrame(tick);
@@ -126,11 +177,11 @@ searchBox.addEventListener('input', () => {
     const res = await fetch(`{% url "checkin:participant_search_api" %}?q=${encodeURIComponent(q)}`);
     const data = await res.json();
     searchResults.innerHTML = data.results.map(p => `
-      <div style="display:flex; justify-content:space-between; align-items:center; padding:0.5rem 0; border-top:1px solid #262626;">
+      <div class="search-item">
         <span>${escapeHtml(p.name)} · ${escapeHtml(p.phone)} ${p.labelCode ? '· ' + escapeHtml(p.labelCode) : ''}</span>
         ${p.checkinStatus === 'CHECKED_IN'
           ? '<span class="muted">체크인됨</span>'
-          : `<button data-id="${escapeHtml(p.id)}" class="manualBtn" style="margin:0;padding:0.35rem 0.7rem;font-size:0.8rem;">체크인</button>`}
+          : `<button data-id="${escapeHtml(p.id)}" class="manualBtn btn-outline">체크인</button>`}
       </div>
     `).join('') || '<p class="muted">검색 결과가 없습니다.</p>';
   }, 250);

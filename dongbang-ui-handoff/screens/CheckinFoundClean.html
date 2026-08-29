@@ -1,0 +1,68 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
+:root{
+  --bg: oklch(99% 0.002 90);
+  --surface: oklch(100% 0 0);
+  --line: oklch(88% 0.004 60);
+  --text: oklch(18% 0.008 60);
+  --muted: oklch(50% 0.008 60);
+  --accent: oklch(40% 0.09 260);
+}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--bg);color:var(--text);font-family:'Noto Sans KR',system-ui,sans-serif;}
+</style>
+</helmet>
+<div style="width:390px;height:900px;background:var(--bg);overflow:hidden;">
+
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 22px;border-bottom:1px solid var(--line);">
+    <div style="display:flex;align-items:center;gap:9px;">
+      <img src="logo.png" alt="KOOKMIN UNIV DANCE CREW" style="height:16px;width:auto;filter:invert(1);"/>
+      <div style="font-size:14px;font-weight:900;color:var(--text);">동방배틀 vol.33 체크인</div>
+    </div>
+    <div style="font-size:11px;font-weight:700;color:var(--muted);border:1px solid var(--line);border-radius:3px;padding:6px 11px;">관리자 모드</div>
+  </div>
+
+  <div style="padding:0 24px;">
+    <div style="margin:22px auto 0;width:100%;height:290px;background:oklch(96% 0.003 90);border:1px solid var(--line);border-radius:6px;position:relative;">
+      <div style="position:absolute;top:30px;left:30px;width:30px;height:30px;border-top:3px solid var(--accent);border-left:3px solid var(--accent);"></div>
+      <div style="position:absolute;top:30px;right:30px;width:30px;height:30px;border-top:3px solid var(--accent);border-right:3px solid var(--accent);"></div>
+      <div style="position:absolute;bottom:30px;left:30px;width:30px;height:30px;border-bottom:3px solid var(--accent);border-left:3px solid var(--accent);"></div>
+      <div style="position:absolute;bottom:30px;right:30px;width:30px;height:30px;border-bottom:3px solid var(--accent);border-right:3px solid var(--accent);"></div>
+
+      <div style="position:absolute;inset:0;background:oklch(18% 0.008 60 / 0.5);display:flex;align-items:center;justify-content:center;border-radius:6px;">
+        <div style="width:250px;background:var(--surface);border:1px solid var(--line);border-radius:8px;box-shadow:0 8px 20px oklch(18% 0.008 60 / 0.16);padding:18px 16px;text-align:center;">
+          <div style="font-family:'Noto Sans KR',sans-serif;font-weight:900;font-size:26px;color:var(--accent);">B-4</div>
+          <div style="font-size:14px;font-weight:900;margin-top:8px;color:var(--text);">홍길동</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px;">참가 · Breaking · 국민대학교</div>
+          <div style="margin-top:8px;font-size:11.5px;color:var(--muted);">아직 체크인되지 않았습니다.</div>
+          <div style="margin-top:12px;padding:9px 0;background:var(--accent);color:oklch(99% 0.002 90);font-weight:700;font-size:12.5px;border-radius:4px;">체크인 확정</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="text-align:center;font-size:12px;color:var(--muted);margin-top:14px;">QR을 화면 사각형 안에 비춰주세요</div>
+
+    <div style="display:flex;align-items:center;gap:12px;margin-top:28px;">
+      <div style="flex:1;height:1px;background:var(--line);"></div>
+      <div style="font-size:11px;color:var(--muted);font-weight:700;">또는 직접 검색</div>
+      <div style="flex:1;height:1px;background:var(--line);"></div>
+    </div>
+
+    <div style="margin-top:18px;">
+      <div style="font-size:12px;color:var(--muted);font-weight:700;margin-bottom:6px;">이름 / 전화번호로 검색</div>
+      <div style="background:var(--surface);border:1px solid var(--line);border-radius:3px;padding:11px 14px;font-size:13.5px;color:var(--muted);">이름 또는 전화번호</div>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

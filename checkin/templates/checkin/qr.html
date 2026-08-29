@@ -1,24 +1,40 @@
 {% extends "checkin/base.html" %}
+{% load static %}
 {% block title %}체크인 QR{% endblock %}
 {% block content %}
 {% if not_found %}
-  <div class="card"><p class="muted">QR 정보를 찾을 수 없습니다. 링크가 정확한지 확인해주세요.</p></div>
+  <div class="center-brand">
+    <img src="{% static 'checkin/logo.png' %}" alt="로고" />
+    <span>{% if participant %}동방배틀 VOL.{{ participant.event.volume }} 체크인 QR{% else %}동방배틀 체크인 QR{% endif %}</span>
+  </div>
+  <p class="muted" style="text-align:center; margin-top:1.1rem; line-height:1.8;">QR 정보를 찾을 수 없습니다.<br />링크가 정확한지 확인해주세요.</p>
 {% else %}
-  <div class="card" style="text-align:center;">
-    <p class="muted">동방배틀 체크인 QR</p>
-    <h1 style="margin-top:0.25rem;">{{ participant.name }}</h1>
+  <div style="text-align:center;">
+    <div class="center-brand">
+      <img src="{% static 'checkin/logo.png' %}" alt="로고" />
+      <span>{% if participant %}동방배틀 VOL.{{ participant.event.volume }} 체크인 QR{% else %}동방배틀 체크인 QR{% endif %}</span>
+    </div>
+
+    <h1 style="margin-top:0.75rem;">{{ participant.name }}</h1>
     <p class="muted">{{ participant.entry_type }}{% if participant.genre %} · {{ participant.genre }}{% endif %}</p>
-    {% if participant.school %}<p class="muted">{{ participant.school }}</p>{% endif %}
-    <img src="{{ qr_data_url }}" alt="체크인 QR" width="220" height="220"
-         style="margin: 1rem auto; border-radius: 0.75rem; background: white; padding: 0.75rem;" />
+    {% if participant.school %}<p class="muted" style="margin-top:0.1rem;">{{ participant.school }}</p>{% endif %}
+
+    <div class="card" style="display:inline-block; margin-top:1.5rem; padding:1.1rem;{% if participant.checkin_status == "CHECKED_IN" %} opacity:0.5;{% endif %}">
+      <img src="{{ qr_data_url }}" alt="체크인 QR" width="200" height="200" style="display:block; border-radius:0.4rem; background:white;" />
+    </div>
+
     {% if participant.label_code %}
-      <div style="font-size:2rem; font-weight:800; margin-top:0.5rem;">{{ participant.label_code }}</div>
+      <div class="label-code" style="font-size:2rem; margin-top:1.25rem;{% if participant.checkin_status == "CHECKED_IN" %} opacity:0.5;{% endif %}">{{ participant.label_code }}</div>
     {% endif %}
-    <p class="muted" style="margin-top:1rem;">
-      {% if participant.checkin_status == "CHECKED_IN" %}이미 체크인 완료{% else %}행사 당일 인포에서 이 화면을 보여주세요{% endif %}
-    </p>
-    <p style="font-size:0.7rem; color:#525252; margin-top:1rem;">
-      이 QR 화면은 본인 확인용입니다. 캡처본을 타인과 공유하지 마세요.
+
+    {% if participant.checkin_status == "CHECKED_IN" %}
+      <div style="margin-top:1rem; display:inline-block; padding:0.6rem 1rem; background:var(--ok-soft); color:var(--ok); font-weight:700; font-size:0.85rem; border-radius:0.4rem;">이미 체크인 완료</div>
+    {% else %}
+      <p class="muted" style="margin-top:1rem;">행사 당일 인포에서 이 화면을 보여주세요</p>
+    {% endif %}
+
+    <p class="fine" style="margin-top:2.25rem; background:var(--surface); border:1px solid var(--line); border-radius:0.4rem; padding:0.75rem 0.85rem; line-height:1.6; text-align:left;">
+      이 QR 화면은 본인 확인용입니다.<br />캡처본을 타인과 공유하지 마세요.
     </p>
   </div>
 {% endif %}

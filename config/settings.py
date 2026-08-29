@@ -186,12 +186,21 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # whitenoise로 정적 파일을 앱 프로세스 자체가 서빙 (Render 같은 PaaS는 별도
 # 웹서버/CDN 없이 gunicorn만 떠 있는 구조라 nginx가 없음).
+# 이 해시 매니페스트 스토리지는 collectstatic을 실행해야 {% static %}이 최신
+# 파일을 가리킨다 — 로컬 개발(DEBUG=1)에서까지 켜두면 CSS/JS를 고쳐도 매번
+# collectstatic을 안 돌리면 브라우저가 예전 파일을 계속 받는 문제가 있었다.
+# 배포(DEBUG=0)에서만 매니페스트 스토리지를 쓰고, 로컬에서는 소스 파일을
+# 그대로 서빙하게 분리한다.
 STORAGES = {
     "default": {
         "BACKEND": "django.core.files.storage.FileSystemStorage",
     },
     "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        "BACKEND": (
+            "whitenoise.storage.CompressedManifestStaticFilesStorage"
+            if not DEBUG
+            else "django.contrib.staticfiles.storage.StaticFilesStorage"
+        ),
     },
 }
 

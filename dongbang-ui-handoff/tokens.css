@@ -1,0 +1,61 @@
+/* 동방배틀 DBBT — "클린" 디자인 토큰
+   각 .html 목업 파일에 <style> 안에 인라인으로 중복되어 있던 값을 한 곳에 모았습니다.
+   실제 구현 시에는 base.html 등 공통 stylesheet에 이 값을 넣고,
+   :root 에 라이트, 아래 다크 블록에 다크 값을 매핑하면 됩니다. */
+
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
+
+:root {
+  --bg: oklch(99% 0.002 90);
+  --surface: oklch(100% 0 0);
+  --surface2: oklch(97% 0.003 90);
+  --line: oklch(88% 0.004 60);
+  --text: oklch(18% 0.008 60);
+  --muted: oklch(50% 0.008 60);
+
+  --accent: oklch(40% 0.09 260);
+  --accent-soft: oklch(94% 0.02 260);
+
+  --ok: oklch(52% 0.11 155);
+  --ok-soft: oklch(94% 0.03 155);
+
+  --warn: oklch(55% 0.14 70);
+  --warn-soft: oklch(94% 0.04 70);
+
+  --bad: oklch(52% 0.17 25);
+  --bad-soft: oklch(94% 0.04 25);
+}
+
+/* 다크 모드: prefers-color-scheme 또는 별도 [data-theme="dark"] 클래스 등
+   프로젝트에서 쓰는 다크모드 전환 방식에 맞춰 아래 블록을 적용하세요. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: oklch(15% 0.006 60);
+    --surface: oklch(20% 0.008 60);
+    --surface2: oklch(24% 0.01 60);
+    --line: oklch(31% 0.012 60);
+    --text: oklch(96% 0.004 90);
+    --muted: oklch(66% 0.016 60);
+
+    --accent: oklch(74% 0.12 260);
+    --accent-soft: oklch(27% 0.05 260);
+
+    --ok: oklch(76% 0.13 155);
+    --ok-soft: oklch(27% 0.05 155);
+
+    --warn: oklch(78% 0.14 70);
+    --warn-soft: oklch(27% 0.05 70);
+
+    --bad: oklch(74% 0.16 25);
+    --bad-soft: oklch(27% 0.05 25);
+  }
+}
+
+body {
+  font-family: 'Noto Sans KR', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* 참고: 다크 배경 위의 로고(logo.png, 흰색 워드마크)는 filter 없이 그대로 쓰고,
+   밝은 배경 위에서는 filter:invert(1) 을 줘서 검게 뒤집어 씁니다. */

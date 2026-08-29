@@ -1,0 +1,34 @@
+{% extends "admin/change_list.html" %}
+{% load admin_list %}
+
+{% block object-tools %}
+{% if dbbt_active_event %}
+<div class="dbbt-stat-tiles">
+  <div class="dbbt-stat-tile">
+    <div class="dbbt-stat-label">총 신청</div>
+    <div class="dbbt-stat-value">{{ dbbt_stat_total }}명</div>
+  </div>
+  <div class="dbbt-stat-tile">
+    <div class="dbbt-stat-label dbbt-stat-label-warn">학적검수 대기</div>
+    <div class="dbbt-stat-value dbbt-stat-value-warn">{{ dbbt_stat_pending_verification }}명</div>
+  </div>
+  <div class="dbbt-stat-tile">
+    <div class="dbbt-stat-label">입금 대기</div>
+    <div class="dbbt-stat-value">{{ dbbt_stat_pending_payment }}명</div>
+  </div>
+  <div class="dbbt-stat-tile">
+    <div class="dbbt-stat-label dbbt-stat-label-ok">체크인 완료</div>
+    <div class="dbbt-stat-value dbbt-stat-value-ok">{{ dbbt_stat_checked_in }} / {{ dbbt_stat_total }}</div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block filters %}
+<div class="dbbt-filter-toolbar">
+  {{ block.super }}
+  <div class="dbbt-header-action-row">
+    {% change_list_object_tools %}
+  </div>
+</div>
+{% endblock %}

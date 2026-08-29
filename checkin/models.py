@@ -13,6 +13,8 @@ class Event(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     volume = models.PositiveIntegerField(unique=True, help_text="예: 33")
     name = models.CharField(max_length=200, help_text='예: "동방배틀 vol.33"')
+    event_date = models.DateField(null=True, blank=True, help_text="행사 당일 날짜 (선택)")
+    location = models.CharField(max_length=200, null=True, blank=True, help_text="행사 장소 (선택, 예: 국민대학교)")
     is_active = models.BooleanField(default=True, help_text="신규 신청을 받는 현재 회차인지")
     # 이 회차의 점수 시트에 붙인 google-apps-script/SheetSync.gs를 웹 앱으로
     # 배포하면 나오는 URL(/exec로 끝남). 회차마다 새 시트를 만들어 새로 배포하기

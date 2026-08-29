@@ -1,0 +1,57 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
+:root{
+  --bg: oklch(15% 0.006 60);
+  --surface: oklch(20% 0.008 60);
+  --line: oklch(31% 0.012 60);
+  --text: oklch(96% 0.004 90);
+  --muted: oklch(66% 0.016 60);
+  --accent: oklch(74% 0.12 260);
+  --bad: oklch(74% 0.16 25);
+}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--bg);color:var(--text);font-family:'Noto Sans KR',system-ui,sans-serif;}
+</style>
+</helmet>
+<div style="width:390px;height:900px;background:var(--bg);overflow:hidden;">
+
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 22px;border-bottom:1px solid var(--line);">
+    <div style="display:flex;align-items:center;gap:9px;">
+      <img src="logo.png" alt="KOOKMIN UNIV DANCE CREW" style="height:16px;width:auto;"/>
+      <div style="font-size:14px;font-weight:900;color:var(--text);">동방배틀 vol.33 체크인</div>
+    </div>
+    <div style="font-size:11px;font-weight:700;color:var(--muted);border:1px solid var(--line);border-radius:3px;padding:6px 11px;">관리자 모드</div>
+  </div>
+
+  <div style="padding:0 24px;">
+    <div style="margin:22px auto 0;width:100%;height:290px;background:oklch(19% 0.006 60);border:1px solid var(--line);border-radius:6px;position:relative;display:flex;align-items:center;justify-content:center;">
+      <div style="text-align:center;padding:0 30px;">
+        <div style="font-size:13px;color:var(--bad);font-weight:700;">등록되지 않은 QR입니다.</div>
+      </div>
+    </div>
+    <div style="text-align:center;font-size:12px;color:var(--muted);margin-top:14px;">QR을 화면 사각형 안에 비춰주세요</div>
+
+    <div style="display:flex;align-items:center;gap:12px;margin-top:28px;">
+      <div style="flex:1;height:1px;background:var(--line);"></div>
+      <div style="font-size:11px;color:var(--muted);font-weight:700;">또는 직접 검색</div>
+      <div style="flex:1;height:1px;background:var(--line);"></div>
+    </div>
+
+    <div style="margin-top:18px;">
+      <div style="font-size:12px;color:var(--muted);font-weight:700;margin-bottom:6px;">이름 / 전화번호로 검색</div>
+      <div style="background:var(--surface);border:1px solid var(--line);border-radius:3px;padding:11px 14px;font-size:13.5px;color:var(--muted);">이름 또는 전화번호</div>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

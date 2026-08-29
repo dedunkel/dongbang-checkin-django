@@ -1,0 +1,142 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'admin/css/dbbt_theme.css' %}">{% endblock %}
+
+{% block extrahead %}{{ block.super }}
+<script>
+  (function () {
+    // 브라우저가 CSS를 칠하기 전에 저장된 테마를 먼저 적용해서 테마가
+    // 바뀌는 깜빡임 없이 바로 맞는 테마로 그려지게 한다.
+    try {
+      var stored = localStorage.getItem('dbbt-theme');
+      if (stored === 'light' || stored === 'dark') {
+        document.documentElement.setAttribute('data-theme', stored);
+      }
+    } catch (e) {}
+  })();
+</script>
+{% endblock %}
+
+{% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | DBBT STAFF{% endblock %}
+
+{% block branding %}{% endblock %}
+
+{% block nav-global %}{% endblock %}
+{% block nav-sidebar %}{% endblock %}
+{% block nav-breadcrumbs %}{% endblock %}
+
+{% block content_title %}
+<div class="dbbt-topbar">
+  <div class="dbbt-topbar-left">
+    <div class="dbbt-topbar-brand">
+      <img src="{% static 'checkin/logo.png' %}" alt="">
+      <span>DBBT STAFF</span>
+    </div>
+    {% if opts and cl is not None %}
+    {% elif opts and opts.model_name == 'user' and original %}
+      <div class="dbbt-crumb">
+        계정 관리 <span class="chev">›</span> {{ original.first_name|default:original.username }}
+      </div>
+    {% elif opts %}
+      <div class="dbbt-crumb">
+        {% if opts.model_name == 'event' %}회차 관리{% elif opts.model_name == 'participant' %}참가자 관리{% else %}{{ opts.verbose_name_plural|capfirst }}{% endif %}
+        <span class="chev">›</span>
+        {% if add %}새 {{ opts.verbose_name }} 추가{% elif opts.model_name == 'participant' %}{{ original.name }}{% else %}{{ original }}{% endif %}
+      </div>
+    {% elif admin_tab == 'accounts' %}
+    {% endif %}
+    <h1>
+      {% if opts.model_name == 'event' and cl is not None %}회차 관리
+      {% elif opts.model_name == 'participant' and cl is not None %}참가자 관리
+      {% elif admin_tab == 'accounts' %}계정 관리
+      {% elif opts.model_name == 'event' %}{% if add %}새 회차 추가{% else %}{{ original }}{% if original.is_active %} <span class="dbbt-badge dbbt-badge-ok">활성</span>{% endif %}{% endif %}
+      {% elif opts.model_name == 'participant' %}{% if add %}새 참가자 추가{% else %}{{ original.name }}{% if original.label_code %} <span class="dbbt-badge dbbt-badge-accent">{{ original.label_code }}</span>{% endif %}{% endif %}
+      {% elif opts.model_name == 'user' and cl is None %}{% if add %}계정 초대{% else %}{{ original.first_name|default:original.username }}{% if dbbt_role_label %} <span class="dbbt-badge dbbt-badge-{{ dbbt_role_badge_class }}">{{ dbbt_role_label }}</span>{% endif %}{% endif %}
+      {% else %}{{ title }}
+      {% endif %}
+    </h1>
+  </div>
+  <div class="dbbt-topbar-right">
+    {% if opts.model_name == 'participant' and cl is not None and dbbt_active_event %}
+      <span class="dbbt-event-pill">{{ dbbt_active_event.name }}{% if dbbt_active_event.is_active %} · 신청 진행중{% endif %}</span>
+    {% endif %}
+    {% if request.user.is_authenticated %}
+      <a href="{% url 'checkin:checkin' %}" class="dbbt-btn dbbt-btn-outline">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1Z"/>
+          <circle cx="12" cy="13" r="3.5"/>
+        </svg>
+        QR 체크인 스캐너
+      </a>
+    {% endif %}
+    <div class="dbbt-theme-toggle" role="group" aria-label="라이트/다크 테마 전환">
+      <button type="button" class="dbbt-theme-toggle-option" data-theme-choice="light" aria-label="라이트 모드">
+        <svg width="13" height="13" viewBox="0 0 14 14">
+          <circle cx="7" cy="7" r="2.7" stroke-width="1.3"/>
+          <path d="M7 0.5V2M7 12V13.5M0.5 7H2M12 7H13.5M2.5 2.5L3.6 3.6M10.4 10.4L11.5 11.5M11.5 2.5L10.4 3.6M3.6 10.4L2.5 11.5" stroke-width="1.3" stroke-linecap="round"/>
+        </svg>
+      </button>
+      <button type="button" class="dbbt-theme-toggle-option" data-theme-choice="dark" aria-label="다크 모드">
+        <svg width="13" height="13" viewBox="0 0 14 14">
+          <path d="M11.5 8.5A5 5 0 1 1 5.5 2.5A4 4 0 0 0 11.5 8.5Z"/>
+        </svg>
+      </button>
+    </div>
+    {% if request.user.is_authenticated %}
+      <span class="dbbt-user-email">{{ request.user.email|default:request.user.get_username }}</span>
+      <form id="dbbt-logout-form" method="post" action="{% url 'admin:logout' %}">{% csrf_token %}
+        <button type="submit" class="dbbt-logout-btn">로그아웃</button>
+      </form>
+    {% endif %}
+  </div>
+</div>
+
+{% if request.user.is_authenticated %}
+<div class="dbbt-tabs">
+  <a class="dbbt-tab{% if opts.model_name == 'event' %} dbbt-tab-active{% endif %}" href="{% url 'admin:checkin_event_changelist' %}">회차 관리</a>
+  <a class="dbbt-tab{% if opts.model_name == 'participant' %} dbbt-tab-active{% endif %}" href="{% url 'admin:checkin_participant_changelist' %}">참가자 관리</a>
+  <a class="dbbt-tab{% if admin_tab == 'accounts' or opts.model_name == 'user' %} dbbt-tab-active{% endif %}" href="{% url 'accounts_dashboard' %}">계정 관리</a>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block content_subtitle %}{% endblock %}
+
+{% block extrabody %}{{ block.super }}
+<script>
+  (function () {
+    document.querySelectorAll('.dbbt-theme-toggle-option').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var choice = btn.getAttribute('data-theme-choice');
+        document.documentElement.setAttribute('data-theme', choice);
+        try { localStorage.setItem('dbbt-theme', choice); } catch (e) {}
+      });
+    });
+  })();
+
+  (function () {
+    // 필터 pill: 한 번에 하나만 펼쳐지게 하고(다른 걸 열면 나머지는 자동으로
+    // 닫힘), 드롭다운 바깥을 클릭해도 닫히게 한다 — 네이티브 <details>는 이
+    // 둘 다 기본으로 해주지 않아서(다른 요약을 클릭하기 전엔 계속 열려있음),
+    // 계속 펼쳐진 채로 남아있는 것처럼 보이는 원인이었다.
+    var filterNav = document.getElementById('changelist-filter');
+    if (!filterNav) return;
+    var allDetails = Array.prototype.slice.call(filterNav.querySelectorAll('details'));
+
+    allDetails.forEach(function (d) {
+      d.addEventListener('toggle', function () {
+        if (!d.open) return;
+        allDetails.forEach(function (other) {
+          if (other !== d) other.open = false;
+        });
+      });
+    });
+
+    document.addEventListener('click', function (e) {
+      if (filterNav.contains(e.target)) return;
+      allDetails.forEach(function (d) { d.open = false; });
+    });
+  })();
+</script>
+{% endblock %}

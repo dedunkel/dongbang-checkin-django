@@ -1,0 +1,104 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
+:root{
+  --bg: oklch(99% 0.002 90);
+  --surface: oklch(100% 0 0);
+  --surface2: oklch(97% 0.003 90);
+  --line: oklch(88% 0.004 60);
+  --text: oklch(18% 0.008 60);
+  --muted: oklch(50% 0.008 60);
+  --accent: oklch(40% 0.09 260);
+  --accent-soft: oklch(94% 0.02 260);
+}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--bg);color:var(--text);font-family:'Noto Sans KR',system-ui,sans-serif;}
+.section{border:1px solid var(--line);border-radius:6px;padding:18px 20px;margin-top:14px;}
+.section.disabled{background:var(--surface2);}
+.section-title{font-size:12.5px;font-weight:900;color:var(--text);margin-bottom:14px;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px 20px;}
+.field-label{font-size:10.5px;color:var(--muted);font-weight:700;margin-bottom:5px;}
+.field-input{background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:9px 11px;font-size:12.5px;color:var(--text);display:flex;align-items:center;justify-content:space-between;}
+.field-input.placeholder{color:var(--muted);}
+.field-input.readonly{background:var(--surface2);color:var(--muted);font-style:italic;}
+.field-help{font-size:10px;color:var(--muted);margin-top:4px;line-height:1.5;}
+.chev{opacity:0.55;}
+.btn{padding:10px 16px;border-radius:4px;font-size:12.5px;font-weight:700;white-space:nowrap;}
+.btn-primary{background:var(--accent);color:oklch(99% 0.002 90);}
+.btn-outline{background:var(--surface);border:1px solid var(--line);color:var(--text);}
+</style>
+</helmet>
+<div style="width:1280px;height:1280px;background:var(--bg);padding:30px 36px 50px;overflow:hidden;">
+
+  <!-- top bar -->
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+    <div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <img src="logo.png" alt="KOOKMIN UNIV DANCE CREW" style="height:13px;width:auto;filter:invert(1);"/>
+        <div style="font-size:10.5px;letter-spacing:0.16em;color:var(--muted);font-weight:700;">DBBT STAFF</div>
+      </div>
+      <div style="font-size:12px;color:var(--muted);margin-top:6px;">참가자 관리 <span style="margin:0 4px;">›</span> 새 참가자 추가</div>
+      <h1 style="font-size:22px;font-weight:900;margin:4px 0 0;">새 참가자 추가</h1>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div style="font-size:12px;color:var(--muted);">staff@dongbangbattle.kr</div>
+    </div>
+  </div>
+
+  <!-- 기본 -->
+  <div class="section">
+    <div class="section-title">기본 정보</div>
+    <div class="grid2">
+      <div><div class="field-label">회차</div><div class="field-input">동방배틀 vol.33 (활성 회차) <svg class="chev" width="9" height="9" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="var(--muted)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div>
+      <div><div class="field-label">구분</div><div class="field-input">참가 <svg class="chev" width="9" height="9" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="var(--muted)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div>
+      <div><div class="field-label">이름</div><div class="field-input placeholder">이름 입력</div></div>
+      <div><div class="field-label">연락처</div><div class="field-input placeholder">010-0000-0000</div></div>
+    </div>
+  </div>
+
+  <!-- 신청 정보 -->
+  <div class="section">
+    <div class="section-title">신청 정보</div>
+    <div class="grid2">
+      <div><div class="field-label">소속대학</div><div class="field-input placeholder">학교명 입력</div></div>
+      <div><div class="field-label">학적</div><div class="field-input placeholder">재학 / 휴학 <svg class="chev" width="9" height="9" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="var(--muted)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div>
+      <div><div class="field-label">참가 장르</div><div class="field-input placeholder">장르 선택 <svg class="chev" width="9" height="9" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="var(--muted)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div>
+      <div><div class="field-label">입금자명 <span style="font-weight:400;color:var(--muted);">(선택)</span></div><div class="field-input placeholder">본인 명의가 아닐 경우 입력</div></div>
+    </div>
+  </div>
+
+  <!-- 검수 -->
+  <div class="section">
+    <div class="section-title">검수</div>
+    <div class="grid2">
+      <div><div class="field-label">학적검수</div><div class="field-input">검수 대기 <svg class="chev" width="9" height="9" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="var(--muted)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div>
+      <div><div class="field-label">입금 상태</div><div class="field-input">대기 <svg class="chev" width="9" height="9" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="var(--muted)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div>
+    </div>
+  </div>
+
+  <!-- 라벨/QR — 저장 후에만 -->
+  <div class="section disabled">
+    <div class="section-title" style="color:var(--muted);">라벨 · QR · 체크인</div>
+    <div class="field-help" style="font-size:11px;">저장 후 회차 관리의 "라벨 / QR 발급 실행"으로 자동 배정됩니다. 지금은 입력할 수 없습니다.</div>
+  </div>
+
+  <!-- submit row -->
+  <div style="margin-top:22px;display:flex;align-items:center;gap:8px;">
+    <div class="btn btn-primary">저장</div>
+    <div class="btn btn-outline">저장 후 계속 편집</div>
+    <div class="btn btn-outline">저장 후 새로 추가</div>
+    <div style="font-size:12.5px;color:var(--muted);margin-left:6px;">목록으로</div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

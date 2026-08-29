@@ -1,0 +1,27 @@
+{% load i18n %}
+<div class="actions dbbt-actions-bar">
+  {% for field in action_form %}{% if field.name == "select_across" %}{{ field }}{% endif %}{% endfor %}
+
+  {% if cl.opts.model_name == "event" %}
+    <button type="submit" name="action" value="run_label_assign" class="dbbt-btn dbbt-btn-outline">④ 라벨 / QR 발급 실행</button>
+    <button type="submit" name="action" value="push_order_to_sheet" class="dbbt-btn dbbt-btn-outline">⑤ 점수 시트 순서 반영</button>
+  {% elif cl.opts.model_name == "participant" %}
+    <button type="submit" name="action" value="approve_verification" class="dbbt-btn dbbt-btn-outline">학적검수 승인</button>
+    <button type="submit" name="action" value="mark_paid" class="dbbt-btn dbbt-btn-outline">입금 확인</button>
+    <button type="submit" name="action" value="swap_labels" class="dbbt-btn dbbt-btn-outline">라벨 맞바꾸기</button>
+  {% else %}
+    {% for field in action_form %}{% if field.name == "action" %}<label>{{ field.label }} {{ field }}</label>{% endif %}{% endfor %}
+    <button type="submit" class="button" title="{% translate "Run the selected action" %}" name="index" value="{{ action_index|default:0 }}">{% translate "Go" %}</button>
+  {% endif %}
+
+  {% if actions_selection_counter %}
+    <span class="action-counter" data-actions-icnt="{{ cl.result_list|length }}">{{ selection_note }}</span>
+    {% if cl.result_count != cl.result_list|length %}
+    <span class="all hidden">{{ selection_note_all }}</span>
+    <span class="question hidden">
+        <a role="button" href="#" title="{% translate "Click here to select the objects across all pages" %}">{% blocktranslate with cl.result_count as total_count %}Select all {{ total_count }} {{ module_name }}{% endblocktranslate %}</a>
+    </span>
+    <span class="clear hidden"><a role="button" href="#">{% translate "Clear selection" %}</a></span>
+    {% endif %}
+  {% endif %}
+</div>

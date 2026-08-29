@@ -1,0 +1,252 @@
+/* 동방배틀 DBBT — "클린" 디자인 토큰 + 참가자용 화면(참가/QR/체크인) 공통 스타일.
+   dongbang-ui-handoff/tokens.css의 팔레트를 그대로 가져와서 라이트를 기본,
+   다크는 prefers-color-scheme으로 자동 전환한다. */
+
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
+
+:root, html[data-theme="light"] {
+  --bg: oklch(99% 0.002 90);
+  --surface: oklch(100% 0 0);
+  --surface2: oklch(97% 0.003 90);
+  --line: oklch(88% 0.004 60);
+  --text: oklch(18% 0.008 60);
+  --muted: oklch(50% 0.008 60);
+
+  --accent: oklch(40% 0.09 260);
+  --accent-soft: oklch(94% 0.02 260);
+
+  --ok: oklch(52% 0.11 155);
+  --ok-soft: oklch(94% 0.03 155);
+
+  --warn: oklch(55% 0.14 70);
+  --warn-soft: oklch(94% 0.04 70);
+
+  --bad: oklch(52% 0.17 25);
+  --bad-soft: oklch(94% 0.04 25);
+
+  /* 로고(logo.png)는 어두운 배경을 전제로 만들어진 흰색 로고라, 밝은 배경에서는
+     invert(1)로 뒤집어 검게 보이게 한다. 다크 모드에서는 그대로 사용. */
+  --logo-filter: invert(1);
+}
+
+/* prefers-color-scheme은 테마를 명시적으로 고르지 않았을 때(=data-theme 속성이
+   없을 때)만 시스템 설정을 따르게 하고, 토글로 라이트를 명시했으면 시스템이
+   다크여도 라이트를 유지한다 — admin 쪽 dbbt_theme.css와 동일한 캐스케이드. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: oklch(15% 0.006 60);
+    --surface: oklch(20% 0.008 60);
+    --surface2: oklch(24% 0.01 60);
+    --line: oklch(31% 0.012 60);
+    --text: oklch(96% 0.004 90);
+    --muted: oklch(66% 0.016 60);
+
+    --accent: oklch(74% 0.12 260);
+    --accent-soft: oklch(27% 0.05 260);
+
+    --ok: oklch(76% 0.13 155);
+    --ok-soft: oklch(27% 0.05 155);
+
+    --warn: oklch(78% 0.14 70);
+    --warn-soft: oklch(27% 0.05 70);
+
+    --bad: oklch(74% 0.16 25);
+    --bad-soft: oklch(27% 0.05 25);
+
+    --logo-filter: none;
+  }
+}
+
+html[data-theme="dark"] {
+  --bg: oklch(15% 0.006 60);
+  --surface: oklch(20% 0.008 60);
+  --surface2: oklch(24% 0.01 60);
+  --line: oklch(31% 0.012 60);
+  --text: oklch(96% 0.004 90);
+  --muted: oklch(66% 0.016 60);
+
+  --accent: oklch(74% 0.12 260);
+  --accent-soft: oklch(27% 0.05 260);
+
+  --ok: oklch(76% 0.13 155);
+  --ok-soft: oklch(27% 0.05 155);
+
+  --warn: oklch(78% 0.14 70);
+  --warn-soft: oklch(27% 0.05 70);
+
+  --bad: oklch(74% 0.16 25);
+  --bad-soft: oklch(27% 0.05 25);
+
+  --logo-filter: none;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0; min-height: 100vh; display: flex; flex-direction: column;
+  background: var(--bg); color: var(--text);
+  font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+}
+
+main { flex: 1; max-width: 640px; margin: 0 auto; padding: 2.5rem 1.5rem; width: 100%; }
+a { color: var(--accent); }
+
+.brand { display: flex; align-items: center; gap: 0.5rem; }
+.brand img { height: 25px; width: auto; filter: var(--logo-filter); }
+.logo-hero { width: 190px; height: auto; filter: var(--logo-filter); display: block; }
+.brand span { font-size: 0.7rem; letter-spacing: 0.12em; color: var(--muted); font-weight: 700; }
+
+.topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding-bottom: 1.1rem; margin-bottom: 1.4rem; border-bottom: 1px solid var(--line);
+}
+.topbar .title { font-size: 0.9rem; font-weight: 900; }
+.pill {
+  font-size: 0.68rem; font-weight: 700; color: var(--muted);
+  border: 1px solid var(--line); border-radius: 3px; padding: 0.35rem 0.7rem; white-space: nowrap;
+}
+
+/* 라이트/다크 토글 — Main.html에 그려진 세그먼트 pill(해/달 두 옵션, 선택된
+   쪽만 accent-soft 배경) 그대로. admin 쪽 .dbbt-theme-toggle과 같은
+   localStorage 키('dbbt-theme')를 써서 한쪽에서 바꾸면 다른 쪽도 이어진다. */
+.theme-toggle {
+  position: fixed; top: 24px; right: 24px; z-index: 40;
+  display: inline-flex; align-items: center; background: var(--surface); border: 1px solid var(--line);
+  border-radius: 20px; padding: 3px; gap: 2px; box-shadow: 0 1px 3px oklch(18% 0.008 60 / 0.08);
+}
+.theme-toggle-option {
+  width: 28px; height: 28px; border-radius: 16px; display: flex; align-items: center; justify-content: center;
+  border: none; background: none; color: var(--muted); cursor: pointer; padding: 0;
+}
+.theme-toggle-option svg { display: block; fill: none; stroke: currentColor; }
+.theme-toggle-option[data-theme-choice="dark"] svg { fill: currentColor; stroke: none; }
+
+.theme-toggle-option[data-theme-choice="light"] { color: var(--accent); background: var(--accent-soft); }
+.theme-toggle-option[data-theme-choice="dark"] { color: var(--muted); background: none; }
+@media (prefers-color-scheme: dark) {
+  html:not([data-theme="light"]) .theme-toggle-option[data-theme-choice="light"] { color: var(--muted); background: none; }
+  html:not([data-theme="light"]) .theme-toggle-option[data-theme-choice="dark"] { color: var(--accent); background: var(--accent-soft); }
+}
+html[data-theme="dark"] .theme-toggle-option[data-theme-choice="light"] { color: var(--muted); background: none; }
+html[data-theme="dark"] .theme-toggle-option[data-theme-choice="dark"] { color: var(--accent); background: var(--accent-soft); }
+html[data-theme="light"] .theme-toggle-option[data-theme-choice="light"] { color: var(--accent); background: var(--accent-soft); }
+html[data-theme="light"] .theme-toggle-option[data-theme-choice="dark"] { color: var(--muted); background: none; }
+
+h1 { font-size: 1.25rem; font-weight: 900; margin-bottom: 1.5rem; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 1rem; padding: 1.75rem; }
+
+label { display: block; font-size: 0.8rem; color: var(--muted); font-weight: 700; margin: 1rem 0 0.4rem; }
+input[type=text], input[type=tel], input[type=email], select {
+  width: 100%; padding: 0.65rem 0.8rem; border-radius: 0.6rem; border: 1px solid var(--line);
+  background: var(--surface); color: var(--text); font-size: 0.95rem; font-family: inherit;
+}
+.radio-row { display: flex; gap: 1.25rem; margin-top: 0.35rem; }
+.radio-row label { display: flex; align-items: center; gap: 0.4rem; margin: 0; color: var(--text); font-weight: 400; }
+
+/* 참가/관람 선택: 라디오 자체는 숨기고 라벨을 탭처럼 스타일링 (기능은 그대로 라디오) */
+.entry-type-tabs ul { display: flex; gap: 0.5rem; list-style: none; padding: 0; margin: 0.35rem 0 0; }
+.entry-type-tabs li { flex: 1; }
+.entry-type-tabs input[type=radio] { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.entry-type-tabs label {
+  display: flex; align-items: center; justify-content: center; margin: 0; padding: 0.7rem 0;
+  border-radius: 0.4rem; border: 1px solid var(--line); background: var(--surface); color: var(--muted);
+  font-weight: 700; font-size: 0.95rem; cursor: pointer;
+}
+.entry-type-tabs label:has(input:checked) {
+  background: var(--accent-soft); color: var(--accent); border-color: var(--accent-soft);
+}
+
+/* 신청/성공/빈 상태 화면: 카드 없이 화면 중앙에 배치 */
+main:has(.empty-state) { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+.logo-standalone { height: 25px; width: auto; filter: var(--logo-filter); margin: 0 auto 1.4rem; display: block; }
+
+button, .btn {
+  display: inline-block; margin-top: 1.5rem; padding: 0.75rem 1.2rem; border-radius: 0.6rem;
+  border: none; background: var(--accent); color: var(--bg); font-weight: 700; font-size: 0.95rem; cursor: pointer;
+  text-decoration: none; font-family: inherit; text-align: center;
+}
+button:disabled { opacity: 0.5; cursor: default; }
+.btn-outline {
+  background: var(--surface); border: 1px solid var(--line); color: var(--text); font-weight: 700;
+}
+
+.errorlist { color: var(--bad); font-size: 0.85rem; margin: 0.25rem 0 0; padding: 0; list-style: none; }
+.muted { color: var(--muted); font-size: 0.85rem; }
+.fine { font-size: 0.72rem; color: var(--muted); }
+.success { color: var(--ok); font-weight: 700; }
+.error-text { color: var(--bad); font-weight: 700; }
+
+footer { text-align: center; padding: 1rem; font-size: 0.75rem; color: var(--muted); }
+
+.message-list { list-style: none; padding: 0; margin: 0 0 1rem; }
+.message-item {
+  padding: 0.6rem 0.9rem; border-radius: 0.6rem; margin-bottom: 0.5rem; font-size: 0.85rem;
+}
+.message-item.success { background: var(--ok-soft); color: var(--ok); }
+.message-item.error { background: var(--bad-soft); color: var(--bad); }
+.message-item.info { background: var(--surface2); color: var(--text); }
+
+/* 신청/QR/체크인 확인 화면 공통: 로고+타이틀 중앙 정렬 헤더 */
+.center-brand { display: flex; align-items: center; justify-content: center; gap: 0.5rem; }
+.center-brand img { height: 24px; width: auto; filter: var(--logo-filter); }
+.center-brand span { font-size: 0.68rem; letter-spacing: 0.14em; color: var(--muted); font-weight: 700; }
+
+/* 라벨 코드(A-1 등) 큰 표시 */
+.label-code { font-weight: 900; color: var(--accent); }
+
+/* 체크인 스캐너: 카메라 뷰파인더 */
+.viewfinder {
+  position: relative; margin-top: 1rem; width: 100%; aspect-ratio: 4 / 3;
+  background: var(--surface2); border: 1px solid var(--line); border-radius: 0.75rem; overflow: hidden;
+}
+.viewfinder video { width: 100%; height: 100%; object-fit: cover; display: block; background: #000; }
+.viewfinder .corner {
+  position: absolute; width: 26px; height: 26px; border-color: var(--accent); border-style: solid; border-width: 0;
+  z-index: 2; pointer-events: none;
+}
+.viewfinder .corner.tl { top: 14px; left: 14px; border-top-width: 3px; border-left-width: 3px; }
+.viewfinder .corner.tr { top: 14px; right: 14px; border-top-width: 3px; border-right-width: 3px; }
+.viewfinder .corner.bl { bottom: 14px; left: 14px; border-bottom-width: 3px; border-left-width: 3px; }
+.viewfinder .corner.br { bottom: 14px; right: 14px; border-bottom-width: 3px; border-right-width: 3px; }
+.viewfinder .scan-line {
+  position: absolute; left: 14px; right: 14px; top: 50%; height: 2px; background: var(--accent);
+  z-index: 1; animation: dbbt-scan 2.2s ease-in-out infinite;
+}
+@keyframes dbbt-scan {
+  0%, 100% { top: 16%; opacity: 0.85; }
+  50% { top: 84%; opacity: 0.85; }
+}
+.result-card .check-icon { display: block; margin: 0 auto; }
+
+.viewfinder .overlay {
+  position: absolute; inset: 0; background: oklch(18% 0.008 60 / 0.55);
+  display: none; align-items: center; justify-content: center; padding: 0.75rem; z-index: 3;
+}
+.viewfinder .overlay.show { display: flex; }
+.result-card {
+  width: 100%; max-width: 260px; background: var(--surface); border: 1px solid var(--line);
+  border-radius: 0.75rem; padding: 1.1rem 1rem; text-align: center;
+  box-shadow: 0 8px 20px oklch(18% 0.008 60 / 0.16);
+}
+.result-card .code { font-size: 1.6rem; font-weight: 900; color: var(--accent); }
+.result-card .name { font-size: 0.95rem; font-weight: 900; margin-top: 0.4rem; }
+.result-card .sub { font-size: 0.75rem; color: var(--muted); margin-top: 0.15rem; }
+.result-card .status { margin-top: 0.6rem; font-size: 0.8rem; font-weight: 700; }
+.result-card .status.ok { color: var(--ok); }
+.result-card .status.bad { color: var(--bad); }
+.result-card button { margin-top: 0.75rem; width: 100%; }
+.camera-off-box {
+  margin-top: 1rem; width: 100%; min-height: 140px; background: var(--surface); border: 1px dashed var(--line);
+  border-radius: 0.75rem; display: flex; align-items: center; justify-content: center; text-align: center; padding: 1.5rem;
+  font-size: 0.8rem; color: var(--muted); line-height: 1.7;
+}
+
+.divider-row { display: flex; align-items: center; gap: 0.75rem; margin-top: 1.75rem; }
+.divider-row .line { flex: 1; height: 1px; background: var(--line); }
+.divider-row .label { font-size: 0.7rem; color: var(--muted); font-weight: 700; }
+
+.search-item {
+  display: flex; justify-content: space-between; align-items: center; padding: 0.6rem 0.1rem;
+  border-top: 1px solid var(--line); font-size: 0.85rem;
+}
+.search-item button { margin: 0; padding: 0.35rem 0.75rem; font-size: 0.78rem; }

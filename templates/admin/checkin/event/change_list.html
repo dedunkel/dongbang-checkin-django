@@ -1,0 +1,18 @@
+{% extends "admin/change_list.html" %}
+
+{% block pagination %}
+{{ block.super }}
+<div class="dbbt-export-row">
+  <div class="dbbt-section-subtitle">선택 회차 내보내기</div>
+  <div class="dbbt-action-row">
+    <button type="submit" name="action" value="export_application_confirmation_excel" class="dbbt-pill">신청 확인용 명단</button>
+    <button type="submit" name="action" value="export_announcement_excel" class="dbbt-pill">공지용 명단 (마스킹)</button>
+    {% if perms.checkin.export_sensitive_data %}
+    <button type="submit" name="action" value="export_qr_send_list" class="dbbt-pill">QR 발송용 명단 · 운영진</button>
+    <button type="submit" name="action" value="export_score_sheet_excel" class="dbbt-pill">점수표 · 운영진</button>
+    <button type="submit" name="action" value="export_event_csv" class="dbbt-pill">CSV 백업 · 운영진</button>
+    {% endif %}
+  </div>
+  <div class="dbbt-field-help">위 표에서 체크박스로 회차를 먼저 선택한 뒤 눌러주세요.</div>
+</div>
+{% endblock %}

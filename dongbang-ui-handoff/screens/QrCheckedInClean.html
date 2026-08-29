@@ -1,0 +1,57 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
+:root{
+  --bg: oklch(99% 0.002 90);
+  --surface: oklch(100% 0 0);
+  --line: oklch(88% 0.004 60);
+  --text: oklch(18% 0.008 60);
+  --muted: oklch(50% 0.008 60);
+  --accent: oklch(40% 0.09 260);
+  --accent-soft: oklch(94% 0.02 260);
+  --ok: oklch(52% 0.11 155);
+  --ok-soft: oklch(94% 0.03 155);
+}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--bg);color:var(--text);font-family:'Noto Sans KR',system-ui,sans-serif;}
+</style>
+</helmet>
+<div style="width:390px;height:900px;background:var(--bg);padding:72px 24px 40px;text-align:center;overflow:hidden;">
+
+  <div style="display:flex;align-items:center;justify-content:center;gap:8px;">
+    <img src="logo.png" alt="KOOKMIN UNIV DANCE CREW" style="height:13px;width:auto;filter:invert(1);"/>
+    <div style="font-size:11px;letter-spacing:0.16em;color:var(--muted);font-weight:700;">동방배틀 VOL.33 체크인 QR</div>
+  </div>
+
+  <div style="font-size:19px;font-weight:900;margin-top:12px;color:var(--text);">홍길동 <span style="color:var(--muted);font-weight:500;font-size:14px;">(비보이 스파크)</span></div>
+  <div style="font-size:13px;color:var(--muted);margin-top:4px;">참가 · Breaking</div>
+  <div style="font-size:13px;color:var(--muted);margin-top:2px;">국민대학교</div>
+
+  <div style="margin:26px auto 0;width:236px;background:oklch(98% 0.003 90);border-radius:6px;padding:18px;opacity:0.5;box-shadow:0 1px 3px oklch(18% 0.008 60 / 0.06);">
+    <svg width="200" height="200" viewBox="0 0 17 17" shape-rendering="crispEdges">
+      <rect x="0" y="0" width="17" height="17" fill="white"/>
+      <rect x="0" y="0" width="7" height="7" fill="black"/><rect x="1" y="1" width="5" height="5" fill="white"/><rect x="2" y="2" width="3" height="3" fill="black"/>
+      <rect x="10" y="0" width="7" height="7" fill="black"/><rect x="11" y="1" width="5" height="5" fill="white"/><rect x="12" y="2" width="3" height="3" fill="black"/>
+      <rect x="0" y="10" width="7" height="7" fill="black"/><rect x="1" y="11" width="5" height="5" fill="white"/><rect x="2" y="12" width="3" height="3" fill="black"/>
+    </svg>
+  </div>
+
+  <div style="font-family:'Noto Sans KR',sans-serif;font-weight:900;font-size:34px;margin-top:24px;color:var(--accent);opacity:0.5;">B-4</div>
+
+  <div style="margin-top:16px;padding:10px 16px;background:var(--ok-soft);color:var(--ok);font-size:13px;font-weight:700;border-radius:4px;display:inline-block;">이미 체크인 완료</div>
+
+  <div style="margin-top:40px;padding:12px 14px;background:var(--surface);border:1px solid var(--line);font-size:11px;color:var(--muted);line-height:1.6;border-radius:4px;">
+    이 QR 화면은 본인 확인용입니다.<br/>캡처본을 타인과 공유하지 마세요.
+  </div>
+</div>
+</x-dc>
+</body>
+</html>
