@@ -1,6 +1,7 @@
 import csv
 
 from django.contrib import admin, messages
+from django.db import transaction
 from django.db.models import CharField, Value
 from django.db.models.functions import Cast, Concat, LPad
 from django.http import HttpResponse
@@ -156,6 +157,38 @@ def mark_paid(modeladmin, request, queryset):
     messages.success(request, f"{updated}명 입금 확인 처리했습니다.")
 
 
+@admin.action(description="선택한 참가자 2명의 라벨(조/번호) 맞바꾸기")
+def swap_labels(modeladmin, request, queryset):
+    if queryset.count() != 2:
+        messages.error(request, "라벨을 맞바꾸려면 참가자를 정확히 2명 선택해야 합니다.")
+        return
+
+    a, b = list(queryset)
+    if a.event_id != b.event_id or a.genre != b.genre:
+        messages.error(request, "같은 회차·같은 장르의 참가자끼리만 라벨을 맞바꿀 수 있습니다.")
+        return
+    if not a.label_code or not b.label_code:
+        messages.error(request, "두 참가자 모두 라벨이 배정되어 있어야 맞바꿀 수 있습니다.")
+        return
+
+    a_group, a_number = a.label_group, a.label_number
+    b_group, b_number = b.label_group, b.label_number
+
+    # label_slot_unique 제약은 즉시 검사라, 둘을 그냥 순서대로 서로의 자리로
+    # 옮기면 중간에 반드시 한 번은 자리가 겹쳐서 IntegrityError가 난다. A를
+    # 먼저 완전히 비워서(=제약 검사 대상에서 제외) B가 그 빈자리로 옮긴 뒤,
+    # A를 B가 떠나서 빈 자리로 옮기는 3단계로 나누면 매 순간 충돌이 없다.
+    with transaction.atomic():
+        a.label_group, a.label_number = None, None
+        a.save()
+        b.label_group, b.label_number = a_group, a_number
+        b.save()
+        a.label_group, a.label_number = b_group, b_number
+        a.save()
+
+    messages.success(request, f"{a.name}({a.label_code}) ↔ {b.name}({b.label_code}) 라벨을 맞바꿨습니다.")
+
+
 @admin.register(Participant)
 class ParticipantAdmin(admin.ModelAdmin):
     list_display = (
@@ -164,7 +197,7 @@ class ParticipantAdmin(admin.ModelAdmin):
     )
     list_filter = ("event", "entry_type", "verification_status", "payment_status", "checkin_status", "genre")
     search_fields = ("name", "phone", "email", "school")
-    actions = [approve_verification, mark_paid]
+    actions = [approve_verification, mark_paid, swap_labels]
     readonly_fields = ("id", "qr_token", "created_at")
 
     def get_queryset(self, request):
