@@ -34,6 +34,21 @@ class EntryType(models.TextChoices):
     VIEWER = "관람", "관람"
 
 
+class Genre(models.TextChoices):
+    """참가자 신청 장르. 값은 구글 폼 선택지 문구와 정확히 동일해야 한다 —
+    SheetSync.gs의 GENRE_TAB_MAP, announcement_export.py의 GENRE_TABS가
+    이 값으로 참가자를 장르별 탭에 배정하기 때문에, 값이 조금이라도
+    어긋나면 해당 참가자가 그 어떤 엑셀/시트에도 나타나지 않게 된다."""
+
+    WAACKING = "Waacking", "왁킹"
+    POPPING = "Popping", "팝핑"
+    LOCKING = "Locking", "락킹"
+    HOUSE = "House", "하우스"
+    KRUMP = "Krump", "크럼프"
+    HIPHOP = "Hiphop", "힙합"
+    BREAKING = "Breaking", "브레이킹"
+
+
 class VerificationStatus(models.TextChoices):
     N_A = "N_A", "해당없음"
     PENDING = "PENDING", "검수 대기"
@@ -60,7 +75,7 @@ class Participant(models.Model):
     phone = models.CharField(max_length=50)
     school = models.CharField(max_length=200, null=True, blank=True)
     academic_status = models.CharField(max_length=50, null=True, blank=True)
-    genre = models.CharField(max_length=100, null=True, blank=True)
+    genre = models.CharField(max_length=100, null=True, blank=True, choices=Genre.choices)
     payer_name = models.CharField(
         max_length=200, null=True, blank=True, help_text="입금자명 (운영진이 입금 내역과 대조할 때 참고)"
     )
