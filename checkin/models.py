@@ -116,11 +116,29 @@ class Participant(models.Model):
         return f"{self.name} ({self.entry_type})"
 
     def save(self, *args, **kwargs):
+        def _also_update(field: str) -> None:
+            update_fields = kwargs.get("update_fields")
+            if update_fields is not None and field not in update_fields:
+                kwargs["update_fields"] = list(update_fields) + [field]
+
+        # label_code("A-3" 같은 표시용 문자열)는 label_group/label_number로부터
+        # 항상 다시 계산한다 — 관리자 화면에서 셋을 각각 따로 수정할 수 있다 보니
+        # (예: label_group만 지우고 label_code는 그대로 두는 식) 서로 안 맞는
+        # 상태가 남으면 엑셀 내보내기 정렬에서 터지는 문제가 있었다. label_code를
+        # 직접 고쳐도 이 값이 우선이라 반영되지 않는다 — 실제 값은 group/number다.
+        new_label_code = (
+            f"{self.label_group}-{self.label_number}"
+            if self.label_group not in (None, "") and self.label_number is not None
+            else None
+        )
+        if self.label_code != new_label_code:
+            self.label_code = new_label_code
+            _also_update("label_code")
+
         # 관리자 화면 등에서 체크인 상태를 "체크인 전"으로 되돌리면, 이전
         # 체크인 시각이 그대로 남아 헷갈리지 않도록 함께 지운다.
         if self.checkin_status == CheckinStatus.NOT_CHECKED_IN and self.checked_in_at is not None:
             self.checked_in_at = None
-            update_fields = kwargs.get("update_fields")
-            if update_fields is not None and "checked_in_at" not in update_fields:
-                kwargs["update_fields"] = list(update_fields) + ["checked_in_at"]
+            _also_update("checked_in_at")
+
         super().save(*args, **kwargs)
