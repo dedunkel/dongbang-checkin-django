@@ -76,6 +76,28 @@ def participants_for_tab(event: Event, genre: str | None) -> list[Participant]:
     )
 
 
+def find_duplicate_labels(event: Event) -> list[str]:
+    """장르 탭 안에서 같은 라벨 코드(예: "A-1")가 두 명 이상에게 붙어있는 경우를
+    찾아 사람이 읽을 수 있는 문제 설명 목록으로 반환. 정상이면 빈 리스트.
+
+    보통은 label_slot_unique DB 제약이 이런 중복 저장 자체를 막아주지만,
+    (1) 그 제약이 못 잡는 예외 상황(예: genre가 비어있는 경우, NULL은 서로
+    다르다고 취급돼서 제약에 안 걸림)이 있고, (2) 막히더라도 관리자에게는
+    장르/코드/이름을 콕 집어 알려주는 게 훨씬 낫기 때문에 내보내기 직전에
+    한 번 더 확인한다."""
+    problems = []
+    for genre, tab_name in GENRE_TABS:
+        if genre is None:
+            continue
+        by_code: dict[str, list[str]] = {}
+        for p in participants_for_tab(event, genre):
+            by_code.setdefault(p.label_code, []).append(p.name)
+        for code, names in by_code.items():
+            if len(names) > 1:
+                problems.append(f'{tab_name} 탭의 라벨 코드 "{code}"가 {len(names)}명에게 중복 배정됨: {", ".join(names)}')
+    return problems
+
+
 def write_title_row(ws, event: Event, sheet_title: str, num_columns: int) -> None:
     """탭 맨 위에 "동방배틀 Vol.N {장르} 참가자 명단"(관람은 "관람자 명단") 제목
     행을 병합 셀로 넣는다. 공지용 명단/점수표 둘 다 같은 제목 형식을 쓴다."""

@@ -8,7 +8,7 @@ from django.utils.http import content_disposition_header
 
 from .models import Event, Participant
 from .services import sheet_sync
-from .services.announcement_export import build_announcement_file
+from .services.announcement_export import build_announcement_file, find_duplicate_labels
 from .services.assign_labels import assign_labels_and_tokens
 from .services.score_sheet_export import build_score_sheet_file
 
@@ -66,11 +66,26 @@ def export_event_csv(modeladmin, request, queryset):
     return response
 
 
+def _has_duplicate_labels(request, event) -> bool:
+    """라벨 코드 중복이 있으면 관리자 화면에 에러로 알리고 True를 반환.
+    (수동으로 label_group/label_number를 조정하다가 겹치는 경우 대비 —
+    보통은 DB 제약이 막아주지만, 그걸로 못 잡는 경우까지 한 번 더 확인.)"""
+    problems = find_duplicate_labels(event)
+    if problems:
+        messages.error(
+            request,
+            f'"{event.name}": 라벨 코드가 중복 배정된 참가자가 있어 다운로드를 중단했습니다 — ' + " / ".join(problems),
+        )
+    return bool(problems)
+
+
 @admin.action(description="선택 회차: 공지용 명단 엑셀 다운로드 (이름/연락처 마스킹)")
 def export_announcement_excel(modeladmin, request, queryset):
     event = queryset.first()
     if queryset.count() > 1:
         messages.warning(request, "공지용 명단은 한 번에 회차 하나씩만 가능합니다. 첫 번째로 선택한 회차만 내려받습니다.")
+    if _has_duplicate_labels(request, event):
+        return
 
     filename, content = build_announcement_file(event)
     response = HttpResponse(
@@ -88,6 +103,8 @@ def export_score_sheet_excel(modeladmin, request, queryset):
     event = queryset.first()
     if queryset.count() > 1:
         messages.warning(request, "점수표는 한 번에 회차 하나씩만 가능합니다. 첫 번째로 선택한 회차만 내려받습니다.")
+    if _has_duplicate_labels(request, event):
+        return
 
     filename, content = build_score_sheet_file(event)
     response = HttpResponse(
