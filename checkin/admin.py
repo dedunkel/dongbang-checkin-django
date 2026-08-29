@@ -39,14 +39,15 @@ def push_order_to_sheet(modeladmin, request, queryset):
             messages.error(request, f'"{event.name}": 점수 시트 반영 실패 — {result.get("message")}')
 
 
-@admin.action(description="선택 회차: 참가자 CSV 백업 다운로드 (마스킹 없음, 슈퍼유저 전용)")
+@admin.action(description="선택 회차: 참가자 CSV 백업 다운로드 (마스킹 없음, 운영진 전용)")
 def export_event_csv(modeladmin, request, queryset):
     # 이름/연락처를 마스킹 없이 그대로 내보내는 액션이라, export_score_sheet_excel(#28)과
-    # 동일하게 슈퍼유저로만 제한한다. get_actions에서 일반 스태프에게는 드롭다운에서
-    # 아예 안 보이게 숨기지만, 직접 폼을 조작해서 요청을 보내는 경우까지 막으려고
-    # 여기서도 한 번 더 확인한다.
-    if not request.user.is_superuser:
-        messages.error(request, "CSV 백업 다운로드는 슈퍼유저만 실행할 수 있습니다.")
+    # 동일하게 checkin.export_sensitive_data 권한이 있는 사람(슈퍼유저 또는 "운영진"
+    # 그룹)만 실행할 수 있게 제한한다. get_actions에서 권한 없는 사람에게는
+    # 드롭다운에서 아예 안 보이게 숨기지만, 직접 폼을 조작해서 요청을 보내는
+    # 경우까지 막으려고 여기서도 한 번 더 확인한다.
+    if not request.user.has_perm("checkin.export_sensitive_data"):
+        messages.error(request, "CSV 백업 다운로드는 운영진만 실행할 수 있습니다.")
         return
 
     event = queryset.first()
@@ -108,14 +109,14 @@ def export_announcement_excel(modeladmin, request, queryset):
     return response
 
 
-@admin.action(description="선택 회차: 점수표 엑셀 다운로드 (마스킹 없음, 슈퍼유저 전용)")
+@admin.action(description="선택 회차: 점수표 엑셀 다운로드 (마스킹 없음, 운영진 전용)")
 def export_score_sheet_excel(modeladmin, request, queryset):
-    # 이름/연락처를 마스킹 없이 그대로 내보내는 유일한 액션이라, 지금 있는
-    # 슈퍼유저/일반 스태프 구분 중 슈퍼유저로만 제한한다 (#28). get_actions에서
-    # 일반 스태프에게는 드롭다운에서 아예 안 보이게 숨기지만, 직접 폼을
-    # 조작해서 요청을 보내는 경우까지 막으려고 여기서도 한 번 더 확인한다.
-    if not request.user.is_superuser:
-        messages.error(request, "점수표 다운로드는 슈퍼유저만 실행할 수 있습니다.")
+    # 이름/연락처를 마스킹 없이 그대로 내보내는 액션이라, checkin.export_sensitive_data
+    # 권한이 있는 사람(슈퍼유저 또는 "운영진" 그룹)만 실행할 수 있게 제한한다 (#28).
+    # get_actions에서 권한 없는 사람에게는 드롭다운에서 아예 안 보이게 숨기지만,
+    # 직접 폼을 조작해서 요청을 보내는 경우까지 막으려고 여기서도 한 번 더 확인한다.
+    if not request.user.has_perm("checkin.export_sensitive_data"):
+        messages.error(request, "점수표 다운로드는 운영진만 실행할 수 있습니다.")
         return
 
     event = queryset.first()
@@ -172,7 +173,7 @@ class EventAdmin(admin.ModelAdmin):
 
     def get_actions(self, request):
         actions = super().get_actions(request)
-        if not request.user.is_superuser:
+        if not request.user.has_perm("checkin.export_sensitive_data"):
             actions.pop("export_score_sheet_excel", None)
             actions.pop("export_event_csv", None)
         return actions

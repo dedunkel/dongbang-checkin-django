@@ -25,6 +25,12 @@ class Event(models.Model):
 
     class Meta:
         ordering = ["-volume"]
+        permissions = [
+            (
+                "export_sensitive_data",
+                "마스킹 없는 민감 정보 엑셀 내보내기 가능 (점수표, CSV 백업)",
+            ),
+        ]
 
     def __str__(self):
         return self.name
