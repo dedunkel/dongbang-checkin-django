@@ -94,8 +94,17 @@ def scan_view(request, token):
     return render(request, "checkin/scan.html", {"participant": participant})
 
 
-@staff_member_required
+@require_POST
 def scan_confirm(request, token):
+    if not (request.user.is_authenticated and request.user.is_staff):
+        # @staff_member_required가 기본으로 하는 것처럼 로그인 화면으로 보내되,
+        # next는 이 POST 액션 자체가 아니라 GET인 scan_view로 잡는다 — POST
+        # 액션으로 next를 잡으면 로그인 후 리다이렉트가 GET으로 재요청되면서
+        # require_POST에 막혀 405가 나기 때문. 그 대신 로그인 후에는 확인
+        # 화면으로 돌아가서 "체크인 확정" 버튼을 다시 눌러야 한다.
+        login_url = f"{reverse('admin:login')}?next={reverse('checkin:scan', args=[token])}"
+        return redirect(login_url)
+
     participant = get_object_or_404(Participant, qr_token=token)
     if participant.checkin_status != "CHECKED_IN":
         _mark_checked_in(participant)

@@ -20,9 +20,13 @@
       {% endif %}
     {% else %}
       <p class="muted" style="margin-top:1.25rem;">아직 체크인되지 않았습니다.</p>
-      <a class="btn" href="{% url 'checkin:scan_confirm' token=participant.qr_token %}">체크인 확정</a>
+      <form method="post" action="{% url 'checkin:scan_confirm' token=participant.qr_token %}">
+        {% csrf_token %}
+        <button type="submit" class="btn">체크인 확정</button>
+      </form>
       <p style="font-size:0.75rem; color:#525252; margin-top:0.75rem;">
-        (스태프 로그인이 필요합니다 — 로그인 화면이 뜨면 로그인 후 이 화면으로 자동으로 돌아옵니다)
+        (스태프 로그인이 필요합니다 — 로그인 화면이 뜨면 로그인 후 이 화면으로
+        돌아와서 "체크인 확정" 버튼을 다시 눌러주세요)
       </p>
     {% endif %}
   </div>
