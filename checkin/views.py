@@ -267,10 +267,6 @@ def google_form_import(request):
                 academic_status=academic_status,
                 genre=genre,
                 payer_name=(row.get("payerName") or "").strip() or None,
-                # 이메일은 구글 폼에도 예비 신청 폼(RegisterForm)에도 문항이 없어서
-                # 항상 빈 값 — 학적증명서 파일 업로드 때문에 응답 시 구글 로그인이
-                # 필요해 별도로 안 받기로 함. email 필드 자체는 모델에 남겨뒀지만
-                # 지금은 어느 신청 경로로도 채워지지 않는다.
                 # 폼의 "입금확인" 체크 여부와 무관하게 항상 PENDING에서 시작합니다.
                 # 실제 확인은 운영진이 /admin에서 합니다 (예전 Apps Script 버전과 동일한 정책).
                 verification_status="N_A" if entry_type == "관람" else "PENDING",

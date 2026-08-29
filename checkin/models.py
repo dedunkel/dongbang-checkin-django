@@ -61,7 +61,6 @@ class Participant(models.Model):
     school = models.CharField(max_length=200, null=True, blank=True)
     academic_status = models.CharField(max_length=50, null=True, blank=True)
     genre = models.CharField(max_length=100, null=True, blank=True)
-    email = models.EmailField(null=True, blank=True)
     payer_name = models.CharField(
         max_length=200, null=True, blank=True, help_text="입금자명 (운영진이 입금 내역과 대조할 때 참고)"
     )
