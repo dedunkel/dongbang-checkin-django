@@ -44,6 +44,9 @@ const CONFIG = {
   // 이메일은 별도 문항으로 안 받기로 함 (별도 이메일 질문이 있다면 fc.email
   // 키를 다시 추가하면 됨).
   FORM_COLS: {
+    // 구글 폼과 연결된 시트에 자동으로 생기는 첫 컬럼 — 중복 방지 키로 씀
+    // (시트 행 번호 대신 이 값을 쓰는 이유는 아래 buildRow_ 주석 참고).
+    timestamp: '타임스탬프',
     type: '참가 / 관람',
     name: '참가자명 / 관람자명',
     phone: '연락처',
@@ -104,14 +107,28 @@ function menuTestConnection() {
   }
 }
 
-/** 시트 한 행 -> 서버가 기대하는 row 객체로 변환. externalRef는 시트 행 번호를 그대로 씀. */
+/**
+ * 시트 한 행 -> 서버가 기대하는 row 객체로 변환.
+ *
+ * externalRef는 응답 제출 시각(타임스탬프)의 밀리초 값을 씀. 예전엔 시트
+ * 행 번호를 그대로 썼는데, 시트에서 응답 행을 하나라도 지우면(테스트
+ * 응답 정리 등) 그 아래 모든 행 번호가 한 칸씩 당겨져서, 이미 가져온
+ * 응답들도 새 행 번호로 다시 계산되며 중복 참가자로 재수입되는 문제가
+ * 있었음(#22). 타임스탬프는 그 응답 고유의 값이라 행이 밀려도 안 바뀜.
+ * 혹시 타임스탬프 컬럼을 못 찾으면(헤더 이름이 다르거나 수기로 추가한
+ * 행이면) 예전처럼 행 번호로 대체한다.
+ */
 function buildRow_(sheet, header, rowNum) {
   const values = sheet.getRange(rowNum, 1, 1, header.length).getValues()[0];
   const map = {};
   header.forEach((h, i) => { map[h] = values[i]; });
   const fc = CONFIG.FORM_COLS;
+  const timestampValue = map[fc.timestamp];
+  const externalRef = timestampValue instanceof Date
+    ? String(timestampValue.getTime())
+    : String(timestampValue || rowNum);
   return {
-    externalRef: String(rowNum),
+    externalRef: externalRef,
     type: String(map[fc.type] || ''),
     name: String(map[fc.name] || ''),
     phone: String(map[fc.phone] || ''),
