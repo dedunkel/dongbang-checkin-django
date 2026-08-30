@@ -321,7 +321,7 @@ html[data-theme="light"] .dbbt-theme-toggle-option[data-theme-choice="dark"] { c
    버튼이 안 보이거나 hover해야만 배경이 보이는 등 예측하기 어렵게 충돌했다),
    버튼 자체는 !important로 확실히 우리 스타일이 이기게 고정한다. */
 .object-tools, .dbbt-header-action-row {
-  list-style: none; margin: -6px 0 14px; padding: 0; display: flex; align-items: center; gap: 8px;
+  list-style: none; margin: 14px 0 14px; padding: 0; display: flex; align-items: center; gap: 8px;
   justify-content: flex-end; float: none;
 }
 .object-tools li, .dbbt-object-tools-item { list-style: none; margin: 0; float: none; height: auto; }
