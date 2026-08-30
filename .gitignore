@@ -5,3 +5,8 @@ db.sqlite3
 .env
 staticfiles/
 desktop.ini
+
+# 실제 시크릿이 CONFIG에 그대로 들어가는 Apps Script 파일 — .env처럼
+# .gs.example만 커밋하고 실제 값이 든 .gs는 로컬에만 둔다.
+google-apps-script/Forwarder.gs
+google-apps-script/SheetSync.gs

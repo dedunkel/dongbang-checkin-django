@@ -84,9 +84,12 @@ Forwarder.gs`)을 씁니다.
 
 1. 서버 쪽: `.env`에 `IMPORT_SECRET`을 아무 랜덤 문자열로 채워둡니다.
 2. 구글 폼 응답 시트를 열고 확장 프로그램 > Apps Script.
-3. `google-apps-script/Forwarder.gs` 내용을 통째로 붙여넣고, 맨 위 `CONFIG`의
-   `SERVER_URL`(배포 도메인 + `/api/import/google-form/`, 끝 슬래시 포함),
-   `IMPORT_SECRET`(1번과 동일한 값), `FORM_COLS`(실제 시트 헤더 이름)를 맞춥니다.
+3. `google-apps-script/Forwarder.gs.example`을 `google-apps-script/Forwarder.gs`로
+   복사한 뒤(`.gs`는 `.env`처럼 `.gitignore`에 있어 커밋되지 않습니다 — 실제
+   시크릿이 CONFIG에 그대로 들어가기 때문입니다) 그 내용을 통째로 Apps Script에
+   붙여넣고, 맨 위 `CONFIG`의 `SERVER_URL`(배포 도메인 +
+   `/api/import/google-form/`, 끝 슬래시 포함), `IMPORT_SECRET`(1번과 동일한 값),
+   `FORM_COLS`(실제 시트 헤더 이름)를 맞춥니다.
 4. 저장 → 트리거(시계 아이콘) 추가 → 함수 `onFormSubmit`, 이벤트 유형
    "양식 제출 시"로 등록 → 권한 승인.
 5. 시트를 새로고침하면 "동방배틀 연동" 메뉴가 생깁니다. 트리거를 달기 전에
@@ -108,9 +111,10 @@ Forwarder.gs`)을 씁니다.
 1. 서버 쪽: `.env`에 `SHEET_SYNC_SECRET`을 아무 랜덤 문자열로 채워둡니다
    (배포 환경 전체에서 공유하는 값이라 한 번만 설정하면 됩니다).
 2. 그 점수 시트 파일을 열고 확장 프로그램 > Apps Script.
-3. `google-apps-script/SheetSync.gs` 내용을 통째로 붙여넣고, `CONFIG`의
-   `SECRET`(1번과 동일한 값), `GENRE_TAB_MAP`(장르별 탭 이름), `COLS`(실제
-   헤더 이름)를 맞춥니다.
+3. `google-apps-script/SheetSync.gs.example`을 `google-apps-script/SheetSync.gs`로
+   복사한 뒤(마찬가지로 `.gs`는 `.gitignore`에 있어 커밋되지 않습니다) 그
+   내용을 통째로 붙여넣고, `CONFIG`의 `SECRET`(1번과 동일한 값),
+   `GENRE_TAB_MAP`(장르별 탭 이름), `COLS`(실제 헤더 이름)를 맞춥니다.
 4. 배포 > 새 배포 > 유형: 웹 앱, 실행 계정: 나, 액세스 권한: 전체 허용 →
    배포하면 나오는 URL(`/exec`로 끝남)을 확인합니다.
 5. `/admin/` > **Events**에서 그 회차를 열어 `Sheet sync url` 필드에 4번
@@ -232,14 +236,15 @@ checkin/
 │   ├── label_assign.py         # 라벨 배정 알고리즘 (TS 버전과 동일 로직)
 │   ├── assign_labels.py        # 회차 단위 일괄 라벨/QR 발급
 │   ├── sheet_sync.py           # 체크인 시 점수 시트 "도착 여부" 실시간 반영
+│   ├── event_excel_export.py   # 엑셀 내보내기 3종이 공유하는 탭 구성/마스킹/워크북 조립 공용 로직
 │   ├── announcement_export.py  # 공지용 참가/관람 명단 엑셀 (확정자, 마스킹 있음)
 │   ├── application_confirmation_export.py  # 신청 확인용 공지 엑셀 (전원, 마스킹 있음)
 │   └── score_sheet_export.py   # 스태프용 점수표 엑셀 (마스킹 없음)
 ├── templates/checkin/       # register, checkin(스캐너), qr, home
 └── tests.py                  # 라벨 배정 알고리즘 단위 테스트
 google-apps-script/
-├── Forwarder.gs   # 기존 구글 폼 응답 시트에 붙이는 전달용 스크립트
-└── SheetSync.gs   # 점수 시트에 붙이는, 체크인 도착 표시 반영용 스크립트
+├── Forwarder.gs.example   # 기존 구글 폼 응답 시트에 붙이는 전달용 스크립트 (실제 시크릿 채운 Forwarder.gs는 .gitignore 대상)
+└── SheetSync.gs.example   # 점수 시트에 붙이는, 체크인 도착 표시 반영용 스크립트 (SheetSync.gs도 마찬가지)
 requirements.txt
 .env.example
 ```
