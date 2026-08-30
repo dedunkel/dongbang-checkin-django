@@ -90,7 +90,7 @@ class GenreFilter(_ChoiceFilter):
 
 
 class VerificationFilter(_ChoiceFilter):
-    title = "검수"
+    title = "학적검수"
     parameter_name = "verification_status"
     field_name = "verification_status"
     choices_source = VerificationStatus.choices
@@ -465,7 +465,7 @@ class ParticipantAdmin(admin.ModelAdmin):
         css = self._STATUS_BADGE_CLASS.get(value, "neutral")
         return format_html('<span class="dbbt-badge dbbt-badge-{}">{}</span>', css, label)
 
-    @admin.display(description="검수", ordering="verification_status")
+    @admin.display(description="학적검수", ordering="verification_status")
     def verification_status_badge(self, obj):
         return self._status_badge(obj.verification_status, obj.get_verification_status_display())
 
