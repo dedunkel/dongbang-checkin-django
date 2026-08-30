@@ -7,31 +7,23 @@
 확인하는 용도다. 그래서 "순서" 컬럼이 없고, 아직 신청 처리가 덜 끝난
 사람은 비고에 "미입금"/"학적 인증 필요"가 표시된다(문제없으면 빈칸).
 
-이름/연락처 마스킹, 탭 구성, 제목 행 형식은 공지용 명단과 동일 — 관련
-로직을 그대로 재사용한다.
+이름/연락처 마스킹, 탭 구성, 제목 행 형식은 공지용 명단과 동일 —
+event_excel_export.py의 공용 로직을 가져다 쓴다 (#30). 다만 "라벨 유무와
+무관하게 전원을 담는다"는 이 내보내기만의 규칙이라, 그 부분(아래
+all_participants_for_tab)만은 공용 모듈로 옮기지 않고 이 모듈 소유로 둔다 —
+다른 내보내기가 쓰는 participants_for_tab(라벨 배정자만)과 이름이 헷갈리지
+않도록 구분해서 부른다.
 """
 
 from __future__ import annotations
 
-import io
-
-from openpyxl import Workbook
-from openpyxl.styles import Font
-from openpyxl.utils import get_column_letter
-
 from checkin.models import Event, Participant
-from checkin.services.announcement_export import (
-    GENRE_TABS,
-    mask_name,
-    mask_phone,
-    remarks_for,
-    write_title_row,
-)
+from checkin.services.event_excel_export import build_file, mask_name, mask_phone, remarks_for
 
 HEADERS = ["번호", "이름", "연락처", "소속대학", "학적", "비고"]
 
 
-def participants_for_tab(event: Event, genre: str | None) -> list[Participant]:
+def all_participants_for_tab(event: Event, genre: str | None) -> list[Participant]:
     """라벨 유무와 무관하게 그 탭(장르 또는 관람)에 신청한 사람 전원을
     신청 순서(생성일시)로 정렬해 반환."""
     if genre is None:
@@ -41,44 +33,18 @@ def participants_for_tab(event: Event, genre: str | None) -> list[Participant]:
     )
 
 
-def _write_sheet(wb: Workbook, event: Event, sheet_title: str, participants: list[Participant]) -> None:
-    ws = wb.create_sheet(title=sheet_title)
-    write_title_row(ws, event, sheet_title, len(HEADERS))
-
-    for col, header in enumerate(HEADERS, start=1):
-        cell = ws.cell(row=2, column=col, value=header)
-        cell.font = Font(bold=True)
-
-    for i, p in enumerate(participants, start=1):
-        ws.append(
-            [
-                i,
-                mask_name(p.name),
-                mask_phone(p.phone),
-                p.school or "",
-                p.academic_status or "",
-                remarks_for(p),
-            ]
-        )
-
-    for col in range(1, len(HEADERS) + 1):
-        ws.column_dimensions[get_column_letter(col)].width = 16
-
-
-def build_application_confirmation_workbook(event: Event) -> Workbook:
-    wb = Workbook()
-    wb.remove(wb.active)
-
-    for genre, tab_name in GENRE_TABS:
-        _write_sheet(wb, event, tab_name, participants_for_tab(event, genre))
-
-    return wb
+def _row(i: int, p: Participant) -> list:
+    return [
+        i,
+        mask_name(p.name),
+        mask_phone(p.phone),
+        p.school or "",
+        p.academic_status or "",
+        remarks_for(p),
+    ]
 
 
 def build_application_confirmation_file(event: Event) -> tuple[str, bytes]:
     """(파일명, xlsx 바이트) 튜플을 반환."""
-    wb = build_application_confirmation_workbook(event)
-    buf = io.BytesIO()
-    wb.save(buf)
     filename = f"DongbangBattle Vol.{event.volume} 참가·관람 신청 확인용 명단.xlsx"
-    return filename, buf.getvalue()
+    return build_file(event, HEADERS, _row, filename, tab_participants=all_participants_for_tab)
