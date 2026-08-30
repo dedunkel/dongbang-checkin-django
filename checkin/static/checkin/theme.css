@@ -86,6 +86,9 @@ body {
   margin: 0; min-height: 100vh; display: flex; flex-direction: column;
   background: var(--bg); color: var(--text);
   font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  /* 좁은 화면에서 줄바꿈이 필요할 때 한글이 단어(어절) 중간에서 끊기지
+     않고 띄어쓰기 단위로만 끊기게 — 사이트 전체 기본값. */
+  word-break: keep-all;
 }
 
 main { flex: 1; max-width: 640px; margin: 0 auto; padding: 2.5rem 1.5rem; width: 100%; }
@@ -115,8 +118,14 @@ a { color: var(--accent); }
   border-radius: 20px; padding: 3px; gap: 2px; box-shadow: 0 1px 3px oklch(18% 0.008 60 / 0.08);
 }
 .theme-toggle-option {
-  width: 28px; height: 28px; border-radius: 16px; display: flex; align-items: center; justify-content: center;
-  border: none; background: none; color: var(--muted); cursor: pointer; padding: 0;
+  /* iOS Safari는 <button>에 appearance:none을 안 주면 자체 버튼 크롬(둥근
+     사각형 + 최소 터치영역 확보용 여백)을 얹어서, width/height를 줘도 실제
+     박스가 더 크고 각지게 보인다 — 세그먼트 pill이 정사각형처럼 깨져 보이던
+     원인. */
+  appearance: none; -webkit-appearance: none;
+  width: 28px; height: 28px; min-width: 28px; min-height: 28px; border-radius: 16px;
+  display: flex; align-items: center; justify-content: center;
+  border: none; background: none; color: var(--muted); cursor: pointer; padding: 0; margin: 0; font: inherit;
 }
 .theme-toggle-option svg { display: block; fill: none; stroke: currentColor; }
 .theme-toggle-option[data-theme-choice="dark"] svg { fill: currentColor; stroke: none; }

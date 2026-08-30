@@ -1,5 +1,14 @@
 {% extends "admin/change_list.html" %}
 
+{% block filters %}
+<div class="dbbt-filter-toolbar">
+  {{ block.super }}
+  {% if cl.has_active_filters %}
+    <a href="{{ cl.clear_all_filters_qs }}" class="dbbt-pill dbbt-filter-clear">✕ 필터 초기화</a>
+  {% endif %}
+</div>
+{% endblock %}
+
 {% block pagination %}
 {{ block.super }}
 <div class="dbbt-export-row">

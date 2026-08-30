@@ -27,6 +27,9 @@
 {% block filters %}
 <div class="dbbt-filter-toolbar">
   {{ block.super }}
+  {% if cl.has_active_filters %}
+    <a href="{{ cl.clear_all_filters_qs }}" class="dbbt-pill dbbt-filter-clear">✕ 필터 초기화</a>
+  {% endif %}
   <div class="dbbt-header-action-row">
     {% change_list_object_tools %}
   </div>
