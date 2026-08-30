@@ -10,8 +10,12 @@ class RegisterForm(forms.ModelForm):
     # 내보내기가 장르별 탭을 찾는 데 쓰는 내부 라벨일 뿐이라, 참가자에게 보여주는
     # 화면에는 노출하지 않는다 (dongbang-ui-handoff/README.md 참고 사항) — 값과
     # 화면 표시 문구를 둘 다 영문 값으로 맞춰서 select 옵션에 한글이 안 뜨게 한다.
+    # 맨 앞에 빈 선택지를 넣어야 한다 — 안 넣으면 브라우저가 첫 번째 옵션을
+    # 자동으로 선택된 상태로 그려서, 관람 신청자가 장르를 아예 안 건드려도
+    # 장르가 "선택됨" 상태로 제출되어 관람자에게 엉뚱한 장르가 저장됐다.
     genre = forms.ChoiceField(
-        required=False, label="참가 장르", choices=[(g.value, g.value) for g in Genre]
+        required=False, label="참가 장르",
+        choices=[("", "장르 선택")] + [(g.value, g.value) for g in Genre],
     )
 
     class Meta:

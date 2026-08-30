@@ -153,8 +153,11 @@ input[type=text], input[type=tel], input[type=email], select {
 .radio-row label { display: flex; align-items: center; gap: 0.4rem; margin: 0; color: var(--text); font-weight: 400; }
 
 /* 참가/관람 선택: 라디오 자체는 숨기고 라벨을 탭처럼 스타일링 (기능은 그대로 라디오) */
-.entry-type-tabs ul { display: flex; gap: 0.5rem; list-style: none; padding: 0; margin: 0.35rem 0 0; }
-.entry-type-tabs li { flex: 1; }
+/* Django RadioSelect(5.x)는 <ul>/<li>가 아니라 <div id="id_entry_type"><div><label>...
+   구조로 렌더링한다 — 예전에 ul/li 선택자로 스타일링했더니 아무 것도 안
+   걸려서, 탭 두 개가 가로 정렬 없이 세로로 풀사이즈 박스로 쌓여 보였다. */
+.entry-type-tabs > div { display: flex; gap: 0.5rem; margin: 0.35rem 0 0; }
+.entry-type-tabs > div > div { flex: 1; }
 .entry-type-tabs input[type=radio] { position: absolute; opacity: 0; width: 1px; height: 1px; }
 .entry-type-tabs label {
   display: flex; align-items: center; justify-content: center; margin: 0; padding: 0.7rem 0;

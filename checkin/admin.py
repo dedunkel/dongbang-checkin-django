@@ -2,7 +2,7 @@ import csv
 
 from django.contrib import admin, messages
 from django.db import transaction
-from django.db.models import CharField, Value
+from django.db.models import CharField, Count, Q, Value
 from django.db.models.functions import Cast, Concat, LPad
 from django.http import HttpResponse
 from django.urls import reverse
@@ -11,9 +11,10 @@ from django.utils.http import content_disposition_header
 
 from .models import CheckinStatus, Event, Genre, Participant, PaymentStatus, VerificationStatus
 from .services import sheet_sync
-from .services.announcement_export import build_announcement_file, find_duplicate_labels
+from .services.announcement_export import build_announcement_file
 from .services.application_confirmation_export import build_application_confirmation_file
 from .services.assign_labels import assign_labels_and_tokens
+from .services.event_excel_export import find_duplicate_labels
 from .services.score_sheet_export import build_score_sheet_file
 
 # 계정 관리 → 계정 수정 화면(User/Group 기반 커스텀 UserAdmin)을 등록한다.
@@ -148,6 +149,35 @@ def push_order_to_sheet(modeladmin, request, queryset):
             messages.error(request, f'"{event.name}": 점수 시트 반영 실패 — {result.get("message")}')
 
 
+def _first_selected_event(request, queryset, action_label: str) -> Event | None:
+    """내보내기 액션들이 전부 "회차 하나만" 대상으로 동작하는데, 관리자
+    화면에서는 여러 개를 체크박스로 선택할 수 있다 — 그럴 때 첫 번째로
+    선택한 회차만 쓰고, 나머지는 무시됐다는 걸 경고로 알려준다 (#30: 다섯
+    액션에 거의 똑같이 반복되던 패턴을 하나로 모음).
+
+    선택된 회차가 하나도 없으면(예: 페이지를 열어둔 사이 다른 사람이 그
+    회차를 삭제한 경우) None을 반환한다 — 호출하는 쪽에서 반드시 None
+    체크를 해야 한다. 원래는 이 경우를 확인하지 않아서 바로 다음 줄의
+    event.name 등에서 AttributeError로 500이 났었다."""
+    event = queryset.first()
+    if event is None:
+        messages.error(request, f"{action_label}: 선택한 회차를 찾을 수 없습니다 — 이미 삭제됐을 수 있습니다.")
+        return None
+    if queryset.count() > 1:
+        messages.warning(
+            request, f"{action_label}은 한 번에 회차 하나씩만 가능합니다. 첫 번째로 선택한 회차만 내려받습니다."
+        )
+    return event
+
+
+def _xlsx_response(filename: str, content: bytes) -> HttpResponse:
+    response = HttpResponse(
+        content, content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+    response.headers["Content-Disposition"] = content_disposition_header(as_attachment=True, filename=filename)
+    return response
+
+
 @admin.action(description="선택 회차: 참가자 CSV 백업 다운로드 (마스킹 없음, 운영진 전용)")
 def export_event_csv(modeladmin, request, queryset):
     # 이름/연락처를 마스킹 없이 그대로 내보내는 액션이라, export_score_sheet_excel(#28)과
@@ -159,9 +189,9 @@ def export_event_csv(modeladmin, request, queryset):
         messages.error(request, "CSV 백업 다운로드는 운영진만 실행할 수 있습니다.")
         return
 
-    event = queryset.first()
-    if queryset.count() > 1:
-        messages.warning(request, "CSV 백업은 한 번에 회차 하나씩만 가능합니다. 첫 번째로 선택한 회차만 내려받습니다.")
+    event = _first_selected_event(request, queryset, "CSV 백업")
+    if event is None:
+        return
 
     response = HttpResponse(content_type="text/csv; charset=utf-8-sig")
     response.headers["Content-Disposition"] = content_disposition_header(
@@ -194,9 +224,9 @@ def export_qr_send_list(modeladmin, request, queryset):
         messages.error(request, "QR 발송용 명단 다운로드는 운영진만 실행할 수 있습니다.")
         return
 
-    event = queryset.first()
-    if queryset.count() > 1:
-        messages.warning(request, "QR 발송용 명단은 한 번에 회차 하나씩만 가능합니다. 첫 번째로 선택한 회차만 내려받습니다.")
+    event = _first_selected_event(request, queryset, "QR 발송용 명단")
+    if event is None:
+        return
 
     participants = list(event.participants.filter(qr_token__isnull=False).order_by("entry_type", "genre", "created_at"))
     skipped = event.participants.filter(qr_token__isnull=True).count()
@@ -236,21 +266,12 @@ def _has_duplicate_labels(request, event) -> bool:
 
 @admin.action(description="선택 회차: 공지용 명단 엑셀 다운로드 (이름/연락처 마스킹)")
 def export_announcement_excel(modeladmin, request, queryset):
-    event = queryset.first()
-    if queryset.count() > 1:
-        messages.warning(request, "공지용 명단은 한 번에 회차 하나씩만 가능합니다. 첫 번째로 선택한 회차만 내려받습니다.")
+    event = _first_selected_event(request, queryset, "공지용 명단")
+    if event is None:
+        return
     if _has_duplicate_labels(request, event):
         return
-
-    filename, content = build_announcement_file(event)
-    response = HttpResponse(
-        content,
-        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    )
-    response.headers["Content-Disposition"] = content_disposition_header(
-        as_attachment=True, filename=filename
-    )
-    return response
+    return _xlsx_response(*build_announcement_file(event))
 
 
 @admin.action(description="선택 회차: 점수표 엑셀 다운로드 (마스킹 없음, 운영진 전용)")
@@ -263,38 +284,20 @@ def export_score_sheet_excel(modeladmin, request, queryset):
         messages.error(request, "점수표 다운로드는 운영진만 실행할 수 있습니다.")
         return
 
-    event = queryset.first()
-    if queryset.count() > 1:
-        messages.warning(request, "점수표는 한 번에 회차 하나씩만 가능합니다. 첫 번째로 선택한 회차만 내려받습니다.")
+    event = _first_selected_event(request, queryset, "점수표")
+    if event is None:
+        return
     if _has_duplicate_labels(request, event):
         return
-
-    filename, content = build_score_sheet_file(event)
-    response = HttpResponse(
-        content,
-        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    )
-    response.headers["Content-Disposition"] = content_disposition_header(
-        as_attachment=True, filename=filename
-    )
-    return response
+    return _xlsx_response(*build_score_sheet_file(event))
 
 
 @admin.action(description="선택 회차: 신청 참가자 확인용 공지 엑셀 다운로드 (라벨 배정 전에도 가능)")
 def export_application_confirmation_excel(modeladmin, request, queryset):
-    event = queryset.first()
-    if queryset.count() > 1:
-        messages.warning(request, "신청 확인용 명단은 한 번에 회차 하나씩만 가능합니다. 첫 번째로 선택한 회차만 내려받습니다.")
-
-    filename, content = build_application_confirmation_file(event)
-    response = HttpResponse(
-        content,
-        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    )
-    response.headers["Content-Disposition"] = content_disposition_header(
-        as_attachment=True, filename=filename
-    )
-    return response
+    event = _first_selected_event(request, queryset, "신청 확인용 명단")
+    if event is None:
+        return
+    return _xlsx_response(*build_application_confirmation_file(event))
 
 
 @admin.register(Event)
@@ -436,10 +439,19 @@ class ParticipantAdmin(admin.ModelAdmin):
         if target_event is not None:
             participants = target_event.participants
             extra_context["dbbt_active_event"] = target_event
-            extra_context["dbbt_stat_total"] = participants.count()
-            extra_context["dbbt_stat_pending_verification"] = participants.filter(verification_status="PENDING").count()
-            extra_context["dbbt_stat_pending_payment"] = participants.filter(payment_status="PENDING").count()
-            extra_context["dbbt_stat_checked_in"] = participants.filter(checkin_status="CHECKED_IN").count()
+            # 4번 따로 .count()를 부르면 매번 새 쿼리가 나간다 — 하나의
+            # aggregate()로 묶어서 이 화면을 열 때마다(페이지 이동/필터/검색
+            # 시마다) 쿼리 4개 대신 1개만 나가게 한다.
+            stats = participants.aggregate(
+                total=Count("id"),
+                pending_verification=Count("id", filter=Q(verification_status="PENDING")),
+                pending_payment=Count("id", filter=Q(payment_status="PENDING")),
+                checked_in=Count("id", filter=Q(checkin_status="CHECKED_IN")),
+            )
+            extra_context["dbbt_stat_total"] = stats["total"]
+            extra_context["dbbt_stat_pending_verification"] = stats["pending_verification"]
+            extra_context["dbbt_stat_pending_payment"] = stats["pending_payment"]
+            extra_context["dbbt_stat_checked_in"] = stats["checked_in"]
         return super().changelist_view(request, extra_context=extra_context)
 
     _STATUS_BADGE_CLASS = {

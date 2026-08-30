@@ -1,8 +1,6 @@
 {% extends "admin/base_site.html" %}
 {% load i18n static %}
 
-{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'admin/css/dbbt_theme.css' %}">{% endblock %}
-
 {% block bodyclass %}{{ block.super }} login dbbt-login{% endblock %}
 
 {% block usertools %}{% endblock %}
