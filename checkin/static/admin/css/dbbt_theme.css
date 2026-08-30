@@ -708,6 +708,10 @@ html[data-theme="light"] .dbbt-theme-toggle-option[data-theme-choice="dark"] { c
 .dbbt-login-submit.dbbt-btn-link {
   display: block; box-sizing: border-box; text-decoration: none; line-height: normal;
 }
+/* admin 기본 a:link/a:visited(의사클래스라 일반 클래스보다 우선순위가 높음)가
+   버튼 글자색을 다시 링크색으로 덮어써서 배경색과 같아져 글자가 안 보이던
+   문제 — 타입+클래스 조합으로 우선순위를 올려서 되찾는다. */
+a.dbbt-login-submit:link, a.dbbt-login-submit:visited { color: var(--bg); }
 .dbbt-logout-secondary { color: var(--dbbt-accent); font-weight: 700; }
 /* 로그아웃 화면은 상단바(로고+테마 토글)는 그대로 두되, 페이지 제목(h1)만
    목업처럼 숨긴다 — 로그인 화면은 상단바 자체를 content_title에서 비워서
