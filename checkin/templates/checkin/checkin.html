@@ -178,7 +178,7 @@ searchBox.addEventListener('input', () => {
     const data = await res.json();
     searchResults.innerHTML = data.results.map(p => `
       <div class="search-item">
-        <span>${escapeHtml(p.name)} · ${escapeHtml(p.phone)} ${p.labelCode ? '· ' + escapeHtml(p.labelCode) : ''}</span>
+        <span>${escapeHtml(p.name)} · ${escapeHtml(p.phone)}${p.genre ? ' · ' + escapeHtml(p.genre) : ''}${p.labelCode ? ' · ' + escapeHtml(p.labelCode) : ''}</span>
         ${p.checkinStatus === 'CHECKED_IN'
           ? '<span class="muted">체크인됨</span>'
           : `<button data-id="${escapeHtml(p.id)}" class="manualBtn btn-outline">체크인</button>`}
