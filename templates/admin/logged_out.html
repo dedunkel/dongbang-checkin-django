@@ -1,0 +1,34 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block bodyclass %}{{ block.super }} login dbbt-login{% endblock %}
+
+{% block usertools %}{% endblock %}
+{% block nav-global %}{% endblock %}
+{% block nav-sidebar %}{% endblock %}
+{% block content_title %}{% endblock %}
+{% block nav-breadcrumbs %}{% endblock %}
+
+{% block branding %}{% endblock %}
+
+{% block content %}
+<div class="dbbt-login-wrap">
+  <div class="dbbt-login-card dbbt-logout-card">
+
+    <div class="dbbt-logout-badge">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+        <path d="M5 12.5L10 17.5L19.5 6.5" stroke="var(--dbbt-accent)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+
+    <div class="dbbt-login-heading">
+      <div class="dbbt-login-title">로그아웃 되었습니다</div>
+      <div class="dbbt-login-sub">동방배틀 체크인 시스템을 이용해 주셔서<br>고마워요</div>
+    </div>
+
+    <a href="{% url 'admin:login' %}" class="dbbt-login-submit dbbt-btn-link">다시 로그인하기</a>
+
+    <div class="dbbt-login-help">스태프 계정이 아니신가요? <a href="{% url 'checkin:home' %}" class="dbbt-logout-secondary">참가자 페이지로 이동</a></div>
+  </div>
+</div>
+{% endblock %}
