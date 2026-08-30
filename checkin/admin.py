@@ -125,7 +125,7 @@ class ActiveFilter(admin.SimpleListFilter):
         return queryset
 
 
-@admin.action(description="④ 선택 회차: 승인자 라벨/QR 발급 실행")
+@admin.action(description="라벨 / QR 발급")
 def run_label_assign(modeladmin, request, queryset):
     for event in queryset:
         result = assign_labels_and_tokens(event)
@@ -135,7 +135,7 @@ def run_label_assign(modeladmin, request, queryset):
         )
 
 
-@admin.action(description="⑤ 선택 회차: 라벨 순서를 점수 시트에 반영")
+@admin.action(description="점수 시트 순서 반영")
 def push_order_to_sheet(modeladmin, request, queryset):
     for event in queryset:
         result = sheet_sync.push_order_for_event(event)
@@ -490,7 +490,7 @@ class ParticipantAdmin(admin.ModelAdmin):
             )
         )
 
-    @admin.display(description="Label code", ordering="_label_sort")
+    @admin.display(description="라벨 코드", ordering="_label_sort")
     def label_code_display(self, obj):
         return obj.label_code
 
