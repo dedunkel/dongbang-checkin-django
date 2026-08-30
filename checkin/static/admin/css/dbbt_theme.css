@@ -490,7 +490,8 @@ html[data-theme="light"] .dbbt-theme-toggle-option[data-theme-choice="dark"] { c
   display: grid; grid-template-columns: 1fr 1fr; gap: 14px 20px; background: var(--surface);
 }
 .change-form fieldset.module .fieldset-heading {
-  grid-column: 1 / -1; font-size: 12.5px; font-weight: 900; color: var(--text); margin: 0 0 2px;
+  grid-column: 1 / -1; font-size: 12.5px; font-weight: 900; color: var(--text) !important; margin: 0 0 2px;
+  background: none !important; border: none !important; padding: 0 !important; text-align: left; text-transform: none;
 }
 .change-form fieldset.module .form-row {
   padding: 0; border: none; display: block;
@@ -569,16 +570,26 @@ html[data-theme="light"] .dbbt-theme-toggle-option[data-theme-choice="dark"] { c
   justify-content: space-between; gap: 8px; flex-wrap: wrap;
 }
 .submit-row input[type="submit"], .submit-row .button {
-  padding: 9px 14px; border-radius: 4px; font-size: 12px; font-weight: 700; font-family: inherit;
-  border: 1px solid var(--line); background: var(--surface); color: var(--text); cursor: pointer;
+  height: auto !important; padding: 9px 14px; border-radius: 4px; font-size: 12px; font-weight: 700;
+  font-family: inherit; text-transform: none !important; line-height: normal !important;
+  border: 1px solid var(--line) !important; background: var(--surface) !important; color: var(--text) !important; cursor: pointer;
 }
-.submit-row input[name="_save"] { background: var(--dbbt-accent); border-color: var(--dbbt-accent); color: var(--bg); }
-.submit-row .closelink {
-  font-size: 12.5px; color: var(--muted); text-decoration: none; padding: 9px 4px;
+.submit-row input[name="_save"] {
+  background: var(--dbbt-accent) !important; border-color: var(--dbbt-accent) !important; color: var(--bg) !important;
 }
-.submit-row .closelink:hover { color: var(--text); }
-.submit-row .deletelink {
-  font-size: 12.5px; font-weight: 700; color: var(--dbbt-bad); text-decoration: none; padding: 9px 14px;
+.submit-row a.closelink {
+  display: inline-block; height: auto !important; background: none !important;
+  font-size: 12.5px; color: var(--muted) !important; text-decoration: none; padding: 9px 4px;
+}
+.submit-row a.closelink:hover, .submit-row a.closelink:focus, .submit-row a.closelink:active {
+  background: none !important; color: var(--text) !important;
+}
+.submit-row a.deletelink {
+  display: inline-block; height: auto !important; background: none !important; border-radius: 0;
+  font-size: 12.5px; font-weight: 700; color: var(--dbbt-bad) !important; text-decoration: none; padding: 9px 14px;
+}
+.submit-row a.deletelink:hover, .submit-row a.deletelink:focus, .submit-row a.deletelink:active {
+  background: none !important; color: var(--dbbt-bad) !important; text-decoration: underline;
 }
 .dbbt-password-reset { margin-top: 14px; }
 .dbbt-password-reset form { margin: 0; display: inline; }
@@ -595,13 +606,15 @@ html[data-theme="light"] .dbbt-theme-toggle-option[data-theme-choice="dark"] { c
 .change-form fieldset.module #id_role { display: flex; flex-direction: column; gap: 10px; }
 .change-form fieldset.module .field-role input[type="radio"] { position: absolute; opacity: 0; width: 1px; height: 1px; }
 .change-form fieldset.module .field-role label {
-  display: flex; align-items: flex-start; gap: 10px; border: 1px solid var(--line); border-radius: 6px;
-  padding: 12px 14px; cursor: pointer; margin: 0; font-weight: 400;
+  display: grid; grid-template-columns: 16px 1fr; column-gap: 10px; row-gap: 2px; align-items: start;
+  border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px; cursor: pointer; margin: 0; font-weight: 400;
 }
 .change-form fieldset.module .field-role label::before {
-  content: ""; width: 16px; height: 16px; border-radius: 50%; flex-shrink: 0; margin-top: 1px;
+  content: ""; grid-column: 1; grid-row: 1 / -1; width: 16px; height: 16px; border-radius: 50%; margin-top: 1px;
   box-sizing: border-box; border: 1.5px solid var(--line); background: transparent;
 }
+.change-form fieldset.module .field-role .role-name { grid-column: 2; grid-row: 1; }
+.change-form fieldset.module .field-role .role-desc { grid-column: 2; grid-row: 2; }
 .change-form fieldset.module .field-role label:has(input:checked) {
   border-color: var(--dbbt-accent); background: var(--dbbt-accent-soft);
 }
@@ -696,6 +709,10 @@ html[data-theme="light"] .dbbt-theme-toggle-option[data-theme-choice="dark"] { c
   display: block; box-sizing: border-box; text-decoration: none; line-height: normal;
 }
 .dbbt-logout-secondary { color: var(--dbbt-accent); font-weight: 700; }
+/* 로그아웃 화면은 상단바(로고+테마 토글)는 그대로 두되, 페이지 제목(h1)만
+   목업처럼 숨긴다 — 로그인 화면은 상단바 자체를 content_title에서 비워서
+   이 규칙이 적용될 대상이 없다. */
+body.dbbt-login .dbbt-topbar-left h1 { display: none; }
 
 /* ==========================================================================
    태블릿(834px 안팎)에서는 회차/참가자/계정 표를 좌우 스크롤 + 첫 열 고정으로.

@@ -27,6 +27,8 @@ class Event(models.Model):
 
     class Meta:
         ordering = ["-volume"]
+        verbose_name = "회차"
+        verbose_name_plural = "회차"
         permissions = [
             (
                 "export_sensitive_data",
@@ -124,6 +126,8 @@ class Participant(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+        verbose_name = "참가자"
+        verbose_name_plural = "참가자"
         constraints = [
             # 같은 회차·장르 안에서 같은 조/번호가 중복 배정되지 않도록 DB 레벨에서도 막는다.
             UniqueConstraint(
