@@ -3,8 +3,8 @@
   {% for field in action_form %}{% if field.name == "select_across" %}{{ field }}{% endif %}{% endfor %}
 
   {% if cl.opts.model_name == "event" %}
-    <button type="submit" name="action" value="run_label_assign" class="dbbt-btn dbbt-btn-outline">④ 라벨 / QR 발급 실행</button>
-    <button type="submit" name="action" value="push_order_to_sheet" class="dbbt-btn dbbt-btn-outline">⑤ 점수 시트 순서 반영</button>
+    <button type="submit" name="action" value="run_label_assign" class="dbbt-btn dbbt-btn-outline">라벨 / QR 발급 실행</button>
+    <button type="submit" name="action" value="push_order_to_sheet" class="dbbt-btn dbbt-btn-outline">점수 시트 순서 반영</button>
   {% elif cl.opts.model_name == "participant" %}
     <button type="submit" name="action" value="approve_verification" class="dbbt-btn dbbt-btn-outline">학적검수 승인</button>
     <button type="submit" name="action" value="mark_paid" class="dbbt-btn dbbt-btn-outline">입금 확인</button>

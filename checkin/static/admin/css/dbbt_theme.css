@@ -502,6 +502,12 @@ html[data-theme="light"] .dbbt-theme-toggle-option[data-theme-choice="dark"] { c
 .change-form fieldset.module textarea {
   width: 100%; background: var(--surface); border: 1px solid var(--line); border-radius: 4px;
   padding: 9px 11px; font-size: 12.5px; color: var(--text); font-family: inherit; box-sizing: border-box;
+  /* base.css가 select에 height:1.875rem(30px) 고정값을 주는데, 우리 padding(9px
+     위아래)+border(1px씩)를 border-box로 빼고 나면 실제 글자가 들어갈 자리가
+     10px밖에 안 남아서 "검수"/"체크인 상태" 같은 select의 글씨가 위아래로
+     살짝 잘려 보였다. height를 auto로 풀어서 padding+글자 높이만큼 자연스럽게
+     늘어나게 한다. */
+  height: auto; line-height: 1.4;
 }
 .change-form fieldset.module select {
   appearance: none; -webkit-appearance: none;
