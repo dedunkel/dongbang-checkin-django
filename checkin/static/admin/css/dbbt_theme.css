@@ -233,7 +233,7 @@ body.change-list, body.change-form, body.dbbt-login {
 #content h1 {
   font-size: 22px; font-weight: 900; margin: 4px 0 0; color: var(--text); line-height: 1.3;
 }
-.dbbt-topbar-right { display: flex; align-items: center; gap: 14px; padding-top: 4px; }
+.dbbt-topbar-right { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 14px; padding-top: 4px; }
 .dbbt-event-pill {
   font-size: 12px; font-weight: 700; color: var(--dbbt-accent); background: var(--dbbt-accent-soft);
   padding: 8px 14px; border-radius: 3px; white-space: nowrap; text-transform: uppercase;
@@ -272,6 +272,7 @@ html[data-theme="light"] .dbbt-theme-toggle-option[data-theme-choice="dark"] { c
 .dbbt-logout-btn {
   background: none; border: none; padding: 0; font: inherit; font-size: 12px; color: var(--muted);
   cursor: pointer; text-decoration: underline; text-underline-offset: 2px;
+  white-space: nowrap; flex-shrink: 0;
 }
 .dbbt-logout-btn:hover { color: var(--text); }
 
