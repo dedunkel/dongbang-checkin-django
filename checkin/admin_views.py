@@ -10,7 +10,12 @@ OPERATIONS_GROUP_NAME = "운영진"
 def _account_row(user):
     if user.is_superuser:
         tier, tier_label = "super", "슈퍼유저"
-    elif user.groups.filter(name=OPERATIONS_GROUP_NAME).exists():
+    # .filter()/.exists()는 related manager의 prefetch_related 캐시를 안 쓰고
+    # 매번 새 쿼리를 날린다 — accounts_dashboard가 groups를 prefetch해줘도
+    # 여기서 .filter()를 쓰면 그 캐시를 무시하고 계정 수만큼 쿼리가 나가서
+    # (N+1) prefetch가 무용지물이 된다. 이미 메모리에 올라온 user.groups.all()을
+    # 순회하면 캐시를 그대로 쓴다.
+    elif any(g.name == OPERATIONS_GROUP_NAME for g in user.groups.all()):
         tier, tier_label = "op", "운영진"
     else:
         tier, tier_label = "staff", "스태프"

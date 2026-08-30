@@ -3,8 +3,12 @@ import uuid
 
 from openpyxl import load_workbook
 
+from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
+from django.core import mail
 from django.test import TestCase
 
+from checkin.admin_views import OPERATIONS_GROUP_NAME
 from checkin.models import Event, Participant
 from checkin.services.announcement_export import build_announcement_file
 from checkin.services.application_confirmation_export import build_application_confirmation_file
@@ -194,3 +198,95 @@ class EventExcelExportTests(TestCase):
 
     def test_find_duplicate_labels_empty_when_no_conflict(self):
         self.assertEqual(find_duplicate_labels(self.event), [])
+
+
+class AdminSecurityRegressionTests(TestCase):
+    """코드 리뷰(2026-08-30, PR #61)에서 발견된 실제 버그들에 대한 회귀 테스트.
+    전부 실제로 재현/수정을 확인한 것들이라, 나중에 누가 관련 코드를 다시
+    건드릴 때 조용히 되돌아가지 않도록 여기 고정해둔다."""
+
+    def setUp(self):
+        User = get_user_model()
+        self.superuser = User.objects.create_superuser("root", "root@example.com", "pass12345")
+        self.ops_user = User.objects.create_user("ops1", email="ops1@example.com", password="x", is_staff=True)
+        Group.objects.get_or_create(name=OPERATIONS_GROUP_NAME)[0].user_set.add(self.ops_user)
+        self.staff_user = User.objects.create_user("staff1", email="staff1@example.com", password="x", is_staff=True)
+        self.target = User.objects.create_user("kim", email="kim@example.com", password="x", is_staff=True)
+
+    def test_add_user_flow_does_not_crash(self):
+        # AccountUserAdmin.save_related()가 add_form(role 필드 없음)에서도
+        # cleaned_data["role"]을 무조건 읽어서 "+ 계정 초대"가 KeyError로
+        # 500이 났었다.
+        self.client.login(username="root", password="pass12345")
+        resp = self.client.post("/admin/auth/user/add/", {
+            "username": "newstaff", "password1": "Xk8f2m9qLp!", "password2": "Xk8f2m9qLp!",
+        }, follow=True)
+        self.assertEqual(resp.status_code, 200)
+        User = get_user_model()
+        self.assertTrue(User.objects.filter(username="newstaff").exists())
+
+    def test_password_reset_requires_superuser(self):
+        # send_password_reset이 admin_view()(=로그인한 스태프)만 확인해서,
+        # 최하위 권한 스태프도 아무 계정에나 재설정 메일을 발송시킬 수 있었다.
+        self.client.login(username="staff1", password="x")
+        resp = self.client.post(f"/admin/auth/user/{self.target.pk}/send-password-reset/")
+        self.assertEqual(resp.status_code, 302)
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_password_reset_works_for_superuser(self):
+        self.client.login(username="root", password="pass12345")
+        resp = self.client.post(f"/admin/auth/user/{self.target.pk}/send-password-reset/", follow=True)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(len(mail.outbox), 1)
+
+    def test_ops_user_cannot_self_promote_to_superuser(self):
+        # auth.change_user 권한이 "운영진" 그룹에 부여되는 미래 상황을 가정 —
+        # 그래도 role=super는 저장 시점에 서버에서 막혀야 한다.
+        from django.contrib.auth.models import Permission
+        from django.contrib.contenttypes.models import ContentType
+
+        User = get_user_model()
+        ct = ContentType.objects.get_for_model(User)
+        perm = Permission.objects.get(content_type=ct, codename="change_user")
+        self.ops_user.user_permissions.add(perm)
+
+        self.client.login(username="ops1", password="x")
+        resp = self.client.post(f"/admin/auth/user/{self.ops_user.pk}/change/", {
+            "first_name": "", "email": "ops1@example.com", "role": "super", "is_active": "on",
+        }, follow=True)
+        self.assertEqual(resp.status_code, 200)
+        self.ops_user.refresh_from_db()
+        self.assertFalse(self.ops_user.is_superuser)
+        self.assertTrue(self.ops_user.groups.filter(name=OPERATIONS_GROUP_NAME).exists())
+
+    def test_viewer_registration_leaves_genre_blank(self):
+        # RegisterForm.genre에 빈 선택지가 없어서, 관람 신청자가 장르를 안
+        # 건드려도 브라우저가 첫 옵션(Waacking)을 자동 제출해버렸다.
+        Event.objects.create(volume=1, name="테스트", is_active=True)
+        resp = self.client.post("/register/", {
+            "entry_type": "관람", "name": "박관람", "phone": "010-0000-0000",
+            "school": "국민대", "academic_status": "재학",
+        })
+        self.assertEqual(resp.status_code, 200)
+        p = Participant.objects.get(name="박관람")
+        self.assertIn(p.genre, (None, ""))
+
+    def test_export_action_with_deleted_event_does_not_crash(self):
+        # _first_selected_event가 queryset이 비어도(회차가 그 사이 삭제된
+        # 경우) None 체크 없이 event.name 등을 바로 써서 500이 났었다.
+        self.client.login(username="root", password="pass12345")
+        event = Event.objects.create(volume=2, name="삭제될 회차")
+        pk = event.pk
+        event.delete()
+        resp = self.client.post("/admin/checkin/event/", {
+            "action": "export_announcement_excel", "_selected_action": [str(pk)],
+        }, follow=True)
+        self.assertEqual(resp.status_code, 200)
+
+    def test_delete_selected_action_visible(self):
+        # actions.html이 event/participant 액션 바를 통째로 하드코딩된
+        # 버튼 몇 개로 바꾸면서, 장고 기본 "삭제" 액션이 화면에서 사라졌었다.
+        self.client.login(username="root", password="pass12345")
+        Event.objects.create(volume=3, name="목록에 보일 회차")
+        html = self.client.get("/admin/checkin/event/").content.decode("utf-8")
+        self.assertIn('value="delete_selected"', html)

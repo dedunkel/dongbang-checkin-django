@@ -107,8 +107,33 @@ class AccountUserAdmin(UserAdmin):
     )
     readonly_fields = ("last_login",)
 
+    def save_model(self, request, obj, form, change):
+        # AccountEditForm.save()는 request를 모르는 상태로 role=="super"면 바로
+        # is_superuser=True를 켠다. 지금은 계정 관리 화면 자체를 슈퍼유저만
+        # 열 수 있어 문제가 없지만(accounts_dashboard의 접근 제한 참고), 나중에
+        # 누군가 "운영진" 그룹에 auth.change_user 권한을 얹어주는 순간 운영진이
+        # 자기 계정을 슈퍼유저로 셀프 승격시킬 수 있는 구멍이 된다 — 그 상황을
+        # 대비해 여기서도 한 번 더, "슈퍼유저만 슈퍼유저를 만들 수 있다"를 강제한다.
+        if form.cleaned_data.get("role") == ROLE_SUPER and not request.user.is_superuser:
+            obj.is_superuser = False
+            # save_related()가 그룹 배정을 결정할 때도 이 값을 다시 읽으므로,
+            # 여기서 같이 낮춰줘야 "운영진으로 저장했습니다" 메시지와 실제
+            # 저장 결과(그룹 배정)가 어긋나지 않는다.
+            form.cleaned_data["role"] = ROLE_OPS
+            messages.error(request, "슈퍼유저 권한은 슈퍼유저 계정만 부여할 수 있습니다 — 운영진으로 저장했습니다.")
+        super().save_model(request, obj, form, change)
+
     def save_related(self, request, form, formsets, change):
         super().save_related(request, form, formsets, change)
+        # "role" 필드는 AccountEditForm(수정 화면 전용)에만 있고, 계정 추가는
+        # 여전히 UserAdmin 기본 add_form(username/password만)을 쓴다 — 여기서
+        # 무조건 cleaned_data["role"]을 읽으면 계정 추가 시 KeyError로 500이
+        # 났었다. 추가 화면에서는 그룹 배정을 건너뛰고, 슈퍼유저가 이어서
+        # (Django가 추가 후 자동으로 이동시켜주는) 수정 화면에서 권한을
+        # 마저 지정하게 한다.
+        if "role" not in form.cleaned_data:
+            return
+
         role = form.cleaned_data["role"]
         op_group, _ = Group.objects.get_or_create(name=OPERATIONS_GROUP_NAME)
         if role == ROLE_OPS:
@@ -141,6 +166,14 @@ class AccountUserAdmin(UserAdmin):
         ] + super().get_urls()
 
     def send_password_reset(self, request, user_id):
+        # admin_site.admin_view()는 "로그인한 스태프"인지만 확인한다 — 계정
+        # 관리는 슈퍼유저 전용 기능(accounts_dashboard와 동일 기준)이라, 이
+        # 체크가 없으면 최하위 권한인 스태프 계정도 다른 사람(슈퍼유저 포함)의
+        # 비밀번호 재설정 메일을 마음대로 발송시킬 수 있었다.
+        if not request.user.is_superuser:
+            messages.error(request, "비밀번호 재설정 메일 발송은 슈퍼유저만 실행할 수 있습니다.")
+            return redirect("admin:auth_user_change", user_id)
+
         user = self.get_object(request, str(user_id))
         if user is None or not user.email:
             messages.error(request, "이 계정에 이메일이 등록되어 있지 않아 재설정 메일을 보낼 수 없습니다.")

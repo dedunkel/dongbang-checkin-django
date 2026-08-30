@@ -309,6 +309,8 @@ html[data-theme="light"] .dbbt-theme-toggle-option[data-theme-choice="dark"] { c
   background: var(--surface); border-color: var(--line); color: var(--text);
 }
 .dbbt-btn-outline:hover, .dbbt-pill:hover { background: var(--surface2); color: var(--text); }
+.dbbt-btn-danger.dbbt-btn-outline { color: var(--dbbt-bad); }
+.dbbt-btn-danger.dbbt-btn-outline:hover { background: var(--dbbt-bad-soft); color: var(--dbbt-bad); }
 .dbbt-pill { padding: 7px 12px; border-radius: 3px; font-size: 11.5px; font-weight: 700; color: var(--muted); }
 .dbbt-filter-clear { color: var(--dbbt-bad); align-self: center; margin-top: -12px; }
 .dbbt-filter-clear:hover { background: var(--dbbt-bad-soft); color: var(--dbbt-bad); }
