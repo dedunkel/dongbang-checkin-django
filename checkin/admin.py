@@ -247,7 +247,7 @@ def export_qr_send_list(modeladmin, request, queryset):
         qr_url = request.build_absolute_uri(reverse("checkin:qr", args=[p.qr_token]))
         real_name = p.name.split("/")[0]
         message = f"[{event.name}] {real_name}님, 아래 링크에서 입장용 QR을 확인해주세요.\n{qr_url}"
-        writer.writerow([p.name, p.phone, p.entry_type, p.genre or "", qr_url, message])
+        writer.writerow([real_name, p.phone, p.entry_type, p.genre or "", qr_url, message])
     return response
 
 
@@ -330,7 +330,7 @@ class EventAdmin(admin.ModelAdmin):
         return f'{obj.participants.count()}명' if obj and obj.pk else "—"
 
     def get_fieldsets(self, request, obj=None):
-        base = ("기본 정보", {"fields": ("volume", "name", "event_date", "location", "is_active", "sheet_sync_url")})
+        base = ("기본 정보", {"fields": ("volume", "name", "event_date", "sheet_sync_url", "location", "is_active")})
         if obj is None:
             return (base,)
         return (
