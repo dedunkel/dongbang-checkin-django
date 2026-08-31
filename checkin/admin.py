@@ -234,7 +234,7 @@ def export_qr_send_list(modeladmin, request, queryset):
         messages.warning(
             request,
             f'"{event.name}": 아직 QR이 발급되지 않은 참가자 {skipped}명은 명단에서 제외했습니다 '
-            '(먼저 "④ 선택 회차: 승인자 라벨/QR 발급 실행"을 실행해주세요).',
+            '(먼저 "선택 회차: 승인자 라벨/QR 발급 실행"을 실행해주세요).',
         )
 
     response = HttpResponse(content_type="text/csv; charset=utf-8-sig")
@@ -435,7 +435,7 @@ class ParticipantAdmin(admin.ModelAdmin):
     # label_code는 save()에서 항상 label_group/label_number로부터 다시 계산되므로
     # (models.py 참고) 폼에서 직접 수정할 수 있게 두면 값이 저장돼도 무시되어
     # 혼란만 준다 — 목업(ParticipantDetailClean)도 이 필드를 읽기 전용으로 보여준다.
-    readonly_fields = ("id", "qr_token", "created_at", "label_code")
+    readonly_fields = ("id", "qr_link_display", "created_at", "label_code")
 
     def changelist_view(self, request, extra_context=None):
         # ParticipantsClean 목업 상단의 통계 타일(총 신청/학적검수 대기/입금 대기/
@@ -511,6 +511,29 @@ class ParticipantAdmin(admin.ModelAdmin):
     def label_code_display(self, obj):
         return obj.label_code
 
+    @admin.display(description="QR 링크")
+    def qr_link_display(self, obj):
+        if not obj.qr_token:
+            return "-"
+        # ModelAdmin의 readonly 필드 렌더 메서드는 request를 받지 못해서 절대
+        # URL(도메인 포함)을 여기서 직접 만들 수 없다 — 상대 경로만 만들어두고,
+        # 실제 도메인은 base_site.html의 스크립트가 location.origin으로 채운다
+        # (그래야 로컬/스테이징/운영 어디서 봐도 지금 접속한 도메인 기준으로 나온다).
+        path = reverse("checkin:qr", args=[obj.qr_token])
+        return format_html(
+            '<div class="dbbt-copy-row">'
+            '<code class="dbbt-copy-text" data-copy-path="{}"></code>'
+            '<button type="button" class="dbbt-copy-btn" title="링크 복사">'
+            '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+            'stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'
+            '<rect x="9" y="9" width="13" height="13" rx="2"/>'
+            '<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>'
+            "</svg>"
+            "</button>"
+            "</div>",
+            path,
+        )
+
     def get_fieldsets(self, request, obj=None):
         base = (
             ("기본 정보", {"fields": ("event", "entry_type", "name", "phone")}),
@@ -523,6 +546,6 @@ class ParticipantAdmin(admin.ModelAdmin):
             return base
         return base + (
             ("라벨", {"fields": ("label_group", "label_number", "label_code")}),
-            ("QR / 체크인", {"fields": ("qr_token", "qr_sent_at", "checkin_status", "checked_in_at")}),
+            ("QR / 체크인", {"fields": ("qr_link_display", "qr_sent_at", "checkin_status", "checked_in_at")}),
             ("기타", {"fields": ("id", "created_at")}),
         )
