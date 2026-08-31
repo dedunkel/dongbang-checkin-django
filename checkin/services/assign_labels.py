@@ -18,7 +18,7 @@ from checkin.services.label_assign import FixedEntry, FreshEntry, assign_genre
 
 
 def assign_labels_and_tokens(event: Event) -> dict:
-    # select_for_update()로 이 회차 참가자 행을 잠가서, "④ 라벨/QR 발급"이
+    # select_for_update()로 이 회차 참가자 행을 잠가서, "라벨/QR 발급"이
     # 더블클릭 등으로 거의 동시에 두 번 실행돼도 두 번째 실행은 첫 번째가
     # 끝날 때까지 기다렸다가 갱신된 상태를 보게 한다 — 안 그러면 같은 슬롯이
     # 두 참가자에게 중복 배정될 수 있었음(#18). SQLite는 이 잠금을 지원하지

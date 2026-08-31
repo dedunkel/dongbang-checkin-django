@@ -373,6 +373,23 @@ def mark_paid(modeladmin, request, queryset):
     messages.success(request, f"{updated}명 입금 확인 처리했습니다.")
 
 
+@admin.action(description="선택 참가자: 입금 완료 → 환불 처리")
+def mark_refund(modeladmin, request, queryset):
+    # 입금 완료(PAID) 상태인 사람만 환불 대상으로 삼는다 — 대기/환불 상태인
+    # 사람까지 같이 선택했더라도 실수로 잘못 바뀌지 않게.
+    # 이미 라벨/QR이 발급된 사람이 나중에 환불되는 경우까지 대비해, 환불 시
+    # 발급된 라벨·QR도 같이 회수한다(안 그러면 환불 후에도 기존 QR로 체크인이
+    # 가능하게 남아있음). assign_labels_and_tokens()는 이미 payment_status가
+    # PAID인 사람에게만 새로 발급하므로, 환불된 사람은 이후 재실행에서도
+    # 다시 발급되지 않는다.
+    updated = queryset.filter(payment_status="PAID").update(
+        payment_status="REFUND",
+        label_group=None, label_number=None, label_code=None,
+        qr_token=None, qr_sent_at=None,
+    )
+    messages.success(request, f"{updated}명 환불 처리했습니다 (발급된 라벨/QR도 함께 회수했습니다).")
+
+
 @admin.action(description="선택한 참가자 2명의 라벨(조/번호) 맞바꾸기")
 def swap_labels(modeladmin, request, queryset):
     if queryset.count() != 2:
@@ -414,7 +431,7 @@ class ParticipantAdmin(admin.ModelAdmin):
     )
     list_filter = ("event", "entry_type", VerificationFilter, PaymentFilter, CheckinFilter, GenreFilter)
     search_fields = ("name", "phone", "school")
-    actions = [approve_verification, mark_paid, swap_labels]
+    actions = [approve_verification, mark_paid, swap_labels, mark_refund]
     # label_code는 save()에서 항상 label_group/label_number로부터 다시 계산되므로
     # (models.py 참고) 폼에서 직접 수정할 수 있게 두면 값이 저장돼도 무시되어
     # 혼란만 준다 — 목업(ParticipantDetailClean)도 이 필드를 읽기 전용으로 보여준다.
@@ -457,7 +474,7 @@ class ParticipantAdmin(admin.ModelAdmin):
     _STATUS_BADGE_CLASS = {
         "APPROVED": "ok", "PAID": "ok", "CHECKED_IN": "ok",
         "PENDING": "warn",
-        "REJECTED": "bad",
+        "REJECTED": "bad", "REFUND": "bad",
         "N_A": "neutral", "NOT_CHECKED_IN": "neutral",
     }
 
