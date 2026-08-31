@@ -330,7 +330,7 @@ class EventAdmin(admin.ModelAdmin):
         return f'{obj.participants.count()}명' if obj and obj.pk else "—"
 
     def get_fieldsets(self, request, obj=None):
-        base = ("기본 정보", {"fields": ("volume", "name", "event_date", "sheet_sync_url", "location", "is_active")})
+        base = ("기본 정보", {"fields": ("volume", "name", "is_active", "event_date", "location", "sheet_sync_url")})
         if obj is None:
             return (base,)
         return (
@@ -461,7 +461,9 @@ class ParticipantAdmin(admin.ModelAdmin):
             # 시마다) 쿼리 4개 대신 1개만 나가게 한다.
             stats = participants.aggregate(
                 total=Count("id"),
-                pending_verification=Count("id", filter=Q(verification_status="PENDING")),
+                pending_verification=Count(
+                    "id", filter=Q(verification_status__in=["PENDING", "REJECTED"])
+                ),
                 pending_payment=Count("id", filter=Q(payment_status="PENDING")),
                 checked_in=Count("id", filter=Q(checkin_status="CHECKED_IN")),
             )
