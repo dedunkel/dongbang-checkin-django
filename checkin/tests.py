@@ -290,3 +290,60 @@ class AdminSecurityRegressionTests(TestCase):
         Event.objects.create(volume=3, name="목록에 보일 회차")
         html = self.client.get("/admin/checkin/event/").content.decode("utf-8")
         self.assertIn('value="delete_selected"', html)
+
+
+class MarkRefundActionTests(TestCase):
+    """환불 처리 액션 — 입금 완료(PAID) 상태만 환불 대상이 되고, 이미 발급된
+    라벨/QR도 함께 회수되는지 (환불 후에도 옛 QR로 체크인 가능한 상태로
+    남으면 안 됨)."""
+
+    def setUp(self):
+        User = get_user_model()
+        self.superuser = User.objects.create_superuser("root", "root@example.com", "pass12345")
+        self.event = Event.objects.create(volume=1, name="테스트 회차", is_active=True)
+        self.client.login(username="root", password="pass12345")
+
+    def _post_refund(self, participant_ids):
+        return self.client.post("/admin/checkin/participant/", {
+            "action": "mark_refund", "_selected_action": [str(pid) for pid in participant_ids],
+        }, follow=True)
+
+    def test_refund_revokes_existing_label_and_qr(self):
+        p = Participant.objects.create(
+            id=uuid.uuid4(), event=self.event, entry_type="참가", name="김환불", phone="010-0000-0001",
+            genre="Breaking", verification_status="APPROVED", payment_status="PAID",
+            label_group="A", label_number=1, label_code="A-1", qr_token=uuid.uuid4(),
+        )
+        self._post_refund([p.pk])
+        p.refresh_from_db()
+        self.assertEqual(p.payment_status, "REFUND")
+        self.assertIsNone(p.label_group)
+        self.assertIsNone(p.label_number)
+        self.assertIsNone(p.label_code)
+        self.assertIsNone(p.qr_token)
+
+    def test_refund_ignores_non_paid_participants(self):
+        # 대기 상태인 사람까지 실수로 같이 선택해도 잘못 바뀌면 안 된다.
+        p = Participant.objects.create(
+            id=uuid.uuid4(), event=self.event, entry_type="참가", name="이대기", phone="010-0000-0002",
+            genre="Breaking", verification_status="PENDING", payment_status="PENDING",
+        )
+        self._post_refund([p.pk])
+        p.refresh_from_db()
+        self.assertEqual(p.payment_status, "PENDING")
+
+    def test_refunded_participant_not_reissued_label_or_qr(self):
+        # assign_labels_and_tokens()를 다시 돌려도 환불된 사람은 여전히
+        # payment_status != PAID이므로 새 라벨/QR을 받지 않아야 한다.
+        from checkin.services.assign_labels import assign_labels_and_tokens
+
+        p = Participant.objects.create(
+            id=uuid.uuid4(), event=self.event, entry_type="참가", name="박환불", phone="010-0000-0003",
+            genre="Breaking", verification_status="APPROVED", payment_status="PAID",
+            label_group="A", label_number=1, label_code="A-1", qr_token=uuid.uuid4(),
+        )
+        self._post_refund([p.pk])
+        assign_labels_and_tokens(self.event)
+        p.refresh_from_db()
+        self.assertIsNone(p.label_code)
+        self.assertIsNone(p.qr_token)

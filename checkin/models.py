@@ -76,6 +76,7 @@ class VerificationStatus(models.TextChoices):
 class PaymentStatus(models.TextChoices):
     PENDING = "PENDING", "대기"
     PAID = "PAID", "입금 완료"
+    REFUND = "REFUND", "환불"
 
 
 class CheckinStatus(models.TextChoices):
