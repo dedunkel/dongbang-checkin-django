@@ -566,6 +566,22 @@ html[data-theme="light"] .dbbt-theme-toggle-option[data-theme-choice="dark"] { c
 .dbbt-action-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .dbbt-action-row form { margin: 0; }
 
+.dbbt-copy-row {
+  display: flex; align-items: center; gap: 8px; background: var(--surface2); border: 1px solid var(--line);
+  border-radius: 6px; padding: 9px 10px; max-width: 480px;
+}
+.dbbt-copy-text {
+  flex: 1; min-width: 0; font-family: ui-monospace, "SFMono-Regular", Consolas, monospace; font-size: 12px;
+  color: var(--dbbt-accent); overflow-x: auto; white-space: nowrap; padding-bottom: 2px;
+}
+.dbbt-copy-btn {
+  flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; border: none; background: none; border-radius: 4px; padding: 0;
+  cursor: pointer; color: var(--muted);
+}
+.dbbt-copy-btn:hover { background: var(--surface); color: var(--text); }
+.dbbt-copy-btn.dbbt-copy-done { color: var(--dbbt-ok); }
+
 .submit-row {
   margin: 22px 0 0; padding: 0; background: none; border: none; display: flex; align-items: center;
   justify-content: space-between; gap: 8px; flex-wrap: wrap;

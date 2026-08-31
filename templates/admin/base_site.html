@@ -138,5 +138,24 @@
       allDetails.forEach(function (d) { d.open = false; });
     });
   })();
+
+  (function () {
+    // qr_link_display가 만들어둔 상대 경로에 지금 접속한 도메인을 붙여서
+    // 채운다 — 로컬/스테이징/운영 어디서 보든 그 화면 기준 절대 URL이 된다.
+    document.querySelectorAll('.dbbt-copy-text[data-copy-path]').forEach(function (el) {
+      el.textContent = window.location.origin + el.getAttribute('data-copy-path');
+    });
+
+    document.addEventListener('click', function (e) {
+      var btn = e.target.closest('.dbbt-copy-btn');
+      if (!btn) return;
+      var text = btn.previousElementSibling ? btn.previousElementSibling.textContent : '';
+      if (!text) return;
+      navigator.clipboard.writeText(text).then(function () {
+        btn.classList.add('dbbt-copy-done');
+        setTimeout(function () { btn.classList.remove('dbbt-copy-done'); }, 1200);
+      });
+    });
+  })();
 </script>
 {% endblock %}
