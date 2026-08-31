@@ -490,6 +490,17 @@ html[data-theme="light"] .dbbt-theme-toggle-option[data-theme-choice="dark"] { c
   border: 1px solid var(--line); border-radius: 6px; padding: 18px 20px; margin: 14px 0 0;
   display: grid; grid-template-columns: 1fr 1fr; gap: 14px 20px; background: var(--surface);
 }
+/* 회차 "기본 정보"만 3열 — 행사 날짜/행사 장소/점수 시트 연동 URL이 한 줄에
+   나란히 오도록(신규 신청 활성화는 그 위 회차 번호/이름 줄로 올라감), fields
+   순서(get_fieldsets)와 짝을 맞춘 레이아웃이다. min-width는 태블릿 이하에서
+   1열로 접는 아래쪽 반응형 규칙(max-width:1024px)과 안 부딪히게 — 이 선택자는
+   #content-main(id) 때문에 명시도가 더 높아서 media query 없이 두면 좁은
+   화면에서도 3열을 그대로 이겨버린다. */
+@media (min-width: 1025px) {
+  .change-form.model-event #content-main form > div > fieldset.module:first-of-type {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
 .change-form fieldset.module .fieldset-heading {
   grid-column: 1 / -1; font-size: 12.5px; font-weight: 900; color: var(--text) !important; margin: 0 0 2px;
   background: none !important; border: none !important; padding: 0 !important; text-align: left; text-transform: none;

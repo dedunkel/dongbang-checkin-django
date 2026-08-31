@@ -347,3 +347,31 @@ class MarkRefundActionTests(TestCase):
         p.refresh_from_db()
         self.assertIsNone(p.label_code)
         self.assertIsNone(p.qr_token)
+
+
+class ParticipantStatTilesTests(TestCase):
+    """참가자 목록 상단 "학적검수 대기 및 반려" 타일 — 대기 상태뿐 아니라
+    반려된 사람도 함께 세어야 한다(운영진이 둘 다 후속 조치가 필요한
+    사람들이라 하나로 합쳐 보고 싶어함)."""
+
+    def setUp(self):
+        User = get_user_model()
+        self.superuser = User.objects.create_superuser("root", "root@example.com", "pass12345")
+        self.event = Event.objects.create(volume=1, name="테스트 회차", is_active=True)
+        self.client.login(username="root", password="pass12345")
+
+    def test_pending_and_rejected_both_counted(self):
+        Participant.objects.create(
+            id=uuid.uuid4(), event=self.event, entry_type="참가", name="대기자", phone="010-0000-0001",
+            verification_status="PENDING", payment_status="PENDING",
+        )
+        Participant.objects.create(
+            id=uuid.uuid4(), event=self.event, entry_type="참가", name="반려자", phone="010-0000-0002",
+            verification_status="REJECTED", payment_status="PENDING",
+        )
+        Participant.objects.create(
+            id=uuid.uuid4(), event=self.event, entry_type="참가", name="승인자", phone="010-0000-0003",
+            verification_status="APPROVED", payment_status="PAID",
+        )
+        resp = self.client.get("/admin/checkin/participant/")
+        self.assertEqual(resp.context["dbbt_stat_pending_verification"], 2)
