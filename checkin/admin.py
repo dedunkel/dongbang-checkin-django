@@ -471,6 +471,17 @@ class ParticipantAdmin(admin.ModelAdmin):
             extra_context["dbbt_stat_pending_verification"] = stats["pending_verification"]
             extra_context["dbbt_stat_pending_payment"] = stats["pending_payment"]
             extra_context["dbbt_stat_checked_in"] = stats["checked_in"]
+
+            genre_counts = dict(
+                participants.values("genre").annotate(count=Count("id")).values_list("genre", "count")
+            )
+            extra_context["dbbt_genre_breakdown"] = [
+                {"value": value, "label": label, "count": genre_counts.get(value, 0)}
+                for value, label in Genre.choices
+            ]
+            extra_context["dbbt_genre_max"] = max(
+                [g["count"] for g in extra_context["dbbt_genre_breakdown"]] or [0]
+            )
         return super().changelist_view(request, extra_context=extra_context)
 
     _STATUS_BADGE_CLASS = {

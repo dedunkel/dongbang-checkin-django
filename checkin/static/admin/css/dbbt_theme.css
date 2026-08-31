@@ -455,6 +455,8 @@ html[data-theme="light"] .dbbt-theme-toggle-option[data-theme-choice="dark"] { c
 .dbbt-actions-bar { padding: 0 0 12px; }
 .dbbt-export-row { margin-top: 16px; border: 1px solid var(--line); border-radius: 6px; padding: 14px 18px; background: var(--surface); }
 .dbbt-export-row .dbbt-section-subtitle { margin-top: 0; }
+.dbbt-genre-track { width: 220px; height: 7px; background: var(--surface2); border-radius: 4px; overflow: hidden; }
+.dbbt-genre-fill { height: 100%; background: var(--dbbt-accent); border-radius: 4px; }
 
 #changelist table {
   border: 1px solid var(--line); border-radius: 6px; border-collapse: separate; border-spacing: 0;
