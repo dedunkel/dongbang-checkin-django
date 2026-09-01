@@ -1,4 +1,5 @@
 import io
+import json
 import uuid
 
 from openpyxl import load_workbook
@@ -6,7 +7,7 @@ from openpyxl import load_workbook
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.core import mail
-from django.test import TestCase
+from django.test import TestCase, override_settings
 
 from checkin.admin_views import OPERATIONS_GROUP_NAME
 from checkin.models import Event, Participant
@@ -461,3 +462,63 @@ class CheckinConfirmIdempotencyTests(TestCase):
         self.assertEqual(resp2.status_code, 200)
         self.participant.refresh_from_db()
         self.assertEqual(self.participant.checked_in_at, first_time)
+
+
+@override_settings(IMPORT_SECRET="test-secret")
+class GoogleFormImportGenreValidationTests(TestCase):
+    """구글 폼 연동(google_form_import)이 예비 신청 폼(RegisterForm)과 같은
+    기준으로 참가자 장르를 요구하는지(#87) — 장르가 없거나 Genre에 없는
+    값이면 저장하지 않고 errors로 알린다."""
+
+    def setUp(self):
+        self.event = Event.objects.create(volume=1, name="테스트 회차", is_active=True)
+
+    def _import(self, rows):
+        resp = self.client.post(
+            "/api/import/google-form/",
+            data=json.dumps({"rows": rows}),
+            content_type="application/json",
+            HTTP_X_IMPORT_SECRET="test-secret",
+        )
+        return resp.json()
+
+    def test_participant_without_genre_is_rejected(self):
+        data = self._import(
+            [{"externalRef": "row1", "name": "김철수", "phone": "010-0000-0000", "type": "참가", "genre": ""}]
+        )
+        self.assertEqual(data["imported"], 0)
+        self.assertEqual(len(data["errors"]), 1)
+        self.assertFalse(Participant.objects.filter(external_ref="row1").exists())
+
+    def test_participant_with_unknown_genre_is_rejected(self):
+        # Genre.choices에 없는 값(예: 한글 표기, 오타) — GENRE_TABS 어떤 탭과도
+        # 안 맞아서 그대로 저장하면 모든 엑셀에서 누락되는 "유령 참가자"가 된다.
+        data = self._import(
+            [{"externalRef": "row2", "name": "이영희", "phone": "010-0000-0001", "type": "참가", "genre": "왁킹"}]
+        )
+        self.assertEqual(data["imported"], 0)
+        self.assertEqual(len(data["errors"]), 1)
+
+    def test_participant_with_valid_genre_is_imported(self):
+        data = self._import(
+            [{"externalRef": "row3", "name": "박민수", "phone": "010-0000-0002", "type": "참가", "genre": "Waacking"}]
+        )
+        self.assertEqual(data["imported"], 1)
+        self.assertEqual(Participant.objects.get(external_ref="row3").genre, "Waacking")
+
+    def test_viewer_without_genre_is_still_imported(self):
+        # 관람은 장르 문항 자체가 없으므로 검증 대상이 아니다.
+        data = self._import([{"externalRef": "row4", "name": "최유진", "phone": "010-0000-0003", "type": "관람"}])
+        self.assertEqual(data["imported"], 1)
+
+    def test_viewer_with_genre_answered_as_viewer_choice_is_still_imported(self):
+        # 실제 구글 폼은 "참가 장르" 문항에도 선택지로 "관람"이 있어서, 관람
+        # 신청자는 그 문항에 "관람"이라고 답한 채로 들어온다(Genre.values에
+        # 없는 값). "참가 / 관람" 문항이 필수라 entry_type은 항상 정확히
+        # 판별되므로, genre는 참가자일 때만 검증되고 관람은 무조건 None으로
+        # 지워져 이 값과 무관하게 정상 저장돼야 한다.
+        data = self._import(
+            [{"externalRef": "row5", "name": "정하윤", "phone": "010-0000-0004", "type": "관람", "genre": "관람"}]
+        )
+        self.assertEqual(data["imported"], 1)
+        self.assertIsNone(Participant.objects.get(external_ref="row5").genre)

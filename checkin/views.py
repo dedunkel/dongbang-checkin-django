@@ -16,7 +16,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_POST
 
 from .forms import RegisterForm
-from .models import Event, Participant
+from .models import Event, Genre, Participant
 from .services import sheet_sync
 
 UUID_RE = re.compile(
@@ -270,6 +270,15 @@ def google_form_import(request):
         genre = (row.get("genre") or "").strip() or None
         if entry_type != "참가":
             genre = None
+        elif genre not in Genre.values:
+            # 시트 응답이 비어있거나(문항 스킵) Forwarder.gs의 FORM_COLS 헤더
+            # 매핑이 실제 시트 헤더와 안 맞으면 genre가 비거나 오타로 들어올 수
+            # 있다 — 그대로 저장하면 GENRE_TABS 어디에도 안 걸려서 공지용/
+            # 점수표/신청확인용 엑셀 어디에도 안 나오는 "유령 참가자"가 된다.
+            errors.append(
+                {"externalRef": external_ref, "message": f"참가자인데 장르가 없거나 잘못됨: {genre!r}"}
+            )
+            continue
 
         try:
             Participant.objects.create(
