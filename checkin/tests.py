@@ -153,6 +153,39 @@ class ExportMaskingHelperTests(TestCase):
         self.assertEqual(remarks_for(p), "미입금")
 
 
+class ParticipantNameNormalizationTests(TestCase):
+    """저장 시점에 name의 "본명 / 댄서명" 구분자 앞뒤 공백을 정리해서, 목록/
+    상세/CSV 백업처럼 name을 그대로 읽는 곳들이 따로 파싱하지 않아도 깨끗하게
+    나오게 한다."""
+
+    def setUp(self):
+        self.event = Event.objects.create(volume=98, name="정규화 테스트 회차")
+
+    def test_save_trims_spaces_around_separator(self):
+        p = Participant.objects.create(
+            event=self.event, entry_type="참가", name="김시현 / bition", phone="010-0000-0000"
+        )
+        self.assertEqual(p.name, "김시현/bition")
+
+    def test_save_preserves_internal_spaces_in_each_part(self):
+        p = Participant.objects.create(
+            event=self.event, entry_type="참가", name="나나미 헤이지 / bition hi", phone="010-0000-0000"
+        )
+        self.assertEqual(p.name, "나나미 헤이지/bition hi")
+
+    def test_save_leaves_already_clean_name_untouched(self):
+        p = Participant.objects.create(
+            event=self.event, entry_type="참가", name="김철수/비보이스파크", phone="010-0000-0000"
+        )
+        self.assertEqual(p.name, "김철수/비보이스파크")
+
+    def test_save_no_separator_only_strips_outer_whitespace(self):
+        p = Participant.objects.create(
+            event=self.event, entry_type="관람", name="  최유진  ", phone="010-0000-0000"
+        )
+        self.assertEqual(p.name, "최유진")
+
+
 class EventExcelExportTests(TestCase):
     """엑셀 내보내기 3종을 공용 모듈(event_excel_export.py)로 합친 리팩터링(#30)이
     기존 동작(탭 구성/마스킹/라벨 유무 필터링)을 그대로 유지하는지 확인."""
