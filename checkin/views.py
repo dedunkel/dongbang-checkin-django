@@ -6,7 +6,7 @@ import qrcode
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
-from django.db import IntegrityError
+from django.db import IntegrityError, transaction
 from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -16,7 +16,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_POST
 
 from .forms import RegisterForm
-from .models import Event, Participant
+from .models import Event, Genre, Participant
 from .services import sheet_sync
 
 UUID_RE = re.compile(
@@ -108,19 +108,36 @@ def scan_confirm(request, token):
         return redirect(login_url)
 
     participant = get_object_or_404(Participant, qr_token=token)
-    if participant.checkin_status != "CHECKED_IN":
-        _mark_checked_in(participant)
+    participant, just_checked_in = _mark_checked_in(participant.pk)
+    if just_checked_in:
         messages.success(request, f"{participant.name}님 체크인을 확정했습니다.")
     else:
         messages.info(request, f"{participant.name}님은 이미 체크인되어 있습니다.")
     return redirect("checkin:scan", token=token)
 
 
-def _mark_checked_in(participant: Participant) -> None:
-    participant.checkin_status = "CHECKED_IN"
-    participant.checked_in_at = timezone.now()
-    participant.save(update_fields=["checkin_status", "checked_in_at"])
+def _mark_checked_in(participant_id) -> tuple[Participant, bool]:
+    """참가자를 체크인 확정 처리하고 (참가자, 이번에 새로 확정됐는지)를 반환.
+
+    이미 체크인된 사람은 다시 처리하지 않는다 — 안 그러면 최초 도착 시각이
+    나중 요청 시각으로 덮어써진다(#19). select_for_update로 읽기-쓰기 사이를
+    잠가서, 같은 참가자를 거의 동시에 두 번 요청해도(붐비는 입구에서 스태프
+    두 명이 같은 QR을 동시에 스캔하는 경우 등) 두 요청 다 "아직 체크인 전"으로
+    읽어버려 중복 처리되는 일이 없게 한다(#18/#20과 같은 부류의 TOCTOU, #85).
+    SQLite는 이 잠금을 지원하지 않아 조용히 무시되지만(개발용 빠른 실행 경로는
+    그대로 동작), 실제 운영 DB인 Postgres에서는 제대로 잠긴다.
+    """
+    with transaction.atomic():
+        participant = Participant.objects.select_for_update().get(pk=participant_id)
+        if participant.checkin_status == "CHECKED_IN":
+            return participant, False
+        participant.checkin_status = "CHECKED_IN"
+        participant.checked_in_at = timezone.now()
+        participant.save(update_fields=["checkin_status", "checked_in_at"])
+    # 점수 시트 반영은 체크인 자체와 무관하게 실패해도 되는 부가 동작이라, DB
+    # 잠금(트랜잭션) 밖에서 호출해 잠금 시간을 늘리지 않는다.
     sheet_sync.push_arrival(participant)
+    return participant, True
 
 
 # --------------------------------------------------------------------------
@@ -178,11 +195,8 @@ def participant_search_api(request):
 @staff_member_required
 @require_POST
 def manual_checkin_api(request, participant_id):
-    participant = get_object_or_404(Participant, pk=participant_id)
-    # scan_confirm과 마찬가지로 이미 체크인된 사람은 다시 마킹하지 않는다 —
-    # 안 그러면 최초 도착 시각이 나중에 눌린 시각으로 덮어써진다 (#19).
-    if participant.checkin_status != "CHECKED_IN":
-        _mark_checked_in(participant)
+    get_object_or_404(Participant, pk=participant_id)
+    participant, _just_checked_in = _mark_checked_in(participant_id)
     return JsonResponse({"status": "success", "data": _participant_dto(participant)})
 
 
@@ -256,6 +270,15 @@ def google_form_import(request):
         genre = (row.get("genre") or "").strip() or None
         if entry_type != "참가":
             genre = None
+        elif genre not in Genre.values:
+            # 시트 응답이 비어있거나(문항 스킵) Forwarder.gs의 FORM_COLS 헤더
+            # 매핑이 실제 시트 헤더와 안 맞으면 genre가 비거나 오타로 들어올 수
+            # 있다 — 그대로 저장하면 GENRE_TABS 어디에도 안 걸려서 공지용/
+            # 점수표/신청확인용 엑셀 어디에도 안 나오는 "유령 참가자"가 된다.
+            errors.append(
+                {"externalRef": external_ref, "message": f"참가자인데 장르가 없거나 잘못됨: {genre!r}"}
+            )
+            continue
 
         try:
             Participant.objects.create(

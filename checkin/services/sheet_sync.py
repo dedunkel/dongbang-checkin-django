@@ -80,6 +80,12 @@ def push_order_for_event(event) -> dict:
     except OSError as e:
         logger.warning("점수 시트 순서 반영 실패: %s", e)
         return {"ok": False, "message": str(e)}
+    except json.JSONDecodeError as e:
+        # 웹 앱이 "나만" 같은 제한적 액세스로 배포됐거나 구글이 인증 안내
+        # HTML을 200 OK로 돌려주는 경우처럼, 응답은 왔지만 JSON이 아닌
+        # 배포 설정 실수 상황 — OSError가 아니라 여기서 따로 잡아야 한다.
+        logger.warning("점수 시트 순서 반영 실패 — 응답이 JSON이 아님: %s", e)
+        return {"ok": False, "message": "점수 시트 응답을 해석할 수 없습니다 (웹 앱 배포 설정을 확인해주세요)."}
 
 
 def _post(url: str, payload: dict, timeout: int) -> bytes:

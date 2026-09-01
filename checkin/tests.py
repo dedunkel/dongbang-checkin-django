@@ -1,13 +1,17 @@
 import io
+import json
 import uuid
+from unittest.mock import patch
 
 from openpyxl import load_workbook
 
+from django.contrib.admin.sites import site as admin_site
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.core import mail
-from django.test import TestCase
+from django.test import RequestFactory, TestCase, override_settings
 
+from checkin.admin import ParticipantAdmin
 from checkin.admin_views import OPERATIONS_GROUP_NAME
 from checkin.models import Event, Participant
 from checkin.services.announcement_export import build_announcement_file
@@ -16,11 +20,13 @@ from checkin.services.event_excel_export import (
     find_duplicate_labels,
     mask_name,
     mask_phone,
+    participants_for_tab,
     remarks_for,
     split_display_name,
 )
 from checkin.services.label_assign import GROUP_SIZE, FixedEntry, FreshEntry, assign_genre
 from checkin.services.score_sheet_export import build_score_sheet_file
+from checkin.services.sheet_sync import push_order_for_event
 
 
 def mulberry32(seed: int):
@@ -432,3 +438,145 @@ class ParticipantStatTilesTests(TestCase):
         )
         resp = self.client.get("/admin/checkin/participant/")
         self.assertEqual(resp.context["dbbt_stat_pending_verification"], 2)
+
+
+class CheckinConfirmIdempotencyTests(TestCase):
+    """체크인 확정 API를 두 번 불러도 최초 체크인 시각이 덮어써지지 않는지
+    (#19) — _mark_checked_in을 select_for_update로 감싼 뒤(#85)에도 이
+    동작이 그대로 유지되는지 확인."""
+
+    def setUp(self):
+        User = get_user_model()
+        self.staff = User.objects.create_user("staff1", email="staff1@example.com", password="x", is_staff=True)
+        self.event = Event.objects.create(volume=1, name="테스트 회차", is_active=True)
+        self.participant = Participant.objects.create(
+            id=uuid.uuid4(), event=self.event, entry_type="참가", name="김철수", phone="010-0000-0000",
+            payment_status="PAID", verification_status="APPROVED",
+        )
+        self.client.login(username="staff1", password="x")
+
+    def test_double_manual_checkin_keeps_first_checked_in_at(self):
+        resp1 = self.client.post(f"/api/participants/{self.participant.pk}/manual-checkin/")
+        self.assertEqual(resp1.status_code, 200)
+        self.participant.refresh_from_db()
+        first_time = self.participant.checked_in_at
+        self.assertIsNotNone(first_time)
+        self.assertEqual(self.participant.checkin_status, "CHECKED_IN")
+
+        resp2 = self.client.post(f"/api/participants/{self.participant.pk}/manual-checkin/")
+        self.assertEqual(resp2.status_code, 200)
+        self.participant.refresh_from_db()
+        self.assertEqual(self.participant.checked_in_at, first_time)
+
+
+@override_settings(IMPORT_SECRET="test-secret")
+class GoogleFormImportGenreValidationTests(TestCase):
+    """구글 폼 연동(google_form_import)이 예비 신청 폼(RegisterForm)과 같은
+    기준으로 참가자 장르를 요구하는지(#87) — 장르가 없거나 Genre에 없는
+    값이면 저장하지 않고 errors로 알린다."""
+
+    def setUp(self):
+        self.event = Event.objects.create(volume=1, name="테스트 회차", is_active=True)
+
+    def _import(self, rows):
+        resp = self.client.post(
+            "/api/import/google-form/",
+            data=json.dumps({"rows": rows}),
+            content_type="application/json",
+            HTTP_X_IMPORT_SECRET="test-secret",
+        )
+        return resp.json()
+
+    def test_participant_without_genre_is_rejected(self):
+        data = self._import(
+            [{"externalRef": "row1", "name": "김철수", "phone": "010-0000-0000", "type": "참가", "genre": ""}]
+        )
+        self.assertEqual(data["imported"], 0)
+        self.assertEqual(len(data["errors"]), 1)
+        self.assertFalse(Participant.objects.filter(external_ref="row1").exists())
+
+    def test_participant_with_unknown_genre_is_rejected(self):
+        # Genre.choices에 없는 값(예: 한글 표기, 오타) — GENRE_TABS 어떤 탭과도
+        # 안 맞아서 그대로 저장하면 모든 엑셀에서 누락되는 "유령 참가자"가 된다.
+        data = self._import(
+            [{"externalRef": "row2", "name": "이영희", "phone": "010-0000-0001", "type": "참가", "genre": "왁킹"}]
+        )
+        self.assertEqual(data["imported"], 0)
+        self.assertEqual(len(data["errors"]), 1)
+
+    def test_participant_with_valid_genre_is_imported(self):
+        data = self._import(
+            [{"externalRef": "row3", "name": "박민수", "phone": "010-0000-0002", "type": "참가", "genre": "Waacking"}]
+        )
+        self.assertEqual(data["imported"], 1)
+        self.assertEqual(Participant.objects.get(external_ref="row3").genre, "Waacking")
+
+    def test_viewer_without_genre_is_still_imported(self):
+        # 관람은 장르 문항 자체가 없으므로 검증 대상이 아니다.
+        data = self._import([{"externalRef": "row4", "name": "최유진", "phone": "010-0000-0003", "type": "관람"}])
+        self.assertEqual(data["imported"], 1)
+
+    def test_viewer_with_genre_answered_as_viewer_choice_is_still_imported(self):
+        # 실제 구글 폼은 "참가 장르" 문항에도 선택지로 "관람"이 있어서, 관람
+        # 신청자는 그 문항에 "관람"이라고 답한 채로 들어온다(Genre.values에
+        # 없는 값). "참가 / 관람" 문항이 필수라 entry_type은 항상 정확히
+        # 판별되므로, genre는 참가자일 때만 검증되고 관람은 무조건 None으로
+        # 지워져 이 값과 무관하게 정상 저장돼야 한다.
+        data = self._import(
+            [{"externalRef": "row5", "name": "정하윤", "phone": "010-0000-0004", "type": "관람", "genre": "관람"}]
+        )
+        self.assertEqual(data["imported"], 1)
+        self.assertIsNone(Participant.objects.get(external_ref="row5").genre)
+
+
+class SheetSyncOrderErrorHandlingTests(TestCase):
+    """push_order_for_event가 OSError뿐 아니라 JSON이 아닌 응답(JSONDecodeError)도
+    잡아서 관리자 화면에 500 대신 실패 메시지를 돌려주는지(#88) 확인."""
+
+    def setUp(self):
+        self.event = Event.objects.create(
+            volume=1, name="테스트 회차", sheet_sync_url="https://example.com/exec"
+        )
+        Participant.objects.create(
+            id=uuid.uuid4(), event=self.event, entry_type="참가", genre="Waacking",
+            name="김철수", phone="010-0000-0000", label_group="A", label_number=1, label_code="A-1",
+        )
+
+    def test_non_json_response_returns_graceful_failure_instead_of_raising(self):
+        # 웹 앱이 "나만" 액세스로 배포됐을 때 구글이 돌려주는 인증 안내
+        # HTML(200 OK)을 흉내낸 응답.
+        with patch("checkin.services.sheet_sync._post", return_value=b"<html>Authorization required</html>"):
+            result = push_order_for_event(self.event)  # 예외 없이 끝나야 함
+        self.assertFalse(result["ok"])
+        self.assertIn("message", result)
+
+
+class LabelGroupSortOrderTests(TestCase):
+    """장르 하나가 GROUP_SIZE*26명을 넘어 두 글자 그룹("AA" 등, label_assign.py의
+    _letter_at() 참고)이 생겨도, 명단/관리자 화면 정렬이 문자열 비교로 깨지지
+    않고 A..Z 다음에 AA..가 오는지(#89) 확인."""
+
+    def setUp(self):
+        self.event = Event.objects.create(volume=1, name="테스트 회차")
+
+    def _make(self, ref, group, number):
+        return Participant.objects.create(
+            id=uuid.uuid4(), event=self.event, entry_type="참가", genre="Waacking",
+            name=f"참가자{ref}", phone=f"010-0000-{ref:04d}",
+            label_group=group, label_number=number, label_code=f"{group}-{number}",
+        )
+
+    def test_participants_for_tab_orders_single_letter_before_double_letter(self):
+        self._make(1, "AA", 1)
+        self._make(2, "B", 1)
+        self._make(3, "Z", 1)
+        ordered = participants_for_tab(self.event, "Waacking")
+        self.assertEqual([p.label_group for p in ordered], ["B", "Z", "AA"])
+
+    def test_admin_label_sort_orders_single_letter_before_double_letter(self):
+        self._make(1, "AA", 1)
+        self._make(2, "B", 1)
+        self._make(3, "Z", 1)
+        request = RequestFactory().get("/admin/checkin/participant/")
+        qs = ParticipantAdmin(Participant, admin_site).get_queryset(request).order_by("_label_sort")
+        self.assertEqual([p.label_group for p in qs], ["B", "Z", "AA"])

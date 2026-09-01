@@ -511,10 +511,14 @@ class ParticipantAdmin(admin.ModelAdmin):
         qs = super().get_queryset(request)
         # label_code("A-10")를 그대로 정렬하면 문자열 비교라 "A-10"이 "A-2"보다
         # 앞에 와버림. label_number를 0으로 채운 문자열로 만들어 정렬 전용
-        # 컬럼으로 붙여서, group+번호 순으로 정렬되게 한다.
+        # 컬럼으로 붙여서, group+번호 순으로 정렬되게 한다. label_group도 공백으로
+        # 2글자로 맞춰 채운다 — 안 그러면 "AA"(장르 하나가 GROUP_SIZE(10)*26을
+        # 넘어서 두 글자 그룹이 생긴 경우, label_assign.py의 _letter_at() 참고)가
+        # 문자열 비교상 "B"보다 앞에 와버린다. 공백(" ")이 "A"보다 사전순으로
+        # 앞이라 " A" < " Z" < "AA" 순서가 그대로 유지된다.
         return qs.annotate(
             _label_sort=Concat(
-                "label_group",
+                LPad("label_group", 2, Value(" ")),
                 LPad(Cast("label_number", CharField()), 2, Value("0")),
                 output_field=CharField(),
             )
