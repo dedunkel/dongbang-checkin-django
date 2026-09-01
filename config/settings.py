@@ -54,6 +54,18 @@ CSRF_TRUSTED_ORIGINS = [
 ]
 if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    # 배포 환경에서만 강제 — 로컬 개발(DEBUG=1, 보통 http로 켬)까지 https로
+    # 리다이렉트되거나 쿠키에 Secure가 붙으면 로그인 자체가 안 된다.
+    # SECURE_PROXY_SSL_HEADER 덕분에 request.is_secure()가 프록시 뒤에서도
+    # 정확히 판단되므로, 이미 https로 들어온 요청까지 다시 리다이렉트하는
+    # 루프는 생기지 않는다.
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    # 재방문 시 평문 http로 다운그레이드되는 걸 브라우저가 아예 막게 한다.
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
 
 # 기존 구글 폼 → /api/import/google-form 요청 인증용 공유 비밀키.
 # google-apps-script/Forwarder.gs의 CONFIG.IMPORT_SECRET과 동일한 값을 넣어야 합니다.
