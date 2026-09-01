@@ -49,15 +49,25 @@ def _mask_middle(s: str) -> str:
     return s[:2] + "**" + s[4:]
 
 
+def split_display_name(raw_name: str) -> tuple[str, str]:
+    """'이름 / 댄서명' 형식에서 구분자 앞뒤 공백만 제거하고 (본명, 댄서명)으로
+    나눈다. 이름 자체에 포함된 공백(예: "나나미 헤이지")은 원형 그대로 둔다.
+    구분자가 없으면 댄서명은 빈 문자열."""
+    real, sep, dancer = raw_name.partition("/")
+    return real.strip(), (dancer.strip() if sep else "")
+
+
 def mask_name(raw_name: str) -> str:
     """'본명/댄서네임' 형식이면 본명 부분만 가운데를 마스킹하고 댄서네임은
     그대로 둔다. 구분자가 없거나(=댄서네임을 따로 안 적어 이름과 같은 경우),
     댄서네임을 본명과 똑같이 적은 경우(예: "김민준/김민준")는 양쪽 다
     동일하게 마스킹한다."""
-    real, sep, dancer = raw_name.partition("/")
+    real, dancer = split_display_name(raw_name)
     masked_real = _mask_middle(real)
-    if not sep or dancer == real:
-        return f"{masked_real}/{masked_real}" if sep else masked_real
+    if not dancer:
+        return masked_real
+    if dancer == real:
+        return f"{masked_real}/{masked_real}"
     return f"{masked_real}/{dancer}"
 
 

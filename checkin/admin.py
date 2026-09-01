@@ -14,7 +14,7 @@ from .services import sheet_sync
 from .services.announcement_export import build_announcement_file
 from .services.application_confirmation_export import build_application_confirmation_file
 from .services.assign_labels import assign_labels_and_tokens
-from .services.event_excel_export import find_duplicate_labels
+from .services.event_excel_export import find_duplicate_labels, split_display_name
 from .services.score_sheet_export import build_score_sheet_file
 
 # 계정 관리 → 계정 수정 화면(User/Group 기반 커스텀 UserAdmin)을 등록한다.
@@ -245,7 +245,7 @@ def export_qr_send_list(modeladmin, request, queryset):
     writer.writerow(["이름", "연락처", "구분", "장르", "QR 링크", "안내 문구"])
     for p in participants:
         qr_url = request.build_absolute_uri(reverse("checkin:qr", args=[p.qr_token]))
-        real_name = p.name.split("/")[0]
+        real_name, _dancer_name = split_display_name(p.name)
         message = f"[{event.name}] {real_name}님, 아래 링크에서 입장용 QR을 확인해주세요.\n{qr_url}"
         writer.writerow([real_name, p.phone, p.entry_type, p.genre or "", qr_url, message])
     return response
