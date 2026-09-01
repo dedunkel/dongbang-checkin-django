@@ -94,13 +94,35 @@ function checkedInCardHtml(p) {
   `;
 }
 
+// 로그인 세션이 만료되면 @staff_member_required가 이 API 요청들을 로그인
+// 페이지(HTML)로 리다이렉트시키는데, fetch()는 기본적으로 그 리다이렉트를
+// 따라가 최종 응답(HTML, 200)을 그대로 돌려준다. 그 상태에서 res.json()을
+// 부르면 처리되지 않은 예외가 나서 화면에 아무 안내도 없이 조용히 실패하고
+// (행사 중 스태프는 체크인이 된 줄 알고 다음 사람으로 넘어갈 위험), 실제로는
+// 참가자가 체크인되지 않은 채 남는다. content-type으로 먼저 걸러내 명확한
+// 안내를 보여준다.
+async function apiFetchJson(url, options) {
+  let res;
+  try {
+    res = await fetch(url, options);
+  } catch (e) {
+    showOverlay('<div class="status bad">네트워크 오류로 요청에 실패했습니다. 다시 시도해주세요.</div>');
+    return null;
+  }
+  if (!(res.headers.get('content-type') || '').includes('application/json')) {
+    showOverlay('<div class="status bad">로그인이 만료됐습니다.<br/>새로고침 후 다시 로그인해주세요.</div>');
+    return null;
+  }
+  return res.json();
+}
+
 async function lookupQr(text) {
-  const res = await fetch('{% url "checkin:qr_lookup_api" %}', {
+  const data = await apiFetchJson('{% url "checkin:qr_lookup_api" %}', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
     body: JSON.stringify({ text }),
   });
-  const data = await res.json();
+  if (!data) return;
   if (data.status !== 'FOUND') {
     showOverlay('<div class="status bad">등록되지 않은 QR입니다.</div>');
     return;
@@ -111,10 +133,10 @@ async function lookupQr(text) {
 overlay.addEventListener('click', async (e) => {
   if (e.target.id !== 'confirmCheckinBtn') return;
   const id = e.target.dataset.id;
-  const res = await fetch(`/api/participants/${id}/manual-checkin/`, {
+  const data = await apiFetchJson(`/api/participants/${id}/manual-checkin/`, {
     method: 'POST', headers: { 'X-CSRFToken': csrfToken },
   });
-  const data = await res.json();
+  if (!data) return;
   showOverlay(checkedInCardHtml(data.data));
 });
 
@@ -174,8 +196,8 @@ searchBox.addEventListener('input', () => {
   const q = searchBox.value.trim();
   if (!q) { searchResults.innerHTML = ''; return; }
   searchTimer = setTimeout(async () => {
-    const res = await fetch(`{% url "checkin:participant_search_api" %}?q=${encodeURIComponent(q)}`);
-    const data = await res.json();
+    const data = await apiFetchJson(`{% url "checkin:participant_search_api" %}?q=${encodeURIComponent(q)}`);
+    if (!data) return;
     searchResults.innerHTML = data.results.map(p => `
       <div class="search-item">
         <span>${escapeHtml(p.name)} · ${escapeHtml(p.phone)}${p.entryType ? ' · ' + escapeHtml(p.entryType) : ''}${p.genre ? ' · ' + escapeHtml(p.genre) : ''}${p.labelCode ? ' · ' + escapeHtml(p.labelCode) : ''}</span>
@@ -190,9 +212,10 @@ searchBox.addEventListener('input', () => {
 searchResults.addEventListener('click', async (e) => {
   if (!e.target.classList.contains('manualBtn')) return;
   const id = e.target.dataset.id;
-  await fetch(`/api/participants/${id}/manual-checkin/`, {
+  const data = await apiFetchJson(`/api/participants/${id}/manual-checkin/`, {
     method: 'POST', headers: { 'X-CSRFToken': csrfToken },
   });
+  if (!data) return;
   searchBox.dispatchEvent(new Event('input'));
 });
 </script>
