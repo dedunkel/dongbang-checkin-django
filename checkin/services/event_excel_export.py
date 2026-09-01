@@ -95,7 +95,12 @@ def participants_for_tab(event: Event, genre: str | None) -> list[Participant]:
         return list(Participant.objects.filter(event=event, entry_type="관람").order_by("created_at"))
     return sorted(
         Participant.objects.filter(event=event, entry_type="참가", genre=genre, label_code__isnull=False),
-        key=lambda p: (p.label_group, p.label_number),
+        # label_group 문자열만으로 비교하면 "AA" < "B"가 돼버린다 — 한 장르가
+        # GROUP_SIZE(10) x 26을 넘어 label_assign.py가 두 글자 그룹("AA", "AB",
+        # ...)을 만들기 시작하면 순서가 뒤섞인다. len() 우선 비교를 앞에 두면
+        # 같은 길이 안에서는 이미 알파벳 순(_letter_at()이 그렇게 생성)이라
+        # A..Z 다음에 AA..ZZ가 오는 순서가 유지된다.
+        key=lambda p: (len(p.label_group), p.label_group, p.label_number),
     )
 
 

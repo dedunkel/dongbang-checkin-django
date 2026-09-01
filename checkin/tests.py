@@ -5,11 +5,13 @@ from unittest.mock import patch
 
 from openpyxl import load_workbook
 
+from django.contrib.admin.sites import site as admin_site
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.core import mail
-from django.test import TestCase, override_settings
+from django.test import RequestFactory, TestCase, override_settings
 
+from checkin.admin import ParticipantAdmin
 from checkin.admin_views import OPERATIONS_GROUP_NAME
 from checkin.models import Event, Participant
 from checkin.services.announcement_export import build_announcement_file
@@ -18,6 +20,7 @@ from checkin.services.event_excel_export import (
     find_duplicate_labels,
     mask_name,
     mask_phone,
+    participants_for_tab,
     remarks_for,
     split_display_name,
 )
@@ -546,3 +549,34 @@ class SheetSyncOrderErrorHandlingTests(TestCase):
             result = push_order_for_event(self.event)  # 예외 없이 끝나야 함
         self.assertFalse(result["ok"])
         self.assertIn("message", result)
+
+
+class LabelGroupSortOrderTests(TestCase):
+    """장르 하나가 GROUP_SIZE*26명을 넘어 두 글자 그룹("AA" 등, label_assign.py의
+    _letter_at() 참고)이 생겨도, 명단/관리자 화면 정렬이 문자열 비교로 깨지지
+    않고 A..Z 다음에 AA..가 오는지(#89) 확인."""
+
+    def setUp(self):
+        self.event = Event.objects.create(volume=1, name="테스트 회차")
+
+    def _make(self, ref, group, number):
+        return Participant.objects.create(
+            id=uuid.uuid4(), event=self.event, entry_type="참가", genre="Waacking",
+            name=f"참가자{ref}", phone=f"010-0000-{ref:04d}",
+            label_group=group, label_number=number, label_code=f"{group}-{number}",
+        )
+
+    def test_participants_for_tab_orders_single_letter_before_double_letter(self):
+        self._make(1, "AA", 1)
+        self._make(2, "B", 1)
+        self._make(3, "Z", 1)
+        ordered = participants_for_tab(self.event, "Waacking")
+        self.assertEqual([p.label_group for p in ordered], ["B", "Z", "AA"])
+
+    def test_admin_label_sort_orders_single_letter_before_double_letter(self):
+        self._make(1, "AA", 1)
+        self._make(2, "B", 1)
+        self._make(3, "Z", 1)
+        request = RequestFactory().get("/admin/checkin/participant/")
+        qs = ParticipantAdmin(Participant, admin_site).get_queryset(request).order_by("_label_sort")
+        self.assertEqual([p.label_group for p in qs], ["B", "Z", "AA"])
