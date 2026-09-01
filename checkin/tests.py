@@ -1,6 +1,7 @@
 import io
 import json
 import uuid
+from unittest.mock import patch
 
 from openpyxl import load_workbook
 
@@ -22,6 +23,7 @@ from checkin.services.event_excel_export import (
 )
 from checkin.services.label_assign import GROUP_SIZE, FixedEntry, FreshEntry, assign_genre
 from checkin.services.score_sheet_export import build_score_sheet_file
+from checkin.services.sheet_sync import push_order_for_event
 
 
 def mulberry32(seed: int):
@@ -522,3 +524,25 @@ class GoogleFormImportGenreValidationTests(TestCase):
         )
         self.assertEqual(data["imported"], 1)
         self.assertIsNone(Participant.objects.get(external_ref="row5").genre)
+
+
+class SheetSyncOrderErrorHandlingTests(TestCase):
+    """push_order_for_event가 OSError뿐 아니라 JSON이 아닌 응답(JSONDecodeError)도
+    잡아서 관리자 화면에 500 대신 실패 메시지를 돌려주는지(#88) 확인."""
+
+    def setUp(self):
+        self.event = Event.objects.create(
+            volume=1, name="테스트 회차", sheet_sync_url="https://example.com/exec"
+        )
+        Participant.objects.create(
+            id=uuid.uuid4(), event=self.event, entry_type="참가", genre="Waacking",
+            name="김철수", phone="010-0000-0000", label_group="A", label_number=1, label_code="A-1",
+        )
+
+    def test_non_json_response_returns_graceful_failure_instead_of_raising(self):
+        # 웹 앱이 "나만" 액세스로 배포됐을 때 구글이 돌려주는 인증 안내
+        # HTML(200 OK)을 흉내낸 응답.
+        with patch("checkin.services.sheet_sync._post", return_value=b"<html>Authorization required</html>"):
+            result = push_order_for_event(self.event)  # 예외 없이 끝나야 함
+        self.assertFalse(result["ok"])
+        self.assertIn("message", result)
