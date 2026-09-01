@@ -586,6 +586,15 @@ html[data-theme="light"] .dbbt-theme-toggle-option[data-theme-choice="dark"] { c
 .change-form fieldset.module input[type="checkbox"]:checked { background: var(--dbbt-ok); }
 .change-form fieldset.module input[type="checkbox"]:checked::before { left: 17px; }
 
+/* "상태" 칸 — is_active(체크박스, 라벨이 칸 안에 있음)와 last_login(라벨이
+   칸 위에 따로 있음)이 같은 줄에 나란히 오는데, 라벨 유무 차이 때문에
+   위쪽은 안 맞고 실제 입력칸(토글/읽기전용 칸)만 아래쪽 기준으로 맞추면
+   가지런해 보인다. */
+.change-form.model-user fieldset.module .form-row.field-is_active,
+.change-form.model-user fieldset.module .form-row.field-last_login {
+  align-self: end;
+}
+
 .dbbt-section {
   border: 1px solid var(--line); border-radius: 6px; padding: 18px 20px; margin: 14px 0 0; background: var(--surface);
 }
@@ -613,7 +622,13 @@ html[data-theme="light"] .dbbt-theme-toggle-option[data-theme-choice="dark"] { c
 .dbbt-copy-btn:hover { background: var(--surface); color: var(--text); }
 .dbbt-copy-btn.dbbt-copy-done { color: var(--dbbt-ok); }
 
-.submit-row {
+/* 그냥 .submit-row로 주면 Django 기본 admin/css/forms.css의 .submit-row와
+   명시도가 같아서, change_form.html이 extrastyle 블록에서 block.super(=우리
+   base_site.html의 dbbt_theme.css) 다음에 forms.css를 붙이는 바람에 로드
+   순서상 forms.css가 항상 이겨버린다(margin이 0으로 죽어 아래 카드와 붙어
+   보이던 원인). .change-form/.add-form을 붙여 명시도를 올려서 로드 순서와
+   무관하게 우리 쪽이 이기게 한다. */
+.change-form .submit-row, .add-form .submit-row {
   margin: 22px 0 0; padding: 0; background: none; border: none; display: flex; align-items: center;
   justify-content: space-between; gap: 8px; flex-wrap: wrap;
 }
@@ -651,7 +666,8 @@ html[data-theme="light"] .dbbt-theme-toggle-option[data-theme-choice="dark"] { c
    카드처럼 스타일링(참가/관람 탭 선택과 동일한 :has() 패턴). */
 .change-form fieldset.module .field-role { grid-column: 1 / -1; }
 .change-form fieldset.module .field-role label[for="id_role"] { display: none; }
-.change-form fieldset.module #id_role { display: flex; flex-direction: column; gap: 10px; }
+.change-form fieldset.module #id_role { display: flex; flex-direction: row; flex-wrap: wrap; gap: 10px; }
+.change-form fieldset.module .field-role label { flex: 1 1 200px; }
 .change-form fieldset.module .field-role input[type="radio"] { position: absolute; opacity: 0; width: 1px; height: 1px; }
 .change-form fieldset.module .field-role label {
   display: grid; grid-template-columns: 16px 1fr; column-gap: 10px; row-gap: 2px; align-items: start;
