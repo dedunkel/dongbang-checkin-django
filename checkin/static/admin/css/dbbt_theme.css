@@ -530,6 +530,9 @@ html[data-theme="light"] .dbbt-theme-toggle-option[data-theme-choice="dark"] { c
 }
 .change-form fieldset.module .form-row.field-id,
 .change-form fieldset.module .form-row.hidden { display: none; }
+/* 학적검수 메모(textarea)는 상태값 select들과 같은 폭(1/2열)이면 옆에 뜬
+   payment_status와 줄이 안 맞고 어색하다 — 한 줄 전체를 차지하게 한다. */
+.change-form fieldset.module .field-verification_note { grid-column: 1 / -1; }
 .change-form .flex-container { display: block; }
 .change-form label { float: none; display: block; width: auto; padding: 0; line-height: 1.3; }
 .change-form fieldset.module label:not(.vCheckboxLabel) {

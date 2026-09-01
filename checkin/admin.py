@@ -1,8 +1,9 @@
 import csv
 
+from django import forms
 from django.contrib import admin, messages
 from django.db import transaction
-from django.db.models import CharField, Count, Q, Value
+from django.db.models import CharField, Count, Q, TextField, Value
 from django.db.models.functions import Cast, Concat, LPad
 from django.http import HttpResponse
 from django.urls import reverse
@@ -51,6 +52,7 @@ _PARTICIPANT_LABELS = {
     "payer_name": "입금자명",
     "external_ref": "신청 연동 참조값 (external_ref)",
     "verification_status": "학적검수",
+    "verification_note": "학적검수 메모",
     "payment_status": "입금 상태",
     "label_group": "라벨 그룹",
     "label_number": "라벨 번호",
@@ -436,6 +438,9 @@ class ParticipantAdmin(admin.ModelAdmin):
     # (models.py 참고) 폼에서 직접 수정할 수 있게 두면 값이 저장돼도 무시되어
     # 혼란만 준다 — 목업(ParticipantDetailClean)도 이 필드를 읽기 전용으로 보여준다.
     readonly_fields = ("id", "qr_link_display", "created_at", "label_code")
+    # 기본 Textarea는 rows=10이라 "검수" 섹션(상태값 한 줄짜리 select들 사이)에서
+    # 혼자 과하게 크게 나온다 — 메모 한두 줄 적는 용도라 rows=3이면 충분하다.
+    formfield_overrides = {TextField: {"widget": forms.Textarea(attrs={"rows": 3})}}
 
     def changelist_view(self, request, extra_context=None):
         # ParticipantsClean 목업 상단의 통계 타일(총 신청/학적검수 대기/입금 대기/
@@ -555,7 +560,7 @@ class ParticipantAdmin(admin.ModelAdmin):
         base = (
             ("기본 정보", {"fields": ("event", "entry_type", "name", "phone")}),
             ("신청 정보", {"fields": ("school", "academic_status", "genre", "payer_name", "external_ref")}),
-            ("검수", {"fields": ("verification_status", "payment_status")}),
+            ("검수", {"fields": ("verification_status", "verification_note", "payment_status")}),
         )
         if obj is None:
             # 저장 전에는 라벨/QR/체크인 영역이 아직 존재하지 않는다 — 회차 관리의
