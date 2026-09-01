@@ -21,6 +21,7 @@ from openpyxl.styles import Alignment, Font
 from openpyxl.utils import get_column_letter
 
 from checkin.models import Event, Genre, Participant
+from checkin.services.name_utils import split_display_name
 
 # 장르별 탭 순서 — 관람은 마지막, genre=None으로 구분. 탭 목록은 Genre(모델)에서
 # 그대로 가져온다 — 여기서 따로 문자열을 하드코딩하면 모델의 실제 선택지와
@@ -47,14 +48,6 @@ def _mask_middle(s: str) -> str:
     # 그다음 두 글자를 고정으로 별표 2개로 가린 뒤 나머지는 그대로 둔다
     # (예: "zaliij" -> "za**ij").
     return s[:2] + "**" + s[4:]
-
-
-def split_display_name(raw_name: str) -> tuple[str, str]:
-    """'이름 / 댄서명' 형식에서 구분자 앞뒤 공백만 제거하고 (본명, 댄서명)으로
-    나눈다. 이름 자체에 포함된 공백(예: "나나미 헤이지")은 원형 그대로 둔다.
-    구분자가 없으면 댄서명은 빈 문자열."""
-    real, sep, dancer = raw_name.partition("/")
-    return real.strip(), (dancer.strip() if sep else "")
 
 
 def mask_name(raw_name: str) -> str:

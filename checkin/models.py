@@ -3,6 +3,8 @@ import uuid
 from django.db import models
 from django.db.models import Q, UniqueConstraint
 
+from checkin.services.name_utils import split_display_name
+
 
 class Event(models.Model):
     """
@@ -153,6 +155,17 @@ class Participant(models.Model):
             update_fields = kwargs.get("update_fields")
             if update_fields is not None and field not in update_fields:
                 kwargs["update_fields"] = list(update_fields) + [field]
+
+        # "본명 / 댄서명"처럼 구분자 앞뒤에 공백이 섞여 들어와도, 저장 시점에
+        # 한 번 정리해서 이후로는 목록/상세/CSV 백업 등 name을 그대로 읽는
+        # 모든 곳이 따로 파싱하지 않아도 깨끗하게 나오게 한다. 이미 저장된
+        # 기존 값은 다시 저장(수정)돼야 정리되며, 이 로직만으로 소급 적용되지
+        # 않는다.
+        real, dancer = split_display_name(self.name)
+        new_name = f"{real}/{dancer}" if dancer else real
+        if self.name != new_name:
+            self.name = new_name
+            _also_update("name")
 
         # label_code("A-3" 같은 표시용 문자열)는 label_group/label_number로부터
         # 항상 다시 계산한다 — 관리자 화면에서 셋을 각각 따로 수정할 수 있다 보니
