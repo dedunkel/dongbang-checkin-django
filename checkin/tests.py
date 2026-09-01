@@ -432,3 +432,32 @@ class ParticipantStatTilesTests(TestCase):
         )
         resp = self.client.get("/admin/checkin/participant/")
         self.assertEqual(resp.context["dbbt_stat_pending_verification"], 2)
+
+
+class CheckinConfirmIdempotencyTests(TestCase):
+    """체크인 확정 API를 두 번 불러도 최초 체크인 시각이 덮어써지지 않는지
+    (#19) — _mark_checked_in을 select_for_update로 감싼 뒤(#85)에도 이
+    동작이 그대로 유지되는지 확인."""
+
+    def setUp(self):
+        User = get_user_model()
+        self.staff = User.objects.create_user("staff1", email="staff1@example.com", password="x", is_staff=True)
+        self.event = Event.objects.create(volume=1, name="테스트 회차", is_active=True)
+        self.participant = Participant.objects.create(
+            id=uuid.uuid4(), event=self.event, entry_type="참가", name="김철수", phone="010-0000-0000",
+            payment_status="PAID", verification_status="APPROVED",
+        )
+        self.client.login(username="staff1", password="x")
+
+    def test_double_manual_checkin_keeps_first_checked_in_at(self):
+        resp1 = self.client.post(f"/api/participants/{self.participant.pk}/manual-checkin/")
+        self.assertEqual(resp1.status_code, 200)
+        self.participant.refresh_from_db()
+        first_time = self.participant.checked_in_at
+        self.assertIsNotNone(first_time)
+        self.assertEqual(self.participant.checkin_status, "CHECKED_IN")
+
+        resp2 = self.client.post(f"/api/participants/{self.participant.pk}/manual-checkin/")
+        self.assertEqual(resp2.status_code, 200)
+        self.participant.refresh_from_db()
+        self.assertEqual(self.participant.checked_in_at, first_time)
