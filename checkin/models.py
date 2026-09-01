@@ -108,6 +108,9 @@ class Participant(models.Model):
     verification_status = models.CharField(
         max_length=10, choices=VerificationStatus.choices, default=VerificationStatus.PENDING
     )
+    verification_note = models.TextField(
+        null=True, blank=True, help_text="학적검수 메모 (반려 사유 등 운영진 참고용, 참가자에게는 노출되지 않음)"
+    )
     payment_status = models.CharField(
         max_length=10, choices=PaymentStatus.choices, default=PaymentStatus.PENDING
     )
