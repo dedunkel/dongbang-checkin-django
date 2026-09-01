@@ -12,7 +12,13 @@ from checkin.admin_views import OPERATIONS_GROUP_NAME
 from checkin.models import Event, Participant
 from checkin.services.announcement_export import build_announcement_file
 from checkin.services.application_confirmation_export import build_application_confirmation_file
-from checkin.services.event_excel_export import find_duplicate_labels, mask_name, mask_phone, remarks_for
+from checkin.services.event_excel_export import (
+    find_duplicate_labels,
+    mask_name,
+    mask_phone,
+    remarks_for,
+    split_display_name,
+)
 from checkin.services.label_assign import GROUP_SIZE, FixedEntry, FreshEntry, assign_genre
 from checkin.services.score_sheet_export import build_score_sheet_file
 
@@ -108,6 +114,24 @@ class ExportMaskingHelperTests(TestCase):
 
     def test_mask_name_dancer_same_as_real(self):
         self.assertEqual(mask_name("김철수/김철수"), "김*수/김*수")
+
+    def test_mask_name_strips_spaces_around_separator(self):
+        # "김철수 / 비보이스파크"처럼 슬래시 앞뒤에 공백이 있어도 본명만
+        # 정확히 마스킹되어야 한다 (공백이 real_name에 섞여 들어가면 안 됨).
+        self.assertEqual(mask_name("김철수 / 비보이스파크"), "김*수/비보이스파크")
+
+    def test_split_display_name_strips_only_separator_spaces(self):
+        # 이름 자체에 포함된 공백(예: "나나미 헤이지")은 보존하고, 구분자
+        # 앞뒤 공백만 제거한다.
+        self.assertEqual(split_display_name("나나미 헤이지 / bition hi"), ("나나미 헤이지", "bition hi"))
+
+    def test_split_display_name_no_separator(self):
+        self.assertEqual(split_display_name("김철수"), ("김철수", ""))
+
+    def test_split_display_name_extra_slash_kept_in_dancer_part(self):
+        # 첫 번째 슬래시 기준으로만 나눠서, 댄서명에 슬래시가 더 들어가도
+        # 본명 추출이 깨지지 않는다.
+        self.assertEqual(split_display_name("김철수/비보이/스파크"), ("김철수", "비보이/스파크"))
 
     def test_mask_phone_standard_11_digits(self):
         self.assertEqual(mask_phone("010-1234-5678"), "010-****-5678")
