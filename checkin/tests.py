@@ -628,3 +628,38 @@ class LoginBruteForceProtectionTests(TestCase):
         resp = self._attempt("CorrectHorse123!")
         self.assertEqual(resp.status_code, 200)
         self.assertTrue(resp.wsgi_request.user.is_authenticated)
+
+
+class AccountDeactivationRevokesActiveSessionTests(TestCase):
+    """공용 기기 세션 관련 방어(SEC-04). 두 가지를 확인한다:
+    1) 로그인 세션 유효기간이 Django 기본값(2주)이 아니라 7일로 줄었는지.
+    2) "계정 활성화"를 끄면 다음 로그인부터가 아니라, 이미 로그인돼 있던
+       세션도 바로 다음 요청부터 차단되는지 — 기기 분실 시 이 즉시 차단이
+       실제 대응 수단으로 문서화(README, is_active 도움말)돼 있으므로,
+       그 전제가 되는 동작 자체를 회귀 테스트로 고정해둔다."""
+
+    def setUp(self):
+        User = get_user_model()
+        self.staff = User.objects.create_user("staff1", email="staff1@example.com", password="x", is_staff=True)
+
+    def test_session_cookie_age_shortened_from_default(self):
+        from django.conf import settings
+
+        self.assertEqual(settings.SESSION_COOKIE_AGE, 60 * 60 * 24 * 7)
+        self.assertLess(settings.SESSION_COOKIE_AGE, 1209600)  # Django 기본값(2주)보다 짧아야 함
+
+    def test_deactivating_account_blocks_already_logged_in_session_immediately(self):
+        self.client.force_login(self.staff)
+
+        # 로그인된 상태에서는 스캐너 화면 접근 가능.
+        resp = self.client.get("/checkin/")
+        self.assertEqual(resp.status_code, 200)
+
+        # 같은 세션(로그아웃 없이)인 채로, 다른 곳(관리자)이 계정을 비활성화.
+        self.staff.is_active = False
+        self.staff.save(update_fields=["is_active"])
+
+        # 이 기기는 로그아웃한 적이 없는데도, 다음 요청부터 바로 로그인 화면으로 밀려나야 한다.
+        resp = self.client.get("/checkin/")
+        self.assertEqual(resp.status_code, 302)
+        self.assertIn("/admin/login/", resp.url)

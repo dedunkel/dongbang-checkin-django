@@ -74,7 +74,14 @@ class AccountEditForm(forms.ModelForm):
         fields = ["first_name", "email", "is_active"]
         labels = {"first_name": "이름", "email": "이메일", "is_active": "계정 활성화"}
         help_texts = {
-            "is_active": "끄면 로그인만 막혀요 — 그동안의 처리 이력은 그대로 남습니다.",
+            # is_active=False는 "다음 로그인부터" 막는 게 아니라, 이미 로그인된
+            # 기기도 다음 요청부터 즉시 차단한다(Django가 매 요청마다 is_active를
+            # 다시 확인함) — 기기 분실·도난 시 이걸로 그 자리에서 접근을 끊을 수
+            # 있다는 걸 운영진이 알아야 하는 부분이라 도움말에 명시한다.
+            "is_active": (
+                "끄면 로그인이 막히고, 이미 로그인돼 있던 기기(스캐너 등)도 바로 접근이 끊겨요 — "
+                "기기를 분실했을 때 이걸로 즉시 차단할 수 있어요. 그동안의 처리 이력은 그대로 남습니다."
+            ),
         }
 
     def __init__(self, *args, **kwargs):
