@@ -27,6 +27,20 @@ admin.site.site_header = "DBBT STAFF"
 admin.site.site_title = "DBBT STAFF"
 admin.site.index_title = "운영진 대시보드"
 
+# admin 홈 화면의 앱 목록은 기본적으로 이름 알파벳순이라, django-axes가
+# 추가한 "AXES"(로그인 실패 기록 — 운영진이 평소에 볼 일 없는 부가 기능)가
+# 알파벳순으로 맨 위에 와서 정작 자주 쓰는 회차/참가자/계정보다 먼저 눈에
+# 띄었다. get_app_list를 감싸서 axes만 맨 뒤로 보낸다.
+_default_get_app_list = admin.site.get_app_list
+
+
+def _get_app_list_axes_last(self, request, app_label=None):
+    app_list = _default_get_app_list(request, app_label=app_label)
+    return sorted(app_list, key=lambda app: app["app_label"] == "axes")
+
+
+admin.site.get_app_list = _get_app_list_axes_last.__get__(admin.site, admin.site.__class__)
+
 # 폼/목록에 노출되는 라벨을 목업 문구에 맞추는 표시용 조정. verbose_name은
 # 스키마에 영향을 주지 않는 메타데이터라 마이그레이션 없이 바꿔도 안전하다.
 _EVENT_LABELS = {
