@@ -11,6 +11,8 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 import os
+import sys
+from datetime import timedelta
 from pathlib import Path
 
 from django.core.exceptions import ImproperlyConfigured
@@ -89,6 +91,9 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "checkin",
+    # 로그인 무차별 대입(brute-force) 방어 (SEC-02) — 실패 횟수를 세다가
+    # 넘으면 일정 시간 잠근다. AUTHENTICATION_BACKENDS/MIDDLEWARE 설정과 짝이다.
+    "axes",
 ]
 
 MIDDLEWARE = [
@@ -100,7 +105,30 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    # AuthenticationMiddleware보다 뒤, 맨 마지막에 둔다(django-axes 권장 위치) —
+    # 잠금 상태를 사람이 읽을 수 있는 403 응답으로 바꿔주는 역할.
+    "axes.middleware.AxesMiddleware",
 ]
+
+# django-axes는 django.contrib.auth.authenticate() 호출을 가로채 검사하므로,
+# 이 백엔드가 ModelBackend보다 먼저 와야 admin 로그인에도 적용된다.
+AUTHENTICATION_BACKENDS = [
+    "axes.backends.AxesStandaloneBackend",
+    "django.contrib.auth.backends.ModelBackend",
+]
+
+# 로그인 무차별 대입 방어 (SEC-02). 기본값(3회 실패 시 영구 잠금)은 행사
+# 중 스태프가 비밀번호를 몇 번 잘못 눌러도 초조하게 만들 수 있어, 실패
+# 허용 횟수를 조금 늘리고(5회) 잠금은 자동으로 1시간 뒤 풀리게 한다 —
+# 공격자의 초당 수백 회 시도는 여전히 막고, 실수한 스태프는 슈퍼유저 도움
+# 없이도 시간이 지나면 다시 로그인할 수 있다. 잠금 기준은 IP 주소(기본값).
+AXES_FAILURE_LIMIT = 5
+AXES_COOLOFF_TIME = timedelta(hours=1)
+# 테스트 클라이언트의 client.login()은 axes가 요구하는 request 객체 없이
+# authenticate()를 호출해서(AxesBackendRequestParameterRequired) 테스트가
+# 실패한다 — 브루트포스 방어는 테스트 대상이 아니므로 manage.py test 실행
+# 중에는 꺼둔다.
+AXES_ENABLED = "test" not in sys.argv
 
 ROOT_URLCONF = "config.urls"
 
