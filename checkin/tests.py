@@ -663,3 +663,17 @@ class AccountDeactivationRevokesActiveSessionTests(TestCase):
         resp = self.client.get("/checkin/")
         self.assertEqual(resp.status_code, 302)
         self.assertIn("/admin/login/", resp.url)
+
+
+class AdminAppListOrderingTests(TestCase):
+    """admin 홈 화면 앱 목록에서 django-axes(로그인 실패 기록 — 운영진이 평소에
+    볼 일 없는 부가 기능)가 알파벳순으로 맨 위에 오지 않고 맨 뒤로 가는지 확인."""
+
+    def test_axes_app_sorted_last(self):
+        User = get_user_model()
+        superuser = User.objects.create_superuser("root", "root@example.com", "pass12345")
+        self.client.force_login(superuser)
+        resp = self.client.get("/admin/")
+        app_labels = [app["app_label"] for app in resp.context["app_list"]]
+        self.assertGreater(len(app_labels), 1, "다른 앱이 있어야 순서 비교가 의미 있음")
+        self.assertEqual(app_labels[-1], "axes")
