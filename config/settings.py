@@ -69,6 +69,17 @@ if not DEBUG:
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
 
+# 체크인 스캐너는 행사장 공용 아이패드/아이폰에서 "기기당 최초 1회만 로그인"하는
+# 걸 전제로 설계돼 있다(README 참고) — 그 편의성 자체는 그대로 두되, Django
+# 기본값(2주)만큼 길게 남겨두면 그 기기를 분실·도난당했을 때 노출 기간이
+# 너무 길다(SEC-04). 절반인 1주로 줄여서 노출 기간을 낮춘다. 기기를 분실했다면
+# 이걸로 다 해결되는 게 아니라 — 계정 관리에서 그 계정의 "계정 활성화"를
+# 바로 꺼야 한다. is_active=False가 되면 이미 로그인된 기기도 다음 요청부터
+# 즉시 차단된다(ModelBackend.get_user()가 매 요청마다 is_active를 다시
+# 확인하기 때문 — 로그인 시점에만 확인하는 게 아니다). 이 세션 만료 시간은
+# "계정을 못 끈 채로 방치된 경우"를 위한 방어선이다.
+SESSION_COOKIE_AGE = 60 * 60 * 24 * 7  # 7일 (Django 기본값 14일에서 절반으로)
+
 # 기존 구글 폼 → /api/import/google-form 요청 인증용 공유 비밀키.
 # google-apps-script/Forwarder.gs의 CONFIG.IMPORT_SECRET과 동일한 값을 넣어야 합니다.
 IMPORT_SECRET = os.environ.get("IMPORT_SECRET", "")
