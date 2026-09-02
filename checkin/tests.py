@@ -580,3 +580,51 @@ class LabelGroupSortOrderTests(TestCase):
         request = RequestFactory().get("/admin/checkin/participant/")
         qs = ParticipantAdmin(Participant, admin_site).get_queryset(request).order_by("_label_sort")
         self.assertEqual([p.label_group for p in qs], ["B", "Z", "AA"])
+
+
+@override_settings(AXES_ENABLED=True)
+class LoginBruteForceProtectionTests(TestCase):
+    """로그인 무차별 대입 방어(SEC-02, django-axes) — AXES_FAILURE_LIMIT(5회)만큼
+    틀리면 그다음부터는 올바른 비밀번호를 넣어도 잠겨서 로그인이 안 되는지 확인.
+    settings.py에서 manage.py test 실행 중에는 AXES_ENABLED를 꺼두므로(테스트
+    클라이언트의 client.login()이 axes가 요구하는 request 없이 authenticate()를
+    호출해 에러가 나기 때문), 이 테스트만 override_settings로 다시 켠 뒤
+    client.login() 대신 실제 로그인 폼(POST /admin/login/)을 그대로 흉내내
+    request를 정상적으로 넘긴다."""
+
+    def setUp(self):
+        User = get_user_model()
+        self.superuser = User.objects.create_superuser("root", "root@example.com", "CorrectHorse123!")
+
+    def _attempt(self, password):
+        # 실제 로그인 폼도 next 히든 필드를 같이 보낸다 — 없으면 로그인
+        # 성공 시 이 프로젝트에 없는 기본 리다이렉트(/accounts/profile/)로
+        # 빠져 404가 나서, 테스트가 axes와 무관한 이유로 깨진다.
+        return self.client.post(
+            "/admin/login/", {"username": "root", "password": password, "next": "/admin/"}, follow=True
+        )
+
+    def test_locked_out_after_failure_limit_even_with_correct_password(self):
+        # 처음 4번은 그냥 "아이디/비밀번호 틀림" 화면(200)만 다시 보여준다.
+        for _ in range(4):
+            resp = self._attempt("wrong-password")
+            self.assertEqual(resp.status_code, 200)
+            self.assertFalse(resp.wsgi_request.user.is_authenticated)
+
+        # 5번째 실패로 AXES_FAILURE_LIMIT(5)에 도달하는 순간, 그 요청 자체가
+        # 이미 잠금 응답(429 — AXES_HTTP_RESPONSE_CODE 기본값)으로 처리된다.
+        resp = self._attempt("wrong-password")
+        self.assertEqual(resp.status_code, 429)
+
+        # 잠긴 뒤에는 올바른 비밀번호를 넣어도 여전히 막힌다.
+        resp = self._attempt("CorrectHorse123!")
+        self.assertEqual(resp.status_code, 429)
+        self.assertFalse(resp.wsgi_request.user.is_authenticated)
+
+    def test_correct_password_still_works_before_limit_reached(self):
+        for _ in range(4):
+            self._attempt("wrong-password")
+
+        resp = self._attempt("CorrectHorse123!")
+        self.assertEqual(resp.status_code, 200)
+        self.assertTrue(resp.wsgi_request.user.is_authenticated)
