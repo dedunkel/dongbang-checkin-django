@@ -492,6 +492,13 @@ html[data-theme="light"] .dbbt-theme-toggle-option[data-theme-choice="dark"] { c
 #changelist table tbody td, #changelist table tbody th {
   padding: 12px 14px; font-size: 12.5px; color: var(--text); border-bottom: 1px solid var(--line);
   border-top: none; border-left: none; border-right: none; background: none;
+  /* 헤더(thead th)는 이미 nowrap인데 본문 칸은 안 그래서, 이름이 긴 사람이
+     한 명만 있어도 브라우저가 표 전체 열 너비를 다시 배분하면서 "학적" 같은
+     좁은 칸이 "재/학"처럼 두 줄로 쪼개져 그 행만 들쭉날쭉해 보였다. 본문도
+     nowrap으로 고정하면 열 너비가 행마다 안 흔들리고, 대신 표가 넘치면
+     Django 기본 #changelist-form .results(overflow-x:auto)가 가로 스크롤을
+     만들어준다. */
+  white-space: nowrap;
 }
 #changelist table tbody tr:last-child td, #changelist table tbody tr:last-child th { border-bottom: none; }
 #changelist table tbody tr:hover td, #changelist table tbody tr:hover th { background: var(--surface2); }
