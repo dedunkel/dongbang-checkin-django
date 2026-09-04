@@ -439,6 +439,27 @@ class ParticipantStatTilesTests(TestCase):
         resp = self.client.get("/admin/checkin/participant/")
         self.assertEqual(resp.context["dbbt_stat_pending_verification"], 2)
 
+    def test_genre_panel_total_excludes_viewers(self):
+        # "장르별 참가자" 패널의 총 인원은 dbbt_stat_total(관람 포함 전체
+        # 신청자)이 아니라 장르 막대들의 합이어야 한다 — 관람은 genre가 없어
+        # 어떤 막대에도 안 잡히므로, 전체 신청자 수를 그대로 쓰면 막대 합보다
+        # 커져서 화면 숫자와 어긋나 보인다.
+        Participant.objects.create(
+            id=uuid.uuid4(), event=self.event, entry_type="참가", genre="Waacking",
+            name="참가자1", phone="010-0000-0004",
+        )
+        Participant.objects.create(
+            id=uuid.uuid4(), event=self.event, entry_type="참가", genre="Popping",
+            name="참가자2", phone="010-0000-0005",
+        )
+        Participant.objects.create(
+            id=uuid.uuid4(), event=self.event, entry_type="관람",
+            name="관람객1", phone="010-0000-0006",
+        )
+        resp = self.client.get("/admin/checkin/participant/")
+        self.assertEqual(resp.context["dbbt_stat_total"], 3)  # 참가 2 + 관람 1
+        self.assertEqual(resp.context["dbbt_genre_stat_total"], 2)  # 참가자만
+
 
 class CheckinConfirmIdempotencyTests(TestCase):
     """체크인 확정 API를 두 번 불러도 최초 체크인 시각이 덮어써지지 않는지

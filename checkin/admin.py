@@ -501,6 +501,13 @@ class ParticipantAdmin(admin.ModelAdmin):
             extra_context["dbbt_genre_max"] = max(
                 [g["count"] for g in extra_context["dbbt_genre_breakdown"]] or [0]
             )
+            # "장르별 참가자" 패널의 총 인원 — dbbt_stat_total(관람 포함 전체
+            # 신청자)을 그대로 쓰면 장르 막대 합보다 커져서 어긋나 보인다(관람은
+            # genre가 없어 막대에 안 잡히므로). 막대들의 합으로 따로 구해서
+            # 참가자만 센 숫자와 화면에 보이는 막대 합이 항상 일치하게 한다.
+            extra_context["dbbt_genre_stat_total"] = sum(
+                g["count"] for g in extra_context["dbbt_genre_breakdown"]
+            )
         return super().changelist_view(request, extra_context=extra_context)
 
     _STATUS_BADGE_CLASS = {
