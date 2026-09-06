@@ -479,30 +479,33 @@ class ParticipantAdmin(admin.ModelAdmin):
             target_event = Event.objects.order_by("-volume").first()
 
         if target_event is not None:
-            # 환불(payment_status=REFUND)된 사람은 취소된 신청으로 보고 통계/
-            # 장르 분포 어디에도 안 잡히게 여기서 한 번에 걸러둔다 — 아래
-            # 집계/장르 분포가 전부 이 참조를 공유해서 쓰기 때문에, 여기 한
-            # 줄만 고치면 전체가 일관되게 반영된다.
-            participants = target_event.participants.exclude(payment_status="REFUND")
+            # "총 신청"만 환불 포함(취소됐어도 실제 신청은 들어왔던 사람 수를
+            # 그대로 보여주려는 의도) — 학적검수/입금/체크인/장르 분포는 지금
+            # "실제로 진행 중인" 인원 기준이라야 의미가 있어서 환불을 계속
+            # 제외한다. 그래서 두 쿼리셋을 따로 둔다.
+            all_participants = target_event.participants
+            participants = all_participants.exclude(payment_status="REFUND")
             extra_context["dbbt_active_event"] = target_event
+            extra_context["dbbt_stat_total"] = all_participants.count()
             # 4번 따로 .count()를 부르면 매번 새 쿼리가 나간다 — 하나의
             # aggregate()로 묶어서 이 화면을 열 때마다(페이지 이동/필터/검색
             # 시마다) 쿼리 4개 대신 1개만 나가게 한다.
             stats = participants.aggregate(
-                total=Count("id"),
+                active_total=Count("id"),
                 pending_verification=Count(
                     "id", filter=Q(verification_status__in=["PENDING", "REJECTED"])
                 ),
                 pending_payment=Count("id", filter=Q(payment_status="PENDING")),
                 checked_in=Count("id", filter=Q(checkin_status="CHECKED_IN")),
             )
-            extra_context["dbbt_stat_total"] = stats["total"]
+            # 체크인 타일의 분모 — dbbt_stat_total(환불 포함)을 그대로 쓰면
+            # 애초에 체크인될 수 없는 환불 인원까지 분모에 끼어 비율이
+            # 어색해진다. 환불 제외한 "실제 진행 중" 인원수로 따로 둔다.
+            extra_context["dbbt_stat_active_total"] = stats["active_total"]
             extra_context["dbbt_stat_pending_verification"] = stats["pending_verification"]
             extra_context["dbbt_stat_pending_payment"] = stats["pending_payment"]
             extra_context["dbbt_stat_checked_in"] = stats["checked_in"]
-            # 환불은 위 participants(환불 제외)가 아니라 원본 매니저에서 따로
-            # 세야 한다 — 그래야 "환불" 타일에 실제 환불 인원이 표시된다.
-            extra_context["dbbt_stat_refunded"] = target_event.participants.filter(
+            extra_context["dbbt_stat_refunded"] = all_participants.filter(
                 payment_status="REFUND"
             ).count()
 
