@@ -500,6 +500,11 @@ class ParticipantAdmin(admin.ModelAdmin):
             extra_context["dbbt_stat_pending_verification"] = stats["pending_verification"]
             extra_context["dbbt_stat_pending_payment"] = stats["pending_payment"]
             extra_context["dbbt_stat_checked_in"] = stats["checked_in"]
+            # 환불은 위 participants(환불 제외)가 아니라 원본 매니저에서 따로
+            # 세야 한다 — 그래야 "환불" 타일에 실제 환불 인원이 표시된다.
+            extra_context["dbbt_stat_refunded"] = target_event.participants.filter(
+                payment_status="REFUND"
+            ).count()
 
             genre_counts = dict(
                 participants.values("genre").annotate(count=Count("id")).values_list("genre", "count")

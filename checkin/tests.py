@@ -334,6 +334,11 @@ class RefundedParticipantExclusionTests(TestCase):
         breakdown = {g["value"]: g["count"] for g in resp.context["dbbt_genre_breakdown"]}
         self.assertEqual(breakdown["Breaking"], 1)
 
+    def test_dashboard_refund_tile_counts_refunded_participants_and_viewers(self):
+        # "환불" 타일은 다른 타일들과 반대로, 환불된 사람만(참가+관람 합산) 세야 한다.
+        resp = self.client.get("/admin/checkin/participant/")
+        self.assertEqual(resp.context["dbbt_stat_refunded"], 2)  # 환불 참가자 1 + 환불 관람 1
+
 
 class AdminSecurityRegressionTests(TestCase):
     """코드 리뷰(2026-08-30, PR #61)에서 발견된 실제 버그들에 대한 회귀 테스트.
