@@ -90,11 +90,20 @@ def participants_for_tab(event: Event, genre: str | None) -> list[Participant]:
 
     라벨 배정 여부와 무관하게 신청자 전원이 필요한 경우(신청 확인용 명단)는
     이 함수를 쓰지 않는다 — application_confirmation_export.py의
-    all_participants_for_tab 참고."""
+    all_participants_for_tab 참고.
+
+    환불(payment_status=REFUND)된 사람은 명단에서 제외한다 — 참가자는
+    환불 시 label_code가 같이 비워져서 사실상 이미 빠지지만, 관람은 그런
+    연동 필드가 없어 명시적으로 걸러야 한다."""
     if genre is None:
-        return list(Participant.objects.filter(event=event, entry_type="관람").order_by("created_at"))
+        return list(
+            Participant.objects.filter(event=event, entry_type="관람")
+            .exclude(payment_status="REFUND")
+            .order_by("created_at")
+        )
     return sorted(
-        Participant.objects.filter(event=event, entry_type="참가", genre=genre, label_code__isnull=False),
+        Participant.objects.filter(event=event, entry_type="참가", genre=genre, label_code__isnull=False)
+        .exclude(payment_status="REFUND"),
         # label_group 문자열만으로 비교하면 "AA" < "B"가 돼버린다 — 한 장르가
         # GROUP_SIZE(10) x 26을 넘어 label_assign.py가 두 글자 그룹("AA", "AB",
         # ...)을 만들기 시작하면 순서가 뒤섞인다. len() 우선 비교를 앞에 두면

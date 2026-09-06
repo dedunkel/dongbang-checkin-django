@@ -263,6 +263,78 @@ class EventExcelExportTests(TestCase):
         self.assertEqual(find_duplicate_labels(self.event), [])
 
 
+class RefundedParticipantExclusionTests(TestCase):
+    """환불(payment_status=REFUND)된 사람은 취소된 신청으로 보고, 엑셀
+    내보내기 3종과 참가자 대시보드(통계 타일/장르 분포) 어디에도 안 잡혀야
+    한다."""
+
+    def setUp(self):
+        User = get_user_model()
+        self.superuser = User.objects.create_superuser("root", "root@example.com", "pass12345")
+        self.event = Event.objects.create(volume=1, name="테스트 회차", is_active=True)
+        self.client.login(username="root", password="pass12345")
+
+        # 정상 참가자 — 비교 기준.
+        Participant.objects.create(
+            id=uuid.uuid4(), event=self.event, entry_type="참가", genre="Breaking",
+            name="김철수", phone="010-1234-5678", label_group="A", label_number=1, label_code="A-1",
+            payment_status="PAID", verification_status="APPROVED", qr_token=uuid.uuid4(),
+        )
+        # 환불된 참가자 — mark_refund가 실제로 하는 것처럼 라벨/QR도 비워둔다.
+        self.refunded_participant = Participant.objects.create(
+            id=uuid.uuid4(), event=self.event, entry_type="참가", genre="Breaking",
+            name="환불된참가자", phone="010-0000-0001", payment_status="REFUND",
+            verification_status="APPROVED", label_group=None, label_number=None,
+            label_code=None, qr_token=None,
+        )
+        # 환불된 관람 — 관람은 라벨/QR 자체가 없어서 payment_status로만 걸러야 한다.
+        self.refunded_viewer = Participant.objects.create(
+            id=uuid.uuid4(), event=self.event, entry_type="관람",
+            name="환불된관람객", phone="010-0000-0002", payment_status="REFUND",
+        )
+
+    def _sheet_rows(self, wb, sheet_title):
+        ws = wb[sheet_title]
+        return [[c.value for c in row] for row in ws.iter_rows(min_row=3)]
+
+    def test_announcement_excel_excludes_refunded(self):
+        _, content = build_announcement_file(self.event)
+        wb = load_workbook(filename=io.BytesIO(content))
+        breaking_names = {row[1] for row in self._sheet_rows(wb, "브레이킹")}
+        viewer_names = {row[1] for row in self._sheet_rows(wb, "관람")}
+        self.assertNotIn("환불된참가자", breaking_names)
+        self.assertNotIn("환불된관람객", viewer_names)
+
+    def test_score_sheet_excel_excludes_refunded(self):
+        _, content = build_score_sheet_file(self.event)
+        wb = load_workbook(filename=io.BytesIO(content))
+        names = {row[1] for row in self._sheet_rows(wb, "브레이킹")}
+        self.assertNotIn("환불된참가자", names)
+
+    def test_application_confirmation_excludes_refunded(self):
+        # 라벨 유무와 무관하게 전원을 담는 명단이라 다른 필터는 다 통과해도,
+        # 환불만은 걸러져야 한다.
+        _, content = build_application_confirmation_file(self.event)
+        wb = load_workbook(filename=io.BytesIO(content))
+        breaking_names = {row[1] for row in self._sheet_rows(wb, "브레이킹")}
+        viewer_names = {row[1] for row in self._sheet_rows(wb, "관람")}
+        self.assertNotIn("환불된참가자", breaking_names)
+        self.assertNotIn("환불된관람객", viewer_names)
+
+    def test_qr_send_list_excludes_refunded(self):
+        resp = self.client.post("/admin/checkin/event/", {
+            "action": "export_qr_send_list", "_selected_action": [str(self.event.pk)],
+        })
+        content = resp.content.decode("utf-8-sig")
+        self.assertNotIn("환불된참가자", content)
+
+    def test_dashboard_stats_and_genre_breakdown_exclude_refunded(self):
+        resp = self.client.get("/admin/checkin/participant/")
+        self.assertEqual(resp.context["dbbt_stat_total"], 1)  # 정상 참가자만
+        breakdown = {g["value"]: g["count"] for g in resp.context["dbbt_genre_breakdown"]}
+        self.assertEqual(breakdown["Breaking"], 1)
+
+
 class AdminSecurityRegressionTests(TestCase):
     """코드 리뷰(2026-08-30, PR #61)에서 발견된 실제 버그들에 대한 회귀 테스트.
     전부 실제로 재현/수정을 확인한 것들이라, 나중에 누가 관련 코드를 다시

@@ -244,8 +244,14 @@ def export_qr_send_list(modeladmin, request, queryset):
     if event is None:
         return
 
-    participants = list(event.participants.filter(qr_token__isnull=False).order_by("entry_type", "genre", "created_at"))
-    skipped = event.participants.filter(qr_token__isnull=True).count()
+    # 환불된 사람은 mark_refund에서 qr_token도 같이 비우므로 이 필터만으로도
+    # 이미 빠지지만, 명단 성격상 그 전제에 기대지 않고 명시적으로도 걸러둔다.
+    participants = list(
+        event.participants.filter(qr_token__isnull=False)
+        .exclude(payment_status="REFUND")
+        .order_by("entry_type", "genre", "created_at")
+    )
+    skipped = event.participants.filter(qr_token__isnull=True).exclude(payment_status="REFUND").count()
     if skipped:
         messages.warning(
             request,
@@ -473,7 +479,11 @@ class ParticipantAdmin(admin.ModelAdmin):
             target_event = Event.objects.order_by("-volume").first()
 
         if target_event is not None:
-            participants = target_event.participants
+            # 환불(payment_status=REFUND)된 사람은 취소된 신청으로 보고 통계/
+            # 장르 분포 어디에도 안 잡히게 여기서 한 번에 걸러둔다 — 아래
+            # 집계/장르 분포가 전부 이 참조를 공유해서 쓰기 때문에, 여기 한
+            # 줄만 고치면 전체가 일관되게 반영된다.
+            participants = target_event.participants.exclude(payment_status="REFUND")
             extra_context["dbbt_active_event"] = target_event
             # 4번 따로 .count()를 부르면 매번 새 쿼리가 나간다 — 하나의
             # aggregate()로 묶어서 이 화면을 열 때마다(페이지 이동/필터/검색
