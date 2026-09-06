@@ -25,11 +25,20 @@ HEADERS = ["번호", "이름", "연락처", "소속대학", "학적", "비고"]
 
 def all_participants_for_tab(event: Event, genre: str | None) -> list[Participant]:
     """라벨 유무와 무관하게 그 탭(장르 또는 관람)에 신청한 사람 전원을
-    신청 순서(생성일시)로 정렬해 반환."""
+    신청 순서(생성일시)로 정렬해 반환. 환불(payment_status=REFUND)된
+    사람은 신청을 취소한 것으로 보고 제외한다 — 이 명단은 라벨 배정
+    전이라도 쓰이므로 participants_for_tab처럼 label_code로 간접 걸러지지
+    않아, 여기서도 명시적으로 제외해야 한다."""
     if genre is None:
-        return list(Participant.objects.filter(event=event, entry_type="관람").order_by("created_at"))
+        return list(
+            Participant.objects.filter(event=event, entry_type="관람")
+            .exclude(payment_status="REFUND")
+            .order_by("created_at")
+        )
     return list(
-        Participant.objects.filter(event=event, entry_type="참가", genre=genre).order_by("created_at")
+        Participant.objects.filter(event=event, entry_type="참가", genre=genre)
+        .exclude(payment_status="REFUND")
+        .order_by("created_at")
     )
 
 
