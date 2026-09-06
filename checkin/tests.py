@@ -328,11 +328,22 @@ class RefundedParticipantExclusionTests(TestCase):
         content = resp.content.decode("utf-8-sig")
         self.assertNotIn("환불된참가자", content)
 
-    def test_dashboard_stats_and_genre_breakdown_exclude_refunded(self):
+    def test_dashboard_genre_breakdown_excludes_refunded(self):
         resp = self.client.get("/admin/checkin/participant/")
-        self.assertEqual(resp.context["dbbt_stat_total"], 1)  # 정상 참가자만
         breakdown = {g["value"]: g["count"] for g in resp.context["dbbt_genre_breakdown"]}
-        self.assertEqual(breakdown["Breaking"], 1)
+        self.assertEqual(breakdown["Breaking"], 1)  # 정상 참가자만
+
+    def test_dashboard_active_total_excludes_refunded(self):
+        # 체크인 타일의 분모("N / 여기") 등 "지금 진행 중인 인원" 기준은
+        # 환불을 계속 제외해야 한다.
+        resp = self.client.get("/admin/checkin/participant/")
+        self.assertEqual(resp.context["dbbt_stat_active_total"], 1)  # 정상 참가자만
+
+    def test_dashboard_total_includes_refunded(self):
+        # "총 신청"은 취소(환불)됐어도 실제 신청이 들어왔던 사실 자체는
+        # 그대로 보여줘야 하므로 환불도 포함해서 센다.
+        resp = self.client.get("/admin/checkin/participant/")
+        self.assertEqual(resp.context["dbbt_stat_total"], 3)  # 정상 1 + 환불 참가 1 + 환불 관람 1
 
     def test_dashboard_refund_tile_counts_refunded_participants_and_viewers(self):
         # "환불" 타일은 다른 타일들과 반대로, 환불된 사람만(참가+관람 합산) 세야 한다.
