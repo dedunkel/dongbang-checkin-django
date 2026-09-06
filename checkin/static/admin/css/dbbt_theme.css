@@ -340,16 +340,24 @@ html[data-theme="light"] .dbbt-theme-toggle-option[data-theme-choice="dark"] { c
    목업의 카드형 표로 재구성.
    ========================================================================== */
 .dbbt-stat-tiles {
-  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin: 14px 0 22px;
+  display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 14px; margin: 14px 0 22px;
 }
 .dbbt-stat-tile { border: 1px solid var(--line); border-radius: 6px; padding: 16px 18px; background: var(--surface); }
 .dbbt-stat-label { font-size: 11px; color: var(--muted); font-weight: 700; }
 .dbbt-stat-label-warn { color: var(--dbbt-warn); }
 .dbbt-stat-label-ok { color: var(--dbbt-ok); }
+.dbbt-stat-label-bad { color: var(--dbbt-bad); }
 .dbbt-stat-value { font-size: 26px; font-weight: 900; margin-top: 6px; color: var(--text); }
 .dbbt-stat-value-warn { color: var(--dbbt-warn); }
 .dbbt-stat-value-ok { color: var(--dbbt-ok); }
-@media (max-width: 1024px) { .dbbt-stat-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.dbbt-stat-value-bad { color: var(--dbbt-bad); }
+@media (max-width: 1024px) {
+  .dbbt-stat-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  /* 타일 5개를 2열로 접으면 2/2/1로 나뉘어 마지막 줄(체크인 완료)이 왼쪽
+     절반만 차지하고 오른쪽이 허전하게 빈다 — 홀수 개일 때 마지막 칸만
+     두 칸을 다 쓰게 늘려서 마지막 줄을 꽉 채운다. */
+  .dbbt-stat-tiles .dbbt-stat-tile:last-child:nth-child(odd) { grid-column: span 2; }
+}
 
 /* 참가자 관리: 필터 pill과 "+ 새 참가자 추가" 버튼을 같은 줄에 — 필터는
    왼쪽에서 줄바꿈되며 채우고, 버튼은 오른쪽 끝에 고정. */
