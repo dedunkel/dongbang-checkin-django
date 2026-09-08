@@ -186,6 +186,30 @@ def _first_selected_event(request, queryset, action_label: str) -> Event | None:
     return event
 
 
+def _require_export_permission(request, action_label: str) -> bool:
+    """마스킹 없이 민감 정보를 그대로 내보내는 액션들이 공통으로 쓰는 실행
+    가드 (#64: export_event_csv/export_qr_send_list/export_score_sheet_excel
+    세 곳에 복붙돼 있던 3줄을 하나로 모음). get_actions()가 권한 없는
+    사용자의 메뉴에서 이미 숨기지만, 직접 요청을 조작해 액션을 실행하는
+    경우까지 막기 위해 각 액션 함수 안에서도 한 번 더 확인해야 한다 —
+    새 "마스킹 없는" 내보내기 액션을 추가할 때 이 함수 하나만 호출하면
+    되게 해서 체크 누락을 방지한다."""
+    if request.user.has_perm("checkin.export_sensitive_data"):
+        return True
+    messages.error(request, f"{action_label}는 운영진만 실행할 수 있습니다.")
+    return False
+
+
+def _sensitive_export(func):
+    """"마스킹 없음" 내보내기 액션 표시. get_actions()가 이 표시만 보고
+    권한 없는 사용자의 드롭다운 메뉴에서 자동으로 숨긴다 — 액션 이름을
+    별도 목록으로 나열해두면(예전 get_actions() 방식) 새 액션을 추가할 때
+    그 목록에 이름 추가를 깜빡해도 아무 에러 없이 조용히 새지만, 함수
+    바로 위에 붙이는 표시는 액션 정의와 한눈에 붙어있어 빠뜨리기 어렵다."""
+    func.dbbt_sensitive_export = True
+    return func
+
+
 def _xlsx_response(filename: str, content: bytes) -> HttpResponse:
     response = HttpResponse(
         content, content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -195,14 +219,9 @@ def _xlsx_response(filename: str, content: bytes) -> HttpResponse:
 
 
 @admin.action(description="선택 회차: 참가자 CSV 백업 다운로드 (마스킹 없음, 운영진 전용)")
+@_sensitive_export
 def export_event_csv(modeladmin, request, queryset):
-    # 이름/연락처를 마스킹 없이 그대로 내보내는 액션이라, export_score_sheet_excel(#28)과
-    # 동일하게 checkin.export_sensitive_data 권한이 있는 사람(슈퍼유저 또는 "운영진"
-    # 그룹)만 실행할 수 있게 제한한다. get_actions에서 권한 없는 사람에게는
-    # 드롭다운에서 아예 안 보이게 숨기지만, 직접 폼을 조작해서 요청을 보내는
-    # 경우까지 막으려고 여기서도 한 번 더 확인한다.
-    if not request.user.has_perm("checkin.export_sensitive_data"):
-        messages.error(request, "CSV 백업 다운로드는 운영진만 실행할 수 있습니다.")
+    if not _require_export_permission(request, "CSV 백업 다운로드"):
         return
 
     event = _first_selected_event(request, queryset, "CSV 백업")
@@ -233,11 +252,9 @@ def export_event_csv(modeladmin, request, queryset):
 
 
 @admin.action(description="선택 회차: QR 발송용 명단 다운로드 (문자/카톡 대량발송 도구용)")
+@_sensitive_export
 def export_qr_send_list(modeladmin, request, queryset):
-    # 연락처 + 개인별 QR 링크를 그대로 담는 액션이라 CSV 백업/점수표와 동일하게
-    # 운영진 전용으로 제한한다.
-    if not request.user.has_perm("checkin.export_sensitive_data"):
-        messages.error(request, "QR 발송용 명단 다운로드는 운영진만 실행할 수 있습니다.")
+    if not _require_export_permission(request, "QR 발송용 명단 다운로드"):
         return
 
     event = _first_selected_event(request, queryset, "QR 발송용 명단")
@@ -297,13 +314,9 @@ def export_announcement_excel(modeladmin, request, queryset):
 
 
 @admin.action(description="선택 회차: 점수표 엑셀 다운로드 (마스킹 없음, 운영진 전용)")
+@_sensitive_export
 def export_score_sheet_excel(modeladmin, request, queryset):
-    # 이름/연락처를 마스킹 없이 그대로 내보내는 액션이라, checkin.export_sensitive_data
-    # 권한이 있는 사람(슈퍼유저 또는 "운영진" 그룹)만 실행할 수 있게 제한한다 (#28).
-    # get_actions에서 권한 없는 사람에게는 드롭다운에서 아예 안 보이게 숨기지만,
-    # 직접 폼을 조작해서 요청을 보내는 경우까지 막으려고 여기서도 한 번 더 확인한다.
-    if not request.user.has_perm("checkin.export_sensitive_data"):
-        messages.error(request, "점수표 다운로드는 운영진만 실행할 수 있습니다.")
+    if not _require_export_permission(request, "점수표 다운로드"):
         return
 
     event = _first_selected_event(request, queryset, "점수표")
@@ -368,9 +381,12 @@ class EventAdmin(admin.ModelAdmin):
     def get_actions(self, request):
         actions = super().get_actions(request)
         if not request.user.has_perm("checkin.export_sensitive_data"):
-            actions.pop("export_score_sheet_excel", None)
-            actions.pop("export_event_csv", None)
-            actions.pop("export_qr_send_list", None)
+            # 이름을 나열한 목록 대신 @_sensitive_export로 표시된 액션을 찾아서
+            # 숨긴다 — 새 "마스킹 없는" 내보내기 액션을 추가하면서 여기 목록에
+            # 이름 추가를 깜빡해도(#64) 메뉴에 계속 노출되는 일이 없다.
+            for name, (func, _name, _desc) in list(actions.items()):
+                if getattr(func, "dbbt_sensitive_export", False):
+                    actions.pop(name)
         return actions
 
     def delete_queryset(self, request, queryset):
