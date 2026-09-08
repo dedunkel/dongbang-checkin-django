@@ -84,6 +84,7 @@
       </button>
     </div>
     {% if request.user.is_authenticated %}
+      <a href="{% url 'otp_setup' %}" class="dbbt-btn-link" title="2단계 인증 설정">2단계 인증</a>
       <span class="dbbt-user-email">{{ request.user.email|default:request.user.get_username }}</span>
       <form id="dbbt-logout-form" method="post" action="{% url 'admin:logout' %}">{% csrf_token %}
         <button type="submit" class="dbbt-logout-btn">로그아웃</button>

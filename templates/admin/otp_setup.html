@@ -1,0 +1,67 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+<div id="content-main" class="dbbt-otp-setup">
+
+  {% if messages %}
+    <ul class="messagelist">{% for message in messages %}
+      <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message|capfirst }}</li>
+    {% endfor %}</ul>
+  {% endif %}
+
+  {% if enabled %}
+    <div class="dbbt-section">
+      <div class="dbbt-section-title">2단계 인증이 켜져 있어요</div>
+      <p class="dbbt-field-help">
+        다음 로그인부터 비밀번호를 맞춘 뒤 인증 앱(Google Authenticator, Authy 등)의
+        6자리 코드를 한 번 더 입력해야 합니다.
+      </p>
+      <form method="post" style="margin-top: 16px;">{% csrf_token %}
+        <input type="hidden" name="action" value="disable">
+        <button
+          type="submit"
+          class="dbbt-btn dbbt-btn-outline dbbt-btn-danger"
+          onclick="return confirm('2단계 인증을 끌까요? 다음 로그인부터 비밀번호만으로 접속됩니다.');"
+        >2단계 인증 끄기</button>
+      </form>
+    </div>
+  {% else %}
+    <div class="dbbt-section">
+      <div class="dbbt-section-title">2단계 인증 설정</div>
+      <p class="dbbt-field-help">
+        인증 앱(Google Authenticator, Authy 등)으로 아래 QR 코드를 스캔한 뒤,
+        앱에 뜨는 6자리 코드를 입력해서 등록을 마치세요.
+      </p>
+
+      <div class="dbbt-otp-qr">
+        <img src="{{ qr_data_url }}" alt="2단계 인증 QR 코드" width="176" height="176">
+      </div>
+
+      <div class="dbbt-section-subtitle">QR을 못 찍으면 이 키를 인증 앱에 직접 입력하세요</div>
+      <div class="dbbt-copy-row">
+        <code class="dbbt-copy-text">{{ manual_key }}</code>
+        <button type="button" class="dbbt-copy-btn" title="키 복사">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="9" y="9" width="13" height="13" rx="2"/>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+          </svg>
+        </button>
+      </div>
+
+      <form method="post" class="dbbt-otp-confirm-form">{% csrf_token %}
+        <div class="dbbt-field" style="margin-top: 20px;">
+          <label for="id_token">인증 앱에 뜬 6자리 코드</label>
+          <input type="text" id="id_token" name="token" inputmode="numeric" autocomplete="one-time-code" maxlength="6" required autofocus>
+        </div>
+        <button type="submit" class="dbbt-btn dbbt-btn-primary" style="margin-top: 14px;">확인하고 켜기</button>
+      </form>
+
+      <form method="post" style="margin-top: 10px;">{% csrf_token %}
+        <input type="hidden" name="action" value="reset">
+        <button type="submit" class="dbbt-btn-link">다른 QR로 다시 만들기</button>
+      </form>
+    </div>
+  {% endif %}
+
+</div>
+{% endblock %}

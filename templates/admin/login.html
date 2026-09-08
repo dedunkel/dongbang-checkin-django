@@ -53,6 +53,18 @@
         <input type="hidden" name="next" value="{{ next }}">
       </div>
 
+      {% comment %}
+      비밀번호까지는 맞았고, 2단계 인증이 켜진 계정이라 코드 입력이 더 필요한 단계 —
+      2단계 인증을 안 켠 대부분의 계정에는 이 칸이 아예 안 보이는 게 맞다.
+      {% endcomment %}
+      {% if form.get_user %}
+      <div class="dbbt-field">
+        <label for="{{ form.otp_token.id_for_label }}">2단계 인증 코드</label>
+        {{ form.otp_token.errors }}
+        {{ form.otp_token }}
+      </div>
+      {% endif %}
+
       {% url 'admin_password_reset' as password_reset_url %}
       {% if password_reset_url %}
         <div class="dbbt-login-forgot"><a href="{{ password_reset_url }}">{% translate 'Forgotten your login credentials?' %}</a></div>

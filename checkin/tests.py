@@ -10,6 +10,8 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.core import mail
 from django.test import RequestFactory, TestCase, override_settings
+from django_otp.oath import totp
+from django_otp.plugins.otp_totp.models import TOTPDevice
 
 from checkin.admin import ParticipantAdmin
 from checkin.admin_views import OPERATIONS_GROUP_NAME
@@ -737,6 +739,126 @@ class LoginBruteForceProtectionTests(TestCase):
         resp = self._attempt("CorrectHorse123!")
         self.assertEqual(resp.status_code, 200)
         self.assertTrue(resp.wsgi_request.user.is_authenticated)
+
+
+def _wrong_token(device: TOTPDevice) -> str:
+    """device의 실제 현재 코드와 다른 게 확실한 6자리 문자열. verify_token()을
+    미리 불러서 "이게 틀린 코드 맞나" 확인하면 그 호출 자체가 실패 시도로
+    기록돼(스로틀링) 뒤이은 정상 검증까지 잠글 수 있어, 시간 기반 코드를
+    직접 계산해 +1한 값을 쓴다(같은 스텝 안에서는 항상 실제 코드와 다름)."""
+    correct = totp(device.bin_key)
+    return str((correct + 1) % 1_000_000).zfill(6)
+
+
+class TwoFactorAuthenticationTests(TestCase):
+    """2단계 인증(TOTP, SEC-03) — 계정별 단계적 적용의 핵심 동작을 검증한다.
+    확인된(confirmed) 기기가 없는 계정은 예전처럼 비밀번호만으로 로그인되고,
+    기기를 확인해둔 계정만 그 다음부터 코드까지 맞아야 한다."""
+
+    def setUp(self):
+        User = get_user_model()
+        self.user = User.objects.create_superuser("root", "root@example.com", "CorrectHorse123!")
+
+    def _login(self, otp_token=""):
+        # LoginBruteForceProtectionTests와 같은 이유로 client.login() 대신
+        # 실제 로그인 폼 POST를 쓴다 — OTP 검사는 AdminOTPAuthenticationForm.
+        # clean() 안에 있어서, authenticate()를 직접 호출하는 client.login()은
+        # 이 검사를 건드리지 않고 지나가버린다.
+        return self.client.post(
+            "/admin/login/",
+            {"username": "root", "password": "CorrectHorse123!", "next": "/admin/", "otp_token": otp_token},
+            follow=True,
+        )
+
+    def test_login_without_device_needs_no_otp_code(self):
+        resp = self._login()
+        self.assertEqual(resp.status_code, 200)
+        self.assertTrue(resp.wsgi_request.user.is_authenticated)
+
+    # 아래 세 개를 하나로 합쳐서 "빈 코드 → 틀린 코드 → 맞는 코드" 순서로
+    # 연달아 시도하지 않는다 — TOTPDevice 자체에 실패 시 지수적으로 늘어나는
+    # 재시도 대기시간(스로틀링)이 내장돼 있어서, 방금 실패한 직후 바로 맞는
+    # 코드를 넣어도 "너무 빨리 재시도함"으로 막혀 테스트가 깨진다(이건 이
+    # 기능의 버그가 아니라 django-otp 자체의 무차별 대입 방어). 그래서 매
+    # 테스트가 스로틀 이력이 없는 새 기기로 시작해 딱 한 번만 검증한다.
+    def test_login_with_confirmed_device_and_no_code_is_rejected(self):
+        TOTPDevice.objects.create(user=self.user, confirmed=True, name="테스트 기기")
+        resp = self._login()  # 코드 없이
+        self.assertFalse(resp.wsgi_request.user.is_authenticated)
+        self.assertContains(resp, "2단계 인증 코드를 입력해주세요")
+
+    def test_login_with_confirmed_device_and_wrong_code_is_rejected(self):
+        device = TOTPDevice.objects.create(user=self.user, confirmed=True, name="테스트 기기")
+        resp = self._login(otp_token=_wrong_token(device))
+        self.assertFalse(resp.wsgi_request.user.is_authenticated)
+
+    def test_login_with_confirmed_device_and_correct_code_succeeds(self):
+        device = TOTPDevice.objects.create(user=self.user, confirmed=True, name="테스트 기기")
+        resp = self._login(otp_token=str(totp(device.bin_key)).zfill(6))
+        self.assertTrue(resp.wsgi_request.user.is_authenticated)
+
+    def test_unconfirmed_device_does_not_require_otp(self):
+        # 아직 등록을 안 끝낸(코드 확인 전) 기기는 "설정된 것"으로 치지 않는다
+        # — 그렇지 않으면 QR만 찍고 확인을 안 마친 사람이 다음 로그인부터
+        # 자기도 모르게 잠기게 된다.
+        TOTPDevice.objects.create(user=self.user, confirmed=False, name="미확인 기기")
+        resp = self._login()
+        self.assertTrue(resp.wsgi_request.user.is_authenticated)
+
+    def test_disabling_device_returns_to_password_only_login(self):
+        device = TOTPDevice.objects.create(user=self.user, confirmed=True, name="테스트 기기")
+        device.delete()
+        resp = self._login()
+        self.assertTrue(resp.wsgi_request.user.is_authenticated)
+
+
+class OtpSetupViewTests(TestCase):
+    """본인 계정 2단계 인증을 스스로 켜고 끄는 화면(/admin/2fa/, SEC-03)."""
+
+    def setUp(self):
+        User = get_user_model()
+        self.user = User.objects.create_user("staff1", email="staff1@example.com", password="x", is_staff=True)
+        # 여기서는 2단계 인증 기기가 아직 없는 계정으로 화면 자체를 확인하는
+        # 것이라 client.login()으로 충분하다(OTP 검사와 무관한 경로).
+        self.client.login(username="staff1", password="x")
+
+    def test_get_shows_qr_when_no_device(self):
+        resp = self.client.get("/admin/2fa/")
+        self.assertEqual(resp.status_code, 200)
+        self.assertFalse(resp.context["enabled"])
+        self.assertIn("qr_data_url", resp.context)
+        self.assertTrue(TOTPDevice.objects.filter(user=self.user, confirmed=False).exists())
+
+    def test_reuses_same_unconfirmed_device_across_requests(self):
+        # QR을 보여준 뒤 새로고침해도 키가 안 바뀌어야 한다 — 안 그러면 이미
+        # 인증 앱에 등록해둔 QR/코드가 무효가 돼버린다.
+        self.client.get("/admin/2fa/")
+        device1 = TOTPDevice.objects.get(user=self.user, confirmed=False)
+        self.client.get("/admin/2fa/")
+        device2 = TOTPDevice.objects.get(user=self.user, confirmed=False)
+        self.assertEqual(device1.pk, device2.pk)
+        self.assertEqual(device1.key, device2.key)
+
+    def test_wrong_token_does_not_confirm(self):
+        self.client.get("/admin/2fa/")
+        device = TOTPDevice.objects.get(user=self.user, confirmed=False)
+        self.client.post("/admin/2fa/", {"token": _wrong_token(device)}, follow=True)
+        self.assertFalse(TOTPDevice.objects.get(pk=device.pk).confirmed)
+
+    def test_correct_token_confirms_device(self):
+        self.client.get("/admin/2fa/")
+        device = TOTPDevice.objects.get(user=self.user, confirmed=False)
+        token = str(totp(device.bin_key)).zfill(6)
+        self.client.post("/admin/2fa/", {"token": token}, follow=True)
+        self.assertTrue(TOTPDevice.objects.get(pk=device.pk).confirmed)
+
+        resp = self.client.get("/admin/2fa/")
+        self.assertTrue(resp.context["enabled"])
+
+    def test_disable_removes_confirmed_device(self):
+        device = TOTPDevice.objects.create(user=self.user, confirmed=True, name="기본")
+        self.client.post("/admin/2fa/", {"action": "disable"}, follow=True)
+        self.assertFalse(TOTPDevice.objects.filter(pk=device.pk).exists())
 
 
 class AccountDeactivationRevokesActiveSessionTests(TestCase):

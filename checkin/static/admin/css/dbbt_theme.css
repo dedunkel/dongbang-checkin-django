@@ -753,6 +753,20 @@ html[data-theme="light"] .dbbt-theme-toggle-option[data-theme-choice="dark"] { c
 .dbbt-permission-desc { font-size: 12px; color: var(--muted); line-height: 1.9; }
 
 /* ==========================================================================
+   2단계 인증(TOTP) 설정 화면 (SEC-03)
+   ========================================================================== */
+.dbbt-otp-qr {
+  display: inline-flex; padding: 14px; margin: 16px 0; background: #fff;
+  border: 1px solid var(--line); border-radius: 6px;
+  /* QR은 스캐너가 인식해야 하니 테마와 무관하게 항상 흰 바탕 위에 검은 격자로 둔다. */
+}
+.dbbt-otp-confirm-form input[type="text"] {
+  width: 140px; background: var(--surface); border: 1px solid var(--line); border-radius: 4px;
+  padding: 11px 12px; font-size: 18px; letter-spacing: 0.2em; text-align: center;
+  color: var(--text); font-family: inherit; box-sizing: border-box;
+}
+
+/* ==========================================================================
    스태프 로그인
    ========================================================================== */
 .dbbt-login-wrap { display: flex; align-items: center; justify-content: center; min-height: calc(100vh - 60px); padding: 40px 20px; }

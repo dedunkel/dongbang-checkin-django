@@ -22,10 +22,14 @@ from django.contrib import admin
 from django.contrib.auth import views as auth_views
 from django.urls import include, path
 
-from checkin.admin_views import accounts_dashboard
+from checkin.admin_views import accounts_dashboard, otp_setup
 
 urlpatterns = [
     path("admin/accounts/", accounts_dashboard, name="accounts_dashboard"),
+    # 계정 관리(위)와 별개로, 본인 계정의 2단계 인증을 스스로 켜고 끄는
+    # 화면(SEC-03) — 이것도 admin.site.urls보다 앞에 둬야 그 캐치올에
+    # 먼저 안 먹힌다.
+    path("admin/2fa/", otp_setup, name="otp_setup"),
     path(
         "admin/password_reset/",
         auth_views.PasswordResetView.as_view(email_template_name="registration/password_reset_email.html"),
