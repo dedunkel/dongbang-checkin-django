@@ -186,16 +186,25 @@ def participant_search_api(request):
     active_event = Event.objects.filter(is_active=True).first()
     if not q or not active_event:
         return JsonResponse({"results": []})
-    rows = Participant.objects.filter(event=active_event).filter(
-        Q(name__icontains=q) | Q(phone__icontains=q)
-    )[:20]
+    # QR 경로는 환불 시 qr_token을 비워서 자연히 걸러지지만(mark_refund
+    # 참고), 수동 검색은 이름/전화로 바로 조회하기 때문에 같은 보호가
+    # 없으면 환불된 사람이 검색 결과에 그대로 나타나 체크인될 수 있다(#105).
+    rows = Participant.objects.filter(event=active_event).exclude(
+        payment_status="REFUND"
+    ).filter(Q(name__icontains=q) | Q(phone__icontains=q))[:20]
     return JsonResponse({"results": [_participant_dto(p) for p in rows]})
 
 
 @staff_member_required
 @require_POST
 def manual_checkin_api(request, participant_id):
-    get_object_or_404(Participant, pk=participant_id)
+    participant = get_object_or_404(Participant, pk=participant_id)
+    # 검색 결과에서 이미 환불자를 제외하지만, 참가자 id로 직접 요청하는
+    # 경로까지 막아두는 게 QR 경로(qr_token=None)와 동등한 방어다(#105).
+    if participant.payment_status == "REFUND":
+        return JsonResponse(
+            {"status": "error", "message": "환불된 참가자는 체크인할 수 없습니다."}, status=400
+        )
     participant, _just_checked_in = _mark_checked_in(participant_id)
     return JsonResponse({"status": "success", "data": _participant_dto(participant)})
 

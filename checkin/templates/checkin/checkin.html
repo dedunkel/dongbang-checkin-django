@@ -137,6 +137,10 @@ overlay.addEventListener('click', async (e) => {
     method: 'POST', headers: { 'X-CSRFToken': csrfToken },
   });
   if (!data) return;
+  if (data.status !== 'success') {
+    showOverlay(`<div class="status bad">${escapeHtml(data.message || '체크인에 실패했습니다.')}</div>`);
+    return;
+  }
   showOverlay(checkedInCardHtml(data.data));
 });
 
@@ -216,6 +220,10 @@ searchResults.addEventListener('click', async (e) => {
     method: 'POST', headers: { 'X-CSRFToken': csrfToken },
   });
   if (!data) return;
+  if (data.status !== 'success') {
+    alert(data.message || '체크인에 실패했습니다.');
+    return;
+  }
   searchBox.dispatchEvent(new Event('input'));
 });
 </script>
