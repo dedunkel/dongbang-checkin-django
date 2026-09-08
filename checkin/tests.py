@@ -580,6 +580,35 @@ class CheckinConfirmIdempotencyTests(TestCase):
         self.assertEqual(self.participant.checked_in_at, first_time)
 
 
+class ManualCheckinRefundGuardTests(TestCase):
+    """QR 경로는 환불 시 qr_token이 비워져서(mark_refund) 자연히 막히지만,
+    수동 검색 체크인 경로에는 같은 보호가 없었다(#105). 검색 결과에서
+    환불자를 제외하고, id로 직접 요청해도 체크인을 거부하는지 확인."""
+
+    def setUp(self):
+        User = get_user_model()
+        self.staff = User.objects.create_user("staff1", email="staff1@example.com", password="x", is_staff=True)
+        self.event = Event.objects.create(volume=1, name="테스트 회차", is_active=True)
+        self.refunded = Participant.objects.create(
+            id=uuid.uuid4(), event=self.event, entry_type="참가", name="환불된참가자",
+            phone="010-0000-0009", payment_status="REFUND", verification_status="APPROVED",
+            label_group=None, label_number=None, label_code=None, qr_token=None,
+        )
+        self.client.login(username="staff1", password="x")
+
+    def test_search_excludes_refunded_participant(self):
+        resp = self.client.get("/api/participants/search/?q=환불된참가자")
+        names = {row["name"] for row in resp.json()["results"]}
+        self.assertNotIn("환불된참가자", names)
+
+    def test_manual_checkin_rejects_refunded_participant(self):
+        resp = self.client.post(f"/api/participants/{self.refunded.pk}/manual-checkin/")
+        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(resp.json()["status"], "error")
+        self.refunded.refresh_from_db()
+        self.assertEqual(self.refunded.checkin_status, "NOT_CHECKED_IN")
+
+
 @override_settings(IMPORT_SECRET="test-secret")
 class GoogleFormImportGenreValidationTests(TestCase):
     """구글 폼 연동(google_form_import)이 예비 신청 폼(RegisterForm)과 같은
