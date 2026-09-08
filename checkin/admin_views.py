@@ -1,8 +1,13 @@
+from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth import get_user_model
 from django.core.exceptions import PermissionDenied
-from django.shortcuts import render
+from django.shortcuts import redirect, render
 from django.utils import timezone
+from django_otp import devices_for_user
+from django_otp.plugins.otp_totp.models import TOTPDevice
+
+from .otp import totp_qr_data_url
 
 OPERATIONS_GROUP_NAME = "운영진"
 
@@ -59,5 +64,56 @@ def accounts_dashboard(request):
             **{"title": "계정 관리", "admin_tab": "accounts", "site_header": "DBBT STAFF"},
             "rows": rows,
             "now": timezone.now(),
+        },
+    )
+
+
+# 본인 계정의 2단계 인증(TOTP)을 스스로 켜고 끄는 화면 (SEC-03). 계정 관리
+# (다른 사람 계정을 다루는 화면, 슈퍼유저 전용)와는 별개로, 로그인한 사람
+# 누구나(스태프 포함) 자기 계정에 대해서만 쓸 수 있다 — 켜고 끄는 것 자체가
+# 이미 로그인된 상태에서만 가능해서, 스스로 껐다 켰다 하는 걸 막을 이유가
+# 없다(공격자가 이미 그 계정에 로그인해 있다면 2단계 인증 여부와 무관하게
+# 이미 뚫린 상태).
+@staff_member_required
+def otp_setup(request):
+    user = request.user
+    confirmed_devices = list(devices_for_user(user, confirmed=True))
+
+    if confirmed_devices:
+        if request.method == "POST" and request.POST.get("action") == "disable":
+            for device in confirmed_devices:
+                device.delete()
+            messages.success(request, "2단계 인증을 껐습니다. 다음 로그인부터는 비밀번호만으로 접속됩니다.")
+            return redirect("otp_setup")
+        return render(request, "admin/otp_setup.html", {"title": "2단계 인증", "enabled": True})
+
+    # 아직 미확인 상태인 기기가 있으면(직전 시도에서 코드를 틀렸거나 중간에
+    # 이탈) 새로 안 만들고 그대로 재사용한다 — 매번 새로 만들면 키가 바뀌어서
+    # 이미 인증 앱에 등록해둔 QR/코드가 무효가 되어버린다.
+    device = TOTPDevice.objects.filter(user=user, confirmed=False).order_by("-id").first()
+    if device is None:
+        device = TOTPDevice.objects.create(user=user, confirmed=False, name="기본")
+
+    if request.method == "POST":
+        if request.POST.get("action") == "reset":
+            device.delete()
+            return redirect("otp_setup")
+
+        token = (request.POST.get("token") or "").strip()
+        if device.verify_token(token):
+            device.confirmed = True
+            device.save(update_fields=["confirmed"])
+            messages.success(request, "2단계 인증을 설정했습니다. 다음 로그인부터 인증 코드를 입력해야 합니다.")
+            return redirect("otp_setup")
+        messages.error(request, "인증 코드가 올바르지 않습니다. 인증 앱에 뜬 숫자를 다시 확인해주세요.")
+
+    return render(
+        request,
+        "admin/otp_setup.html",
+        {
+            "title": "2단계 인증",
+            "enabled": False,
+            "qr_data_url": totp_qr_data_url(device),
+            "manual_key": device.key,
         },
     )

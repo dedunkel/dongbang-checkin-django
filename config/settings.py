@@ -105,6 +105,10 @@ INSTALLED_APPS = [
     # 로그인 무차별 대입(brute-force) 방어 (SEC-02) — 실패 횟수를 세다가
     # 넘으면 일정 시간 잠근다. AUTHENTICATION_BACKENDS/MIDDLEWARE 설정과 짝이다.
     "axes",
+    # 2단계 인증(TOTP) (SEC-03) — checkin/otp.py의 로그인 폼, otp_totp가
+    # 실제 TOTP 기기(TOTPDevice) 모델을 제공한다.
+    "django_otp",
+    "django_otp.plugins.otp_totp",
 ]
 
 MIDDLEWARE = [
@@ -119,6 +123,9 @@ MIDDLEWARE = [
     # AuthenticationMiddleware보다 뒤, 맨 마지막에 둔다(django-axes 권장 위치) —
     # 잠금 상태를 사람이 읽을 수 있는 403 응답으로 바꿔주는 역할.
     "axes.middleware.AxesMiddleware",
+    # AuthenticationMiddleware 뒤에 둬야 request.user가 있는 상태에서
+    # OTP 인증 여부를 같이 확인할 수 있다 (SEC-03).
+    "django_otp.middleware.OTPMiddleware",
 ]
 
 # django-axes는 django.contrib.auth.authenticate() 호출을 가로채 검사하므로,
@@ -140,6 +147,10 @@ AXES_COOLOFF_TIME = timedelta(hours=1)
 # 실패한다 — 브루트포스 방어는 테스트 대상이 아니므로 manage.py test 실행
 # 중에는 꺼둔다.
 AXES_ENABLED = "test" not in sys.argv
+
+# 2단계 인증(TOTP, SEC-03). 인증 앱(Google Authenticator 등)에 뜨는 계정
+# 이름 앞에 붙는 발급자 표시 — 같은 앱에 여러 서비스를 등록해도 구분되게.
+OTP_TOTP_ISSUER = "DBBT STAFF"
 
 ROOT_URLCONF = "config.urls"
 

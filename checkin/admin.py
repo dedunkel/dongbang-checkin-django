@@ -23,6 +23,11 @@ from .services.score_sheet_export import build_score_sheet_file
 # auth_admin.py는 여기서 명시적으로 임포트해줘야 등록 코드가 실행된다.
 from . import auth_admin  # noqa: F401,E402
 
+# 2단계 인증(TOTP) 로그인 폼을 admin.site.login_form에 꽂는다 (SEC-03) —
+# otp.py를 여기서 임포트해야 그 모듈 하단의 admin.site.login_form = ... 대입이
+# 실행된다(auth_admin과 같은 이유).
+from . import otp as _otp  # noqa: F401,E402
+
 admin.site.site_header = "DBBT STAFF"
 admin.site.site_title = "DBBT STAFF"
 admin.site.index_title = "운영진 대시보드"
