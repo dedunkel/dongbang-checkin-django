@@ -36,6 +36,8 @@ class Event(models.Model):
                 "export_sensitive_data",
                 "마스킹 없는 민감 정보 엑셀 내보내기 가능 (점수표, CSV 백업)",
             ),
+            ("run_label_assign", "라벨 · QR 발급 실행 가능"),
+            ("push_order_to_sheet", "점수 시트 순서 반영 가능"),
         ]
 
     def __str__(self):
@@ -134,6 +136,13 @@ class Participant(models.Model):
         ordering = ["-created_at"]
         verbose_name = "참가자"
         verbose_name_plural = "참가자"
+        permissions = [
+            ("use_scanner", "현장 체크인 스캐너 사용 가능"),
+            ("approve_verification", "학적검수 승인 처리 가능"),
+            ("mark_paid", "입금 확인 처리 가능"),
+            ("mark_refund", "환불 처리 가능"),
+            ("swap_labels", "라벨 맞바꾸기 가능"),
+        ]
         constraints = [
             # 같은 회차·장르 안에서 같은 조/번호가 중복 배정되지 않도록 DB 레벨에서도 막는다.
             UniqueConstraint(
