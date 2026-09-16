@@ -124,7 +124,7 @@ async function lookupQr(text) {
   });
   if (!data) return;
   if (data.status !== 'FOUND') {
-    showOverlay('<div class="status bad">등록되지 않은 QR입니다.</div>');
+    showOverlay(`<div class="status bad">${escapeHtml(data.message || '등록되지 않은 QR입니다.')}</div>`);
     return;
   }
   showOverlay(foundCardHtml(data.data));

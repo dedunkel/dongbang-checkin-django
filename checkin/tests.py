@@ -7,14 +7,13 @@ from openpyxl import load_workbook
 
 from django.contrib.admin.sites import site as admin_site
 from django.contrib.auth import get_user_model
-from django.contrib.auth.models import Group
+from django.contrib.auth.models import Permission
 from django.core import mail
 from django.test import RequestFactory, TestCase, override_settings
 from django_otp.oath import totp
 from django_otp.plugins.otp_totp.models import TOTPDevice
 
 from checkin.admin import ParticipantAdmin
-from checkin.admin_views import OPERATIONS_GROUP_NAME
 from checkin.models import Event, Participant
 from checkin.services.announcement_export import build_announcement_file
 from checkin.services.application_confirmation_export import build_application_confirmation_file
@@ -29,6 +28,14 @@ from checkin.services.event_excel_export import (
 from checkin.services.label_assign import GROUP_SIZE, FixedEntry, FreshEntry, assign_genre
 from checkin.services.score_sheet_export import build_score_sheet_file
 from checkin.services.sheet_sync import push_order_for_event
+
+
+def _grant(user, *codenames):
+    """테스트용: user에게 checkin 앱의 권한(내장 view/change 포함)을
+    codename으로 바로 부여 — 계정별 개별 권한 체크박스가 저장 시 실제로
+    부여하는 것과 같은 모양(auth_admin._permissions_for_codenames)."""
+    perms = Permission.objects.filter(content_type__app_label="checkin", codename__in=codenames)
+    user.user_permissions.add(*perms)
 
 
 def mulberry32(seed: int):
@@ -362,14 +369,15 @@ class AdminSecurityRegressionTests(TestCase):
         User = get_user_model()
         self.superuser = User.objects.create_superuser("root", "root@example.com", "pass12345")
         self.ops_user = User.objects.create_user("ops1", email="ops1@example.com", password="x", is_staff=True)
-        Group.objects.get_or_create(name=OPERATIONS_GROUP_NAME)[0].user_set.add(self.ops_user)
         self.staff_user = User.objects.create_user("staff1", email="staff1@example.com", password="x", is_staff=True)
         self.target = User.objects.create_user("kim", email="kim@example.com", password="x", is_staff=True)
 
     def test_add_user_flow_does_not_crash(self):
-        # AccountUserAdmin.save_related()가 add_form(role 필드 없음)에서도
+        # AccountUserAdmin.save_related()가 예전엔 add_form(role 필드 없음)에서도
         # cleaned_data["role"]을 무조건 읽어서 "+ 계정 초대"가 KeyError로
-        # 500이 났었다.
+        # 500이 났었다 — 지금은 두 폼이 같은 selected_codenames() 인터페이스를
+        # 쓰지만, 여전히 최소 입력(아이디/비밀번호)만으로도 계정 추가가 되는지
+        # 고정해둔다.
         self.client.login(username="root", password="pass12345")
         resp = self.client.post("/admin/auth/user/add/", {
             "username": "newstaff", "password1": "Xk8f2m9qLp!", "password2": "Xk8f2m9qLp!",
@@ -393,8 +401,8 @@ class AdminSecurityRegressionTests(TestCase):
         self.assertEqual(len(mail.outbox), 1)
 
     def test_ops_user_cannot_self_promote_to_superuser(self):
-        # auth.change_user 권한이 "운영진" 그룹에 부여되는 미래 상황을 가정 —
-        # 그래도 role=super는 저장 시점에 서버에서 막혀야 한다.
+        # auth.change_user 권한이 실수로 부여되는 미래 상황을 가정 — 그래도
+        # is_superuser 체크는 저장 시점에 서버에서 막혀야 한다.
         from django.contrib.auth.models import Permission
         from django.contrib.contenttypes.models import ContentType
 
@@ -405,12 +413,16 @@ class AdminSecurityRegressionTests(TestCase):
 
         self.client.login(username="ops1", password="x")
         resp = self.client.post(f"/admin/auth/user/{self.ops_user.pk}/change/", {
-            "first_name": "", "email": "ops1@example.com", "role": "super", "is_active": "on",
+            "first_name": "", "email": "ops1@example.com", "is_superuser": "on", "is_active": "on",
         }, follow=True)
         self.assertEqual(resp.status_code, 200)
         self.ops_user.refresh_from_db()
         self.assertFalse(self.ops_user.is_superuser)
-        self.assertTrue(self.ops_user.groups.filter(name=OPERATIONS_GROUP_NAME).exists())
+        # checkin 권한이 아닌 다른 권한(auth.change_user)은 개별 권한 체크박스
+        # 저장 로직(save_related)이 checkin 권한만 골라 교체하고 건드리지
+        # 않아야 한다 — 안 그러면 user_permissions.set()이 통째로 갈아치우면서
+        # 이 권한까지 같이 날아간다.
+        self.assertTrue(self.ops_user.has_perm("auth.change_user"))
 
     def test_viewer_registration_leaves_genre_blank(self):
         # RegisterForm.genre에 빈 선택지가 없어서, 관람 신청자가 장르를 안
@@ -443,6 +455,107 @@ class AdminSecurityRegressionTests(TestCase):
         Event.objects.create(volume=3, name="목록에 보일 회차")
         html = self.client.get("/admin/checkin/event/").content.decode("utf-8")
         self.assertIn('value="delete_selected"', html)
+
+
+class GranularPermissionCheckboxTests(TestCase):
+    """스태프/운영진/슈퍼유저 3단계 고정 역할 대신 계정마다 체크박스로 개별
+    권한을 켜고 끄는 시스템(계정 수정/추가 화면, admin.py 액션 게이트)이
+    실제로 맞물려 동작하는지 확인."""
+
+    ACCOUNT_FORM_BASE = {
+        "first_name": "", "email": "target@example.com", "is_active": "on",
+        "perm_checkin": [], "perm_event": [], "perm_participant": [], "perm_export": [],
+    }
+
+    def setUp(self):
+        User = get_user_model()
+        self.superuser = User.objects.create_superuser("root", "root@example.com", "pass12345")
+        self.target = User.objects.create_user("kim", email="target@example.com", password="x", is_staff=True)
+        self.client.login(username="root", password="pass12345")
+
+    def test_checking_boxes_grants_exactly_those_permissions(self):
+        data = {**self.ACCOUNT_FORM_BASE, "perm_participant": ["mark_paid", "view_participant"]}
+        resp = self.client.post(f"/admin/auth/user/{self.target.pk}/change/", data, follow=True)
+        self.assertEqual(resp.status_code, 200)
+        self.target.refresh_from_db()
+        self.assertTrue(self.target.has_perm("checkin.mark_paid"))
+        self.assertTrue(self.target.has_perm("checkin.view_participant"))
+        self.assertFalse(self.target.has_perm("checkin.mark_refund"))
+        self.assertFalse(self.target.has_perm("checkin.use_scanner"))
+
+    def test_change_event_bundles_add_event_permission(self):
+        # "회차 정보 관리" 체크박스 하나가 change_event뿐 아니라 add_event도
+        # 같이 부여해야 한다 — 화면에 "추가"용 체크박스를 따로 두지 않기로
+        # 한 설계(auth_admin._PERM_BUNDLES) 그대로 저장되는지 확인.
+        data = {**self.ACCOUNT_FORM_BASE, "perm_event": ["change_event"]}
+        self.client.post(f"/admin/auth/user/{self.target.pk}/change/", data, follow=True)
+        self.target.refresh_from_db()
+        self.assertTrue(self.target.has_perm("checkin.change_event"))
+        self.assertTrue(self.target.has_perm("checkin.add_event"))
+
+    def test_unchecking_a_box_revokes_that_permission(self):
+        _grant(self.target, "mark_paid", "view_participant")
+        data = {**self.ACCOUNT_FORM_BASE, "perm_participant": ["view_participant"]}  # mark_paid 체크 해제
+        self.client.post(f"/admin/auth/user/{self.target.pk}/change/", data, follow=True)
+        self.target.refresh_from_db()
+        self.assertFalse(self.target.has_perm("checkin.mark_paid"))
+        self.assertTrue(self.target.has_perm("checkin.view_participant"))
+
+    def test_add_account_form_grants_selected_permissions_and_can_login(self):
+        data = {
+            "username": "newops", "password1": "Xk8f2m9qLp!", "password2": "Xk8f2m9qLp!",
+            "first_name": "새운영진", "email": "newops@example.com",
+            "perm_checkin": ["use_scanner"], "perm_event": [], "perm_participant": ["view_participant"],
+            "perm_export": [],
+        }
+        resp = self.client.post("/admin/auth/user/add/", data, follow=True)
+        self.assertEqual(resp.status_code, 200)
+        User = get_user_model()
+        new_user = User.objects.get(username="newops")
+        self.assertTrue(new_user.has_perm("checkin.use_scanner"))
+        self.assertTrue(new_user.has_perm("checkin.view_participant"))
+        self.assertFalse(new_user.has_perm("checkin.change_participant"))
+        self.assertTrue(self.client.login(username="newops", password="Xk8f2m9qLp!"))
+
+    def test_action_blocked_without_matching_permission(self):
+        # 참가자 명단을 "볼" 권한은 있어도(=changelist 자체는 열림) mark_paid는
+        # 못 켜야 한다 — view_participant만 있고 mark_paid는 없는 계정.
+        staff = get_user_model().objects.create_user("noperm", email="noperm@example.com", password="x", is_staff=True)
+        _grant(staff, "view_participant")
+        event = Event.objects.create(volume=5, name="권한 테스트 회차", is_active=True)
+        p = Participant.objects.create(
+            id=uuid.uuid4(), event=event, entry_type="참가", name="박대기", phone="010-0000-0010",
+            genre="Breaking", verification_status="APPROVED", payment_status="PENDING",
+        )
+        self.client.login(username="noperm", password="x")
+        resp = self.client.post("/admin/checkin/participant/", {
+            "action": "mark_paid", "_selected_action": [str(p.pk)],
+        }, follow=True)
+        self.assertEqual(resp.status_code, 200)
+        p.refresh_from_db()
+        self.assertEqual(p.payment_status, "PENDING")  # 바뀌지 않아야 함
+
+    def test_action_succeeds_with_matching_permission(self):
+        staff = get_user_model().objects.create_user("hasperm", email="hasperm@example.com", password="x", is_staff=True)
+        _grant(staff, "mark_paid", "view_participant")
+        event = Event.objects.create(volume=6, name="권한 테스트 회차2", is_active=True)
+        p = Participant.objects.create(
+            id=uuid.uuid4(), event=event, entry_type="참가", name="박대기2", phone="010-0000-0011",
+            genre="Breaking", verification_status="APPROVED", payment_status="PENDING",
+        )
+        self.client.login(username="hasperm", password="x")
+        resp = self.client.post("/admin/checkin/participant/", {
+            "action": "mark_paid", "_selected_action": [str(p.pk)],
+        }, follow=True)
+        self.assertEqual(resp.status_code, 200)
+        p.refresh_from_db()
+        self.assertEqual(p.payment_status, "PAID")
+
+    def test_scanner_view_requires_use_scanner_permission(self):
+        staff = get_user_model().objects.create_user("noscan", email="noscan@example.com", password="x", is_staff=True)
+        self.client.login(username="noscan", password="x")
+        resp = self.client.get("/checkin/")
+        self.assertEqual(resp.status_code, 403)
 
 
 class MarkRefundActionTests(TestCase):
@@ -559,6 +672,7 @@ class CheckinConfirmIdempotencyTests(TestCase):
     def setUp(self):
         User = get_user_model()
         self.staff = User.objects.create_user("staff1", email="staff1@example.com", password="x", is_staff=True)
+        _grant(self.staff, "use_scanner")
         self.event = Event.objects.create(volume=1, name="테스트 회차", is_active=True)
         self.participant = Participant.objects.create(
             id=uuid.uuid4(), event=self.event, entry_type="참가", name="김철수", phone="010-0000-0000",
@@ -588,6 +702,7 @@ class ManualCheckinRefundGuardTests(TestCase):
     def setUp(self):
         User = get_user_model()
         self.staff = User.objects.create_user("staff1", email="staff1@example.com", password="x", is_staff=True)
+        _grant(self.staff, "use_scanner")
         self.event = Event.objects.create(volume=1, name="테스트 회차", is_active=True)
         self.refunded = Participant.objects.create(
             id=uuid.uuid4(), event=self.event, entry_type="참가", name="환불된참가자",
@@ -901,6 +1016,7 @@ class AccountDeactivationRevokesActiveSessionTests(TestCase):
     def setUp(self):
         User = get_user_model()
         self.staff = User.objects.create_user("staff1", email="staff1@example.com", password="x", is_staff=True)
+        _grant(self.staff, "use_scanner")
 
     def test_session_cookie_age_shortened_from_default(self):
         from django.conf import settings

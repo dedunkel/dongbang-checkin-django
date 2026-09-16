@@ -6,6 +6,7 @@ import qrcode
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
+from django.core.exceptions import PermissionDenied
 from django.db import IntegrityError, transaction
 from django.db.models import Q
 from django.http import JsonResponse
@@ -145,6 +146,8 @@ def _mark_checked_in(participant_id) -> tuple[Participant, bool]:
 # --------------------------------------------------------------------------
 @staff_member_required
 def checkin_view(request):
+    if not request.user.has_perm("checkin.use_scanner"):
+        raise PermissionDenied("체크인 스캐너 사용 권한이 없습니다.")
     active_event = Event.objects.filter(is_active=True).first()
     return render(request, "checkin/checkin.html", {"event": active_event})
 
@@ -160,6 +163,9 @@ def qr_lookup_api(request):
     """QR을 조회만 하고 체크인 처리는 하지 않음 — 스태프가 화면에서 참가자 정보를
     확인하고 "체크인 확정" 버튼을 눌러야 manual_checkin_api가 실제로 체크인시킴.
     """
+    if not request.user.has_perm("checkin.use_scanner"):
+        return JsonResponse({"status": "NOT_FOUND", "message": "체크인 스캐너 사용 권한이 없습니다."}, status=403)
+
     try:
         body = json.loads(request.body or "{}")
     except json.JSONDecodeError:
@@ -182,6 +188,8 @@ def qr_lookup_api(request):
 @staff_member_required
 @require_GET
 def participant_search_api(request):
+    if not request.user.has_perm("checkin.use_scanner"):
+        return JsonResponse({"results": [], "message": "체크인 스캐너 사용 권한이 없습니다."}, status=403)
     q = request.GET.get("q", "").strip()
     active_event = Event.objects.filter(is_active=True).first()
     if not q or not active_event:
@@ -198,6 +206,10 @@ def participant_search_api(request):
 @staff_member_required
 @require_POST
 def manual_checkin_api(request, participant_id):
+    if not request.user.has_perm("checkin.use_scanner"):
+        return JsonResponse(
+            {"status": "error", "message": "체크인 스캐너 사용 권한이 없습니다."}, status=403
+        )
     participant = get_object_or_404(Participant, pk=participant_id)
     # 검색 결과에서 이미 환불자를 제외하지만, 참가자 id로 직접 요청하는
     # 경로까지 막아두는 게 QR 경로(qr_token=None)와 동등한 방어다(#105).
