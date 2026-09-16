@@ -37,6 +37,7 @@ CAP_CHECKIN = [
 CAP_EVENT = [
     ("view_event", _cap("회차 목록 열람", "회차 목록과 상세 정보를 볼 수 있어요.")),
     ("change_event", _cap("회차 정보 관리", "회차를 추가 · 수정하고 활성 회차를 전환해요.")),
+    ("delete_event", _cap("회차 삭제", "회차와 소속 참가자 전체를 삭제해요. 되돌릴 수 없어요.")),
     ("run_label_assign", _cap("라벨 · QR 발급 실행", "참가자에게 조/번호 라벨과 개인 QR을 배정해요.")),
     ("push_order_to_sheet", _cap("점수 시트 순서 반영", "연동된 점수 시트에 참가자 순서를 반영해요.")),
 ]
@@ -44,6 +45,7 @@ CAP_EVENT = [
 CAP_PARTICIPANT = [
     ("view_participant", _cap("참가자 명단 열람", "참가자 목록과 상세 정보를 볼 수 있어요.")),
     ("change_participant", _cap("참가자 정보 수정", "참가자 정보를 직접 편집해요.")),
+    ("delete_participant", _cap("참가자 삭제", "참가자 레코드를 삭제해요. 되돌릴 수 없어요.")),
     ("approve_verification", _cap("학적검수 승인", "학적 확인 대기 중인 참가자를 승인 처리해요.")),
     ("mark_paid", _cap("입금 확인 처리", "입금이 확인된 참가자를 입금 완료 상태로 바꿔요.")),
     ("mark_refund", _cap("환불 처리", "참가자를 환불 처리하고 라벨 · QR을 회수해요.")),
@@ -73,10 +75,12 @@ _PERM_BUNDLES = {
     "use_scanner": ["use_scanner"],
     "view_event": ["view_event"],
     "change_event": ["change_event", "add_event"],
+    "delete_event": ["delete_event"],
     "run_label_assign": ["run_label_assign"],
     "push_order_to_sheet": ["push_order_to_sheet"],
     "view_participant": ["view_participant"],
     "change_participant": ["change_participant", "add_participant"],
+    "delete_participant": ["delete_participant"],
     "approve_verification": ["approve_verification"],
     "mark_paid": ["mark_paid"],
     "mark_refund": ["mark_refund"],
