@@ -493,6 +493,49 @@ class GranularPermissionCheckboxTests(TestCase):
         self.assertTrue(self.target.has_perm("checkin.change_event"))
         self.assertTrue(self.target.has_perm("checkin.add_event"))
 
+    def test_delete_participant_checkbox_grants_delete_permission(self):
+        data = {**self.ACCOUNT_FORM_BASE, "perm_participant": ["delete_participant"]}
+        self.client.post(f"/admin/auth/user/{self.target.pk}/change/", data, follow=True)
+        self.target.refresh_from_db()
+        self.assertTrue(self.target.has_perm("checkin.delete_participant"))
+
+    def test_delete_event_checkbox_grants_delete_permission(self):
+        data = {**self.ACCOUNT_FORM_BASE, "perm_event": ["delete_event"]}
+        self.client.post(f"/admin/auth/user/{self.target.pk}/change/", data, follow=True)
+        self.target.refresh_from_db()
+        self.assertTrue(self.target.has_perm("checkin.delete_event"))
+
+    def test_participant_delete_blocked_without_delete_participant_permission(self):
+        # Django admin의 delete_selected 액션은 has_delete_permission을 자체적으로
+        # 확인한다 — "참가자 삭제" 체크박스가 그 권한(checkin.delete_participant)에
+        # 정확히 연결돼 있는지 확인.
+        staff = get_user_model().objects.create_user("nodelete", email="nodelete@example.com", password="x", is_staff=True)
+        _grant(staff, "view_participant")
+        event = Event.objects.create(volume=7, name="삭제 권한 테스트 회차", is_active=True)
+        p = Participant.objects.create(
+            id=uuid.uuid4(), event=event, entry_type="참가", name="삭제대상", phone="010-0000-0020",
+            genre="Breaking", verification_status="APPROVED", payment_status="PENDING",
+        )
+        self.client.login(username="nodelete", password="x")
+        self.client.post("/admin/checkin/participant/", {
+            "action": "delete_selected", "_selected_action": [str(p.pk)], "post": "yes",
+        }, follow=True)
+        self.assertTrue(Participant.objects.filter(pk=p.pk).exists())
+
+    def test_participant_delete_succeeds_with_delete_participant_permission(self):
+        staff = get_user_model().objects.create_user("candelete", email="candelete@example.com", password="x", is_staff=True)
+        _grant(staff, "view_participant", "delete_participant")
+        event = Event.objects.create(volume=8, name="삭제 권한 테스트 회차2", is_active=True)
+        p = Participant.objects.create(
+            id=uuid.uuid4(), event=event, entry_type="참가", name="삭제대상2", phone="010-0000-0021",
+            genre="Breaking", verification_status="APPROVED", payment_status="PENDING",
+        )
+        self.client.login(username="candelete", password="x")
+        self.client.post("/admin/checkin/participant/", {
+            "action": "delete_selected", "_selected_action": [str(p.pk)], "post": "yes",
+        }, follow=True)
+        self.assertFalse(Participant.objects.filter(pk=p.pk).exists())
+
     def test_unchecking_a_box_revokes_that_permission(self):
         _grant(self.target, "mark_paid", "view_participant")
         data = {**self.ACCOUNT_FORM_BASE, "perm_participant": ["view_participant"]}  # mark_paid 체크 해제
