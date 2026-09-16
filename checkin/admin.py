@@ -1,4 +1,5 @@
 import csv
+from functools import wraps
 
 from django import forms
 from django.contrib import admin, messages
@@ -146,7 +147,44 @@ class ActiveFilter(admin.SimpleListFilter):
         return queryset
 
 
+def _requires_permission(codename: str, action_label: str):
+    """액션 실행에 필요한 checkin 권한(계정 관리 화면의 체크박스 하나하나에
+    대응)을 선언하는 데코레이터 (#64/#107: export_event_csv 등 세 곳에
+    복붙돼 있던 권한 체크 3줄을 모든 관리자 액션에 쓸 수 있게 일반화).
+    get_actions()가 이 표시(dbbt_required_permission)를 보고 권한 없는
+    사용자의 드롭다운 메뉴에서 액션 자체를 숨기지만, 직접 요청을 조작해
+    실행하는 경우까지 막기 위해 함수 안에서도 한 번 더 확인한다 — 새
+    액션을 추가할 때 이 데코레이터 하나만 붙이면 되게 해서 체크 누락을
+    방지한다."""
+    perm = f"checkin.{codename}"
+
+    def decorator(func):
+        @wraps(func)
+        def wrapper(modeladmin, request, queryset):
+            if not request.user.has_perm(perm):
+                messages.error(request, f"{action_label}은(는) 이 작업 권한이 있는 계정만 실행할 수 있습니다.")
+                return None
+            return func(modeladmin, request, queryset)
+
+        wrapper.dbbt_required_permission = perm
+        return wrapper
+
+    return decorator
+
+
+def _filter_actions_by_permission(actions: dict, request) -> dict:
+    """드롭다운에서 실행 권한이 없는 액션을 숨긴다 — 실행 자체는 각 액션
+    함수 안의 재확인이 막아주지만, 권한 없는 계정 눈에는 아예 안 보이는
+    편이 "눌러봤더니 에러만 뜨는" 경험보다 낫다."""
+    for name, (func, _name, _desc) in list(actions.items()):
+        required = getattr(func, "dbbt_required_permission", None)
+        if required and not request.user.has_perm(required):
+            actions.pop(name)
+    return actions
+
+
 @admin.action(description="라벨 / QR 발급")
+@_requires_permission("run_label_assign", "라벨 / QR 발급")
 def run_label_assign(modeladmin, request, queryset):
     for event in queryset:
         result = assign_labels_and_tokens(event)
@@ -157,6 +195,7 @@ def run_label_assign(modeladmin, request, queryset):
 
 
 @admin.action(description="점수 시트 순서 반영")
+@_requires_permission("push_order_to_sheet", "점수 시트 순서 반영")
 def push_order_to_sheet(modeladmin, request, queryset):
     for event in queryset:
         result = sheet_sync.push_order_for_event(event)
@@ -191,30 +230,6 @@ def _first_selected_event(request, queryset, action_label: str) -> Event | None:
     return event
 
 
-def _require_export_permission(request, action_label: str) -> bool:
-    """마스킹 없이 민감 정보를 그대로 내보내는 액션들이 공통으로 쓰는 실행
-    가드 (#64: export_event_csv/export_qr_send_list/export_score_sheet_excel
-    세 곳에 복붙돼 있던 3줄을 하나로 모음). get_actions()가 권한 없는
-    사용자의 메뉴에서 이미 숨기지만, 직접 요청을 조작해 액션을 실행하는
-    경우까지 막기 위해 각 액션 함수 안에서도 한 번 더 확인해야 한다 —
-    새 "마스킹 없는" 내보내기 액션을 추가할 때 이 함수 하나만 호출하면
-    되게 해서 체크 누락을 방지한다."""
-    if request.user.has_perm("checkin.export_sensitive_data"):
-        return True
-    messages.error(request, f"{action_label}는 운영진만 실행할 수 있습니다.")
-    return False
-
-
-def _sensitive_export(func):
-    """"마스킹 없음" 내보내기 액션 표시. get_actions()가 이 표시만 보고
-    권한 없는 사용자의 드롭다운 메뉴에서 자동으로 숨긴다 — 액션 이름을
-    별도 목록으로 나열해두면(예전 get_actions() 방식) 새 액션을 추가할 때
-    그 목록에 이름 추가를 깜빡해도 아무 에러 없이 조용히 새지만, 함수
-    바로 위에 붙이는 표시는 액션 정의와 한눈에 붙어있어 빠뜨리기 어렵다."""
-    func.dbbt_sensitive_export = True
-    return func
-
-
 def _xlsx_response(filename: str, content: bytes) -> HttpResponse:
     response = HttpResponse(
         content, content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -224,11 +239,8 @@ def _xlsx_response(filename: str, content: bytes) -> HttpResponse:
 
 
 @admin.action(description="선택 회차: 참가자 CSV 백업 다운로드 (마스킹 없음, 운영진 전용)")
-@_sensitive_export
+@_requires_permission("export_csv_backup", "CSV 백업 다운로드")
 def export_event_csv(modeladmin, request, queryset):
-    if not _require_export_permission(request, "CSV 백업 다운로드"):
-        return
-
     event = _first_selected_event(request, queryset, "CSV 백업")
     if event is None:
         return
@@ -257,11 +269,8 @@ def export_event_csv(modeladmin, request, queryset):
 
 
 @admin.action(description="선택 회차: QR 발송용 명단 다운로드 (문자/카톡 대량발송 도구용)")
-@_sensitive_export
+@_requires_permission("export_qr_send_list", "QR 발송용 명단 다운로드")
 def export_qr_send_list(modeladmin, request, queryset):
-    if not _require_export_permission(request, "QR 발송용 명단 다운로드"):
-        return
-
     event = _first_selected_event(request, queryset, "QR 발송용 명단")
     if event is None:
         return
@@ -309,6 +318,7 @@ def _has_duplicate_labels(request, event) -> bool:
 
 
 @admin.action(description="선택 회차: 공지용 명단 엑셀 다운로드 (이름/연락처 마스킹)")
+@_requires_permission("export_announcement", "공지용 명단 다운로드")
 def export_announcement_excel(modeladmin, request, queryset):
     event = _first_selected_event(request, queryset, "공지용 명단")
     if event is None:
@@ -319,11 +329,8 @@ def export_announcement_excel(modeladmin, request, queryset):
 
 
 @admin.action(description="선택 회차: 점수표 엑셀 다운로드 (마스킹 없음, 운영진 전용)")
-@_sensitive_export
+@_requires_permission("export_score_sheet", "점수표 다운로드")
 def export_score_sheet_excel(modeladmin, request, queryset):
-    if not _require_export_permission(request, "점수표 다운로드"):
-        return
-
     event = _first_selected_event(request, queryset, "점수표")
     if event is None:
         return
@@ -333,6 +340,7 @@ def export_score_sheet_excel(modeladmin, request, queryset):
 
 
 @admin.action(description="선택 회차: 신청 참가자 확인용 공지 엑셀 다운로드 (라벨 배정 전에도 가능)")
+@_requires_permission("export_application_confirmation", "신청 확인용 명단 다운로드")
 def export_application_confirmation_excel(modeladmin, request, queryset):
     event = _first_selected_event(request, queryset, "신청 확인용 명단")
     if event is None:
@@ -384,15 +392,7 @@ class EventAdmin(admin.ModelAdmin):
         return ("participant_count_display", "created_at")
 
     def get_actions(self, request):
-        actions = super().get_actions(request)
-        if not request.user.has_perm("checkin.export_sensitive_data"):
-            # 이름을 나열한 목록 대신 @_sensitive_export로 표시된 액션을 찾아서
-            # 숨긴다 — 새 "마스킹 없는" 내보내기 액션을 추가하면서 여기 목록에
-            # 이름 추가를 깜빡해도(#64) 메뉴에 계속 노출되는 일이 없다.
-            for name, (func, _name, _desc) in list(actions.items()):
-                if getattr(func, "dbbt_sensitive_export", False):
-                    actions.pop(name)
-        return actions
+        return _filter_actions_by_permission(super().get_actions(request), request)
 
     def delete_queryset(self, request, queryset):
         for event in queryset:
@@ -405,18 +405,21 @@ class EventAdmin(admin.ModelAdmin):
 
 
 @admin.action(description="선택 참가자: 학적검수 승인 처리 (APPROVED)")
+@_requires_permission("approve_verification", "학적검수 승인")
 def approve_verification(modeladmin, request, queryset):
     updated = queryset.filter(entry_type="참가").update(verification_status="APPROVED")
     messages.success(request, f"{updated}명 학적검수 승인 처리했습니다.")
 
 
 @admin.action(description="선택 참가자: 입금 확인 처리 (PAID)")
+@_requires_permission("mark_paid", "입금 확인 처리")
 def mark_paid(modeladmin, request, queryset):
     updated = queryset.update(payment_status="PAID")
     messages.success(request, f"{updated}명 입금 확인 처리했습니다.")
 
 
 @admin.action(description="선택 참가자: 입금 완료 → 환불 처리")
+@_requires_permission("mark_refund", "환불 처리")
 def mark_refund(modeladmin, request, queryset):
     # 입금 완료(PAID) 상태인 사람만 환불 대상으로 삼는다 — 대기/환불 상태인
     # 사람까지 같이 선택했더라도 실수로 잘못 바뀌지 않게.
@@ -434,6 +437,7 @@ def mark_refund(modeladmin, request, queryset):
 
 
 @admin.action(description="선택한 참가자 2명의 라벨(조/번호) 맞바꾸기")
+@_requires_permission("swap_labels", "라벨 맞바꾸기")
 def swap_labels(modeladmin, request, queryset):
     if queryset.count() != 2:
         messages.error(request, "라벨을 맞바꾸려면 참가자를 정확히 2명 선택해야 합니다.")
@@ -475,6 +479,10 @@ class ParticipantAdmin(admin.ModelAdmin):
     list_filter = ("event", "entry_type", VerificationFilter, PaymentFilter, CheckinFilter, GenreFilter)
     search_fields = ("name", "phone", "school")
     actions = [approve_verification, mark_paid, swap_labels, mark_refund]
+
+    def get_actions(self, request):
+        return _filter_actions_by_permission(super().get_actions(request), request)
+
     # label_code는 save()에서 항상 label_group/label_number로부터 다시 계산되므로
     # (models.py 참고) 폼에서 직접 수정할 수 있게 두면 값이 저장돼도 무시되어
     # 혼란만 준다 — 목업(ParticipantDetailClean)도 이 필드를 읽기 전용으로 보여준다.

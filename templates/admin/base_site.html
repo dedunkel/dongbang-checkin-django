@@ -158,5 +158,21 @@
       });
     });
   })();
+
+  (function () {
+    // 계정 수정/추가 화면 — 슈퍼유저 체크 시 아래 개별 권한 카드들을 흐리게
+    // 표시만 한다(값은 그대로 제출되게, disabled는 쓰지 않음 — dbbt_theme.css
+    // 참고). 슈퍼유저는 이 값들과 무관하게 항상 모든 권한을 갖는다.
+    var superBox = document.getElementById('id_is_superuser');
+    if (!superBox) return;
+    var lockable = Array.prototype.slice.call(
+      document.querySelectorAll('.field-perm_checkin, .field-perm_event, .field-perm_participant, .field-perm_export')
+    );
+    function sync() {
+      lockable.forEach(function (row) { row.classList.toggle('dbbt-perm-locked', superBox.checked); });
+    }
+    superBox.addEventListener('change', sync);
+    sync();
+  })();
 </script>
 {% endblock %}

@@ -605,13 +605,14 @@ html[data-theme="light"] .dbbt-theme-toggle-option[data-theme-choice="dark"] { c
 .change-form fieldset.module input[type="checkbox"]:checked { background: var(--dbbt-ok); }
 .change-form fieldset.module input[type="checkbox"]:checked::before { left: 17px; }
 
-/* "상태" 칸 — is_active(체크박스, 라벨이 칸 안에 있음)와 last_login(라벨이
-   칸 위에 따로 있음)이 같은 줄에 나란히 오는데, 라벨 유무 차이 때문에
-   위쪽은 안 맞고 실제 입력칸(토글/읽기전용 칸)만 아래쪽 기준으로 맞추면
-   가지런해 보인다. */
-.change-form.model-user fieldset.module .form-row.field-is_active,
-.change-form.model-user fieldset.module .form-row.field-last_login {
-  align-self: end;
+/* "상태" 칸 — is_active(토글, 라벨이 토글 옆에 붙어있음)와 last_login(라벨이
+   칸 위에 따로 있음)이 같은 줄에 나란히 오는데, 구조가 달라서 align-self:end로
+   "칸 아래쪽"만 맞추면 last_login 쪽 라벨+칸 전체가 아래로 밀려서 오히려 두
+   컨트롤의 위쪽이 서로 어긋나 보였다. last_login의 라벨 한 줄 높이(폰트
+   10.5px·줄높이 1.3·margin-bottom 5px ≈ 19px)만큼 토글 앞에 빈 칸을 넣어서,
+   라벨 유무와 무관하게 실제 컨트롤(토글 / 읽기전용 칸)끼리 가로로 나란해지게 한다. */
+.change-form.model-user fieldset.module .form-row.field-is_active > div::before {
+  content: ""; display: block; height: 19px;
 }
 
 .dbbt-section {
@@ -681,32 +682,75 @@ html[data-theme="light"] .dbbt-theme-toggle-option[data-theme-choice="dark"] { c
 }
 .dbbt-btn-link:hover { text-decoration: underline; }
 
-/* 계정 수정 — "권한" 라디오를 카드형으로. 실제 input은 숨기고 label을
-   카드처럼 스타일링(참가/관람 탭 선택과 동일한 :has() 패턴). */
-.change-form fieldset.module .field-role { grid-column: 1 / -1; }
-.change-form fieldset.module .field-role label[for="id_role"] { display: none; }
-.change-form fieldset.module #id_role { display: flex; flex-direction: row; flex-wrap: wrap; gap: 10px; }
-.change-form fieldset.module .field-role label { flex: 1 1 200px; }
-.change-form fieldset.module .field-role input[type="radio"] { position: absolute; opacity: 0; width: 1px; height: 1px; }
-.change-form fieldset.module .field-role label {
+/* 계정 수정/추가 — 카테고리별 권한 체크박스를 카드형으로. 실제 input은
+   숨기고 label을 카드처럼 스타일링(예전 "권한" 라디오 3단계와 동일한
+   :has() 패턴 — 라디오는 원형 인디케이터, 체크박스는 정사각형 + 체크
+   표시로 구분). */
+.change-form fieldset.module .field-perm_checkin,
+.change-form fieldset.module .field-perm_event,
+.change-form fieldset.module .field-perm_participant,
+.change-form fieldset.module .field-perm_export { grid-column: 1 / -1; }
+
+.change-form fieldset.module label[for="id_perm_checkin"],
+.change-form fieldset.module label[for="id_perm_event"],
+.change-form fieldset.module label[for="id_perm_participant"],
+.change-form fieldset.module label[for="id_perm_export"] { display: none; }
+
+.change-form fieldset.module #id_perm_checkin {
+  display: flex; flex-direction: column; gap: 8px;
+}
+/* 회차 관리 · 참가자 관리 · 다운로드는 항목이 여러 개라 한 줄에 세로로
+   쌓아두면 스크롤이 길어진다 — 카드 하나가 최소 200px은 되게 하고 남는
+   자리만큼 자동으로 열을 채우는 그리드로 가로 배치한다. 화면이 좁아지면
+   (iOS/Android 포함) 200px가 안 남는 순간 자연스럽게 한 줄에 한 칸으로
+   줄어들어서 별도 미디어 쿼리 없이도 안 깨진다. */
+.change-form fieldset.module #id_perm_event,
+.change-form fieldset.module #id_perm_participant,
+.change-form fieldset.module #id_perm_export {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px;
+}
+.change-form fieldset.module #id_perm_checkin input[type="checkbox"],
+.change-form fieldset.module #id_perm_event input[type="checkbox"],
+.change-form fieldset.module #id_perm_participant input[type="checkbox"],
+.change-form fieldset.module #id_perm_export input[type="checkbox"] {
+  position: absolute; opacity: 0; width: 1px; height: 1px;
+}
+.change-form fieldset.module #id_perm_checkin label,
+.change-form fieldset.module #id_perm_event label,
+.change-form fieldset.module #id_perm_participant label,
+.change-form fieldset.module #id_perm_export label {
   display: grid; grid-template-columns: 16px 1fr; column-gap: 10px; row-gap: 2px; align-items: start;
   border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px; cursor: pointer; margin: 0; font-weight: 400;
 }
-.change-form fieldset.module .field-role label::before {
-  content: ""; grid-column: 1; grid-row: 1 / -1; width: 16px; height: 16px; border-radius: 50%; margin-top: 1px;
+.change-form fieldset.module #id_perm_checkin label::before,
+.change-form fieldset.module #id_perm_event label::before,
+.change-form fieldset.module #id_perm_participant label::before,
+.change-form fieldset.module #id_perm_export label::before {
+  content: ""; grid-column: 1; grid-row: 1 / -1; width: 16px; height: 16px; border-radius: 4px; margin-top: 1px;
   box-sizing: border-box; border: 1.5px solid var(--line); background: transparent;
 }
-.change-form fieldset.module .field-role .role-name { grid-column: 2; grid-row: 1; }
-.change-form fieldset.module .field-role .role-desc { grid-column: 2; grid-row: 2; }
-.change-form fieldset.module .field-role label:has(input:checked) {
+.change-form fieldset.module #id_perm_checkin label:has(input:checked),
+.change-form fieldset.module #id_perm_event label:has(input:checked),
+.change-form fieldset.module #id_perm_participant label:has(input:checked),
+.change-form fieldset.module #id_perm_export label:has(input:checked) {
   border-color: var(--dbbt-accent); background: var(--dbbt-accent-soft);
 }
-.change-form fieldset.module .field-role label:has(input:checked)::before {
-  border-color: var(--dbbt-accent);
-  background: radial-gradient(circle, var(--dbbt-accent) 0 4px, transparent 4.5px);
+.change-form fieldset.module #id_perm_checkin label:has(input:checked)::before,
+.change-form fieldset.module #id_perm_event label:has(input:checked)::before,
+.change-form fieldset.module #id_perm_participant label:has(input:checked)::before,
+.change-form fieldset.module #id_perm_export label:has(input:checked)::before {
+  border-color: var(--dbbt-accent); background: var(--dbbt-accent);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='9' viewBox='0 0 11 9' fill='none'%3E%3Cpath d='M1 4.5L4 7.5L10 1' stroke='white' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: center;
 }
-.change-form fieldset.module .field-role .role-name { display: block; font-size: 12.5px; font-weight: 700; color: var(--text); }
-.change-form fieldset.module .field-role .role-desc { display: block; font-size: 11px; color: var(--muted); margin-top: 3px; line-height: 1.6; }
+.change-form fieldset.module .perm-name { grid-column: 2; grid-row: 1; display: block; font-size: 12.5px; font-weight: 700; color: var(--text); }
+.change-form fieldset.module .perm-desc { grid-column: 2; grid-row: 2; display: block; font-size: 11px; color: var(--muted); margin-top: 3px; line-height: 1.6; }
+
+/* 슈퍼유저 체크 시 아래 개별 권한 카드들을 시각적으로 흐리게(base_site.html의
+   스크립트가 토글) — disabled 속성은 안 쓴다. disabled 필드는 폼 제출값에서
+   아예 빠지므로, 슈퍼유저를 껐다 켰다만 해도 그동안 갖고 있던 개별 권한
+   체크가 전부 날아가 버린다. */
+.dbbt-perm-locked { opacity: 0.4; pointer-events: none; transition: opacity 0.15s; }
 
 /* 계정 수정 화면은 목업처럼 저장/목록으로/계정 삭제만 — 저장 후 계속
    편집 · 저장 후 새로 추가 버튼은 숨긴다. */

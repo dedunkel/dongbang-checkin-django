@@ -32,10 +32,13 @@ class Event(models.Model):
         verbose_name = "회차"
         verbose_name_plural = "회차"
         permissions = [
-            (
-                "export_sensitive_data",
-                "마스킹 없는 민감 정보 엑셀 내보내기 가능 (점수표, CSV 백업)",
-            ),
+            ("export_csv_backup", "참가자 CSV 백업 다운로드 가능 (마스킹 없음)"),
+            ("export_qr_send_list", "QR 발송용 명단 다운로드 가능 (마스킹 없음)"),
+            ("export_score_sheet", "점수표 다운로드 가능 (마스킹 없음)"),
+            ("export_announcement", "공지용 명단 다운로드 가능 (이름/연락처 마스킹)"),
+            ("export_application_confirmation", "신청 확인용 명단 다운로드 가능"),
+            ("run_label_assign", "라벨 · QR 발급 실행 가능"),
+            ("push_order_to_sheet", "점수 시트 순서 반영 가능"),
         ]
 
     def __str__(self):
@@ -134,6 +137,13 @@ class Participant(models.Model):
         ordering = ["-created_at"]
         verbose_name = "참가자"
         verbose_name_plural = "참가자"
+        permissions = [
+            ("use_scanner", "현장 체크인 스캐너 사용 가능"),
+            ("approve_verification", "학적검수 승인 처리 가능"),
+            ("mark_paid", "입금 확인 처리 가능"),
+            ("mark_refund", "환불 처리 가능"),
+            ("swap_labels", "라벨 맞바꾸기 가능"),
+        ]
         constraints = [
             # 같은 회차·장르 안에서 같은 조/번호가 중복 배정되지 않도록 DB 레벨에서도 막는다.
             UniqueConstraint(
