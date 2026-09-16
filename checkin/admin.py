@@ -239,7 +239,7 @@ def _xlsx_response(filename: str, content: bytes) -> HttpResponse:
 
 
 @admin.action(description="선택 회차: 참가자 CSV 백업 다운로드 (마스킹 없음, 운영진 전용)")
-@_requires_permission("export_sensitive_data", "CSV 백업 다운로드")
+@_requires_permission("export_csv_backup", "CSV 백업 다운로드")
 def export_event_csv(modeladmin, request, queryset):
     event = _first_selected_event(request, queryset, "CSV 백업")
     if event is None:
@@ -269,7 +269,7 @@ def export_event_csv(modeladmin, request, queryset):
 
 
 @admin.action(description="선택 회차: QR 발송용 명단 다운로드 (문자/카톡 대량발송 도구용)")
-@_requires_permission("export_sensitive_data", "QR 발송용 명단 다운로드")
+@_requires_permission("export_qr_send_list", "QR 발송용 명단 다운로드")
 def export_qr_send_list(modeladmin, request, queryset):
     event = _first_selected_event(request, queryset, "QR 발송용 명단")
     if event is None:
@@ -318,6 +318,7 @@ def _has_duplicate_labels(request, event) -> bool:
 
 
 @admin.action(description="선택 회차: 공지용 명단 엑셀 다운로드 (이름/연락처 마스킹)")
+@_requires_permission("export_announcement", "공지용 명단 다운로드")
 def export_announcement_excel(modeladmin, request, queryset):
     event = _first_selected_event(request, queryset, "공지용 명단")
     if event is None:
@@ -328,7 +329,7 @@ def export_announcement_excel(modeladmin, request, queryset):
 
 
 @admin.action(description="선택 회차: 점수표 엑셀 다운로드 (마스킹 없음, 운영진 전용)")
-@_requires_permission("export_sensitive_data", "점수표 다운로드")
+@_requires_permission("export_score_sheet", "점수표 다운로드")
 def export_score_sheet_excel(modeladmin, request, queryset):
     event = _first_selected_event(request, queryset, "점수표")
     if event is None:
@@ -339,6 +340,7 @@ def export_score_sheet_excel(modeladmin, request, queryset):
 
 
 @admin.action(description="선택 회차: 신청 참가자 확인용 공지 엑셀 다운로드 (라벨 배정 전에도 가능)")
+@_requires_permission("export_application_confirmation", "신청 확인용 명단 다운로드")
 def export_application_confirmation_excel(modeladmin, request, queryset):
     event = _first_selected_event(request, queryset, "신청 확인용 명단")
     if event is None:

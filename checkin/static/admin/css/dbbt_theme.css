@@ -695,11 +695,18 @@ html[data-theme="light"] .dbbt-theme-toggle-option[data-theme-choice="dark"] { c
 .change-form fieldset.module label[for="id_perm_participant"],
 .change-form fieldset.module label[for="id_perm_export"] { display: none; }
 
-.change-form fieldset.module #id_perm_checkin,
+.change-form fieldset.module #id_perm_checkin {
+  display: flex; flex-direction: column; gap: 8px;
+}
+/* 회차 관리 · 참가자 관리 · 다운로드는 항목이 여러 개라 한 줄에 세로로
+   쌓아두면 스크롤이 길어진다 — 카드 하나가 최소 200px은 되게 하고 남는
+   자리만큼 자동으로 열을 채우는 그리드로 가로 배치한다. 화면이 좁아지면
+   (iOS/Android 포함) 200px가 안 남는 순간 자연스럽게 한 줄에 한 칸으로
+   줄어들어서 별도 미디어 쿼리 없이도 안 깨진다. */
 .change-form fieldset.module #id_perm_event,
 .change-form fieldset.module #id_perm_participant,
 .change-form fieldset.module #id_perm_export {
-  display: flex; flex-direction: column; gap: 8px;
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px;
 }
 .change-form fieldset.module #id_perm_checkin input[type="checkbox"],
 .change-form fieldset.module #id_perm_event input[type="checkbox"],

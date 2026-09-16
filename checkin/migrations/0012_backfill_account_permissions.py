@@ -2,7 +2,17 @@ from django.db import migrations
 
 OPERATIONS_GROUP_NAME = "운영진"
 
-NEW_EVENT_PERMS = ["view_event", "change_event", "add_event", "run_label_assign", "push_order_to_sheet"]
+NEW_EVENT_PERMS = [
+    "view_event", "change_event", "add_event", "run_label_assign", "push_order_to_sheet",
+    # 예전에는 export_sensitive_data 하나가 CSV/QR발송/점수표 세 다운로드를
+    # 한꺼번에 묶어서 통제했다 — 이제 다운로드 항목마다 따로 체크박스가
+    # 생기면서 그 세 개로 쪼개졌고, 공지용/신청확인용 명단은 원래 아무
+    # 권한 체크 없이 누구나 받을 수 있었다가 이번에 처음 게이트가 생겼다.
+    # 지금 운영진으로 쓰고 있는 사람들이 배포 직후 갑자기 다운로드를 못 받는
+    # 일이 없도록 다섯 개 다 기본으로 부여한다.
+    "export_csv_backup", "export_qr_send_list", "export_score_sheet",
+    "export_announcement", "export_application_confirmation",
+]
 NEW_PARTICIPANT_PERMS = [
     "view_participant", "change_participant", "add_participant",
     "approve_verification", "mark_paid", "mark_refund", "swap_labels",

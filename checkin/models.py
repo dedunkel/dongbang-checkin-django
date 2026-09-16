@@ -32,10 +32,11 @@ class Event(models.Model):
         verbose_name = "회차"
         verbose_name_plural = "회차"
         permissions = [
-            (
-                "export_sensitive_data",
-                "마스킹 없는 민감 정보 엑셀 내보내기 가능 (점수표, CSV 백업)",
-            ),
+            ("export_csv_backup", "참가자 CSV 백업 다운로드 가능 (마스킹 없음)"),
+            ("export_qr_send_list", "QR 발송용 명단 다운로드 가능 (마스킹 없음)"),
+            ("export_score_sheet", "점수표 다운로드 가능 (마스킹 없음)"),
+            ("export_announcement", "공지용 명단 다운로드 가능 (이름/연락처 마스킹)"),
+            ("export_application_confirmation", "신청 확인용 명단 다운로드 가능"),
             ("run_label_assign", "라벨 · QR 발급 실행 가능"),
             ("push_order_to_sheet", "점수 시트 순서 반영 가능"),
         ]

@@ -51,10 +51,11 @@ CAP_PARTICIPANT = [
 ]
 
 CAP_EXPORT = [
-    (
-        "export_sensitive_data",
-        _cap("마스킹 없는 민감 정보 다운로드", "CSV 백업 · 점수표 · QR 발송용 명단(연락처 포함)을 내려받아요."),
-    ),
+    ("export_csv_backup", _cap("CSV 백업 다운로드", "참가자 전체 정보를 마스킹 없이 CSV로 내려받아요.")),
+    ("export_qr_send_list", _cap("QR 발송용 명단 다운로드", "문자/카톡 대량발송용 이름 · 연락처 · QR 링크를 내려받아요.")),
+    ("export_score_sheet", _cap("점수표 다운로드", "심사용 점수표를 마스킹 없이 엑셀로 내려받아요.")),
+    ("export_announcement", _cap("공지용 명단 다운로드", "이름/연락처를 마스킹한 공지용 명단을 내려받아요.")),
+    ("export_application_confirmation", _cap("신청 확인용 명단 다운로드", "라벨 배정 전에도 받을 수 있는 전체 신청자 확인용 명단이에요.")),
 ]
 
 _ALL_CAP_GROUPS = [
@@ -80,7 +81,11 @@ _PERM_BUNDLES = {
     "mark_paid": ["mark_paid"],
     "mark_refund": ["mark_refund"],
     "swap_labels": ["swap_labels"],
-    "export_sensitive_data": ["export_sensitive_data"],
+    "export_csv_backup": ["export_csv_backup"],
+    "export_qr_send_list": ["export_qr_send_list"],
+    "export_score_sheet": ["export_score_sheet"],
+    "export_announcement": ["export_announcement"],
+    "export_application_confirmation": ["export_application_confirmation"],
 }
 
 TIER_LABEL = {"staff": "스태프", "op": "운영진", "super": "슈퍼유저"}
