@@ -605,13 +605,14 @@ html[data-theme="light"] .dbbt-theme-toggle-option[data-theme-choice="dark"] { c
 .change-form fieldset.module input[type="checkbox"]:checked { background: var(--dbbt-ok); }
 .change-form fieldset.module input[type="checkbox"]:checked::before { left: 17px; }
 
-/* "상태" 칸 — is_active(체크박스, 라벨이 칸 안에 있음)와 last_login(라벨이
-   칸 위에 따로 있음)이 같은 줄에 나란히 오는데, 라벨 유무 차이 때문에
-   위쪽은 안 맞고 실제 입력칸(토글/읽기전용 칸)만 아래쪽 기준으로 맞추면
-   가지런해 보인다. */
-.change-form.model-user fieldset.module .form-row.field-is_active,
-.change-form.model-user fieldset.module .form-row.field-last_login {
-  align-self: end;
+/* "상태" 칸 — is_active(토글, 라벨이 토글 옆에 붙어있음)와 last_login(라벨이
+   칸 위에 따로 있음)이 같은 줄에 나란히 오는데, 구조가 달라서 align-self:end로
+   "칸 아래쪽"만 맞추면 last_login 쪽 라벨+칸 전체가 아래로 밀려서 오히려 두
+   컨트롤의 위쪽이 서로 어긋나 보였다. last_login의 라벨 한 줄 높이(폰트
+   10.5px·줄높이 1.3·margin-bottom 5px ≈ 19px)만큼 토글 앞에 빈 칸을 넣어서,
+   라벨 유무와 무관하게 실제 컨트롤(토글 / 읽기전용 칸)끼리 가로로 나란해지게 한다. */
+.change-form.model-user fieldset.module .form-row.field-is_active > div::before {
+  content: ""; display: block; height: 19px;
 }
 
 .dbbt-section {
