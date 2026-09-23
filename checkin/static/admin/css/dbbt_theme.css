@@ -908,7 +908,11 @@ body.dbbt-login .dbbt-topbar-left h1 { display: none; }
    관리자 인덱스(/admin/ 첫 화면) — 앱 목록 카드 + 최근 활동 사이드바
    (templates/admin/index.html, design-handoff-adminindex/README.md)
    ========================================================================== */
-.dbbt-app-list { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+/* flex-grow를 안 줘서 카드가 내용 폭(모델명 한 줄)만큼만 좁게 나오고
+   사이드바 옆 나머지 공간이 통째로 비어 보였다 — #content의 flex 아이템으로서
+   남는 공간을 다 채우게 flex:1을 준다(카드 자체는 이 컨테이너 폭에
+   align-items:stretch 기본값으로 이미 꽉 차게 늘어난다). */
+.dbbt-app-list { flex: 1 1 480px; display: flex; flex-direction: column; gap: 16px; min-width: 0; }
 .dbbt-app-card { border: 1px solid var(--line); border-radius: 6px; overflow: hidden; background: var(--surface); }
 .dbbt-app-card-eyebrow {
   font-size: 10.5px; color: var(--muted); font-weight: 700; letter-spacing: 0.06em;
