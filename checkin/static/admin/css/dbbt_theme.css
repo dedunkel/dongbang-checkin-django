@@ -903,3 +903,64 @@ body.dbbt-login .dbbt-topbar-left h1 { display: none; }
 @media (max-width: 767px) {
   .change-form fieldset.module .form-row > div { width: 100%; }
 }
+
+/* ==========================================================================
+   관리자 인덱스(/admin/ 첫 화면) — 앱 목록 카드 + 최근 활동 사이드바
+   (templates/admin/index.html, design-handoff-adminindex/README.md)
+   ========================================================================== */
+.dbbt-app-list { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.dbbt-app-card { border: 1px solid var(--line); border-radius: 6px; overflow: hidden; background: var(--surface); }
+.dbbt-app-card-eyebrow {
+  font-size: 10.5px; color: var(--muted); font-weight: 700; letter-spacing: 0.06em;
+  padding: 11px 16px; border-bottom: 1px solid var(--line); background: var(--surface2);
+}
+.dbbt-app-model-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 12px 16px; border-bottom: 1px solid var(--line);
+}
+.dbbt-app-model-row:last-child { border-bottom: none; }
+.dbbt-app-model-name { font-size: 13px; font-weight: 700; color: var(--text); }
+/* 장고 기본 base.css의 `a:link, a:visited{color:var(--link-fg)}`와 명시도가
+   똑같이 (0,1,1)이라 로드 순서에만 기대야 한다 — #changelist-filter 등
+   다른 곳에서도 쓴 것과 같은 이유로, 로드 순서와 무관하게 확실히 이기도록
+   !important를 붙인다. */
+.dbbt-app-model-name a { color: var(--text) !important; text-decoration: none; }
+.dbbt-app-model-name a:hover { color: var(--dbbt-accent) !important; }
+.dbbt-app-row-actions { display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
+.dbbt-app-link { color: var(--dbbt-accent); font-size: 12px; font-weight: 700; text-decoration: none; white-space: nowrap; }
+.dbbt-app-link:hover { text-decoration: underline; }
+
+.dbbt-activity-panel { width: 340px; flex-shrink: 0; min-width: 0; }
+.dbbt-activity-heading { font-size: 14px; font-weight: 900; margin-bottom: 10px; color: var(--text); }
+.dbbt-activity-row { display: flex; align-items: flex-start; gap: 10px; padding: 10px 16px; border-bottom: 1px solid var(--line); }
+.dbbt-activity-row:last-child { border-bottom: none; }
+.dbbt-activity-icon {
+  width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; margin-top: 1px; font-size: 10px; font-weight: 900;
+}
+.dbbt-activity-icon-delete { background: var(--dbbt-bad-soft); color: var(--dbbt-bad); }
+.dbbt-activity-icon-change { background: var(--dbbt-warn-soft); color: var(--dbbt-warn); }
+.dbbt-activity-icon-add { background: var(--dbbt-ok-soft); color: var(--dbbt-ok); }
+.dbbt-activity-title { font-size: 12.5px; font-weight: 700; color: var(--text); }
+.dbbt-activity-title a { color: var(--text) !important; text-decoration: none; }
+.dbbt-activity-title a:hover { color: var(--dbbt-accent) !important; }
+.dbbt-activity-type { font-size: 10.5px; color: var(--muted); margin-top: 2px; }
+.dbbt-activity-empty { padding: 16px; text-align: center; color: var(--muted); font-size: 12.5px; }
+
+/* content/sidebar가 장고 템플릿 구조상 각자 다른 블록(형제 요소)이라, 둘을
+   같이 감싸는 wrapper div를 새로 못 만든다 — #content 자체가 topbar/tabs
+   (content_title 블록)와 앱 목록(content 블록)·최근 활동(sidebar 블록)을
+   전부 형제로 담고 있으므로, "이 페이지에 .dbbt-app-list가 있을 때만"
+   #content를 flex로 바꿔서 앱 목록과 사이드바가 나란히 오게 한다(다른
+   관리자 화면의 #content는 그대로 block으로 유지돼야 하므로 :has()로
+   범위를 좁힌다). topbar/tabs는 flex-basis:100%로 항상 자기 줄을 통째로
+   차지해서 레이아웃이 안 흐트러진다(flex 컨테이너가 아닐 때는 flex-basis가
+   무시되므로 다른 화면에 영향 없음). */
+#content:has(> .dbbt-app-list) {
+  display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start;
+}
+.dbbt-topbar, .dbbt-tabs { flex-basis: 100%; }
+
+@media (max-width: 1024px) {
+  .dbbt-activity-panel { width: 100%; }
+}
