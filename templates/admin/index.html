@@ -1,0 +1,48 @@
+{% extends "admin/base_site.html" %}
+{% load i18n log %}
+
+{% block content %}
+<div class="dbbt-app-list">
+  {% for app in app_list %}
+    <div class="dbbt-app-card">
+      <div class="dbbt-app-card-eyebrow">{{ app.name|upper }}</div>
+      {% for model in app.models %}
+        <div class="dbbt-app-model-row">
+          <div class="dbbt-app-model-name">
+            {% if model.admin_url %}<a href="{{ model.admin_url }}">{{ model.name }}</a>{% else %}{{ model.name }}{% endif %}
+          </div>
+          <div class="dbbt-app-row-actions">
+            {% if model.add_url %}<a class="dbbt-app-link" href="{{ model.add_url }}">+ 추가</a>{% endif %}
+            {% if model.admin_url %}<a class="dbbt-app-link" href="{{ model.admin_url }}">✏️ 변경</a>{% endif %}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% endfor %}
+</div>
+{% endblock %}
+
+{% block sidebar %}
+<div class="dbbt-activity-panel">
+  <div class="dbbt-activity-heading">최근 활동</div>
+  <div class="dbbt-app-card">
+    <div class="dbbt-app-card-eyebrow">나의 활동</div>
+    {% get_admin_log 10 as admin_log for_user user %}
+    {% for entry in admin_log %}
+      <div class="dbbt-activity-row">
+        <div class="dbbt-activity-icon {% if entry.is_deletion %}dbbt-activity-icon-delete{% elif entry.is_addition %}dbbt-activity-icon-add{% else %}dbbt-activity-icon-change{% endif %}">
+          {% if entry.is_deletion %}✕{% elif entry.is_addition %}+{% else %}✏️{% endif %}
+        </div>
+        <div>
+          <div class="dbbt-activity-title">
+            {% if entry.is_deletion or not entry.get_admin_url %}{{ entry.object_repr }}{% else %}<a href="{{ entry.get_admin_url }}">{{ entry.object_repr }}</a>{% endif %}
+          </div>
+          <div class="dbbt-activity-type">{{ entry.content_type.name|default:"Unknown content"|capfirst }}</div>
+        </div>
+      </div>
+    {% empty %}
+      <div class="dbbt-activity-empty">최근 활동이 없습니다.</div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
