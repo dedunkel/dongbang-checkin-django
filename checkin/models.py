@@ -139,7 +139,8 @@ class Participant(models.Model):
         verbose_name = "참가자"
         verbose_name_plural = "참가자"
         permissions = [
-            ("use_scanner", "현장 체크인 스캐너 사용 가능"),
+            ("scan_qr", "체크인 스캐너에서 QR 스캔 사용 가능"),
+            ("search_manual", "체크인 스캐너에서 이름/전화 수동 검색 사용 가능"),
             ("approve_verification", "학적검수 승인 처리 가능"),
             ("mark_paid", "입금 확인 처리 가능"),
             ("mark_refund", "환불 처리 가능"),

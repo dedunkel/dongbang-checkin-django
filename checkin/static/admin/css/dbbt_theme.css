@@ -696,14 +696,12 @@ html[data-theme="light"] .dbbt-theme-toggle-option[data-theme-choice="dark"] { c
 .change-form fieldset.module label[for="id_perm_participant"],
 .change-form fieldset.module label[for="id_perm_export"] { display: none; }
 
-.change-form fieldset.module #id_perm_checkin {
-  display: flex; flex-direction: column; gap: 8px;
-}
-/* 회차 관리 · 참가자 관리 · 다운로드는 항목이 여러 개라 한 줄에 세로로
-   쌓아두면 스크롤이 길어진다 — 카드 하나가 최소 200px은 되게 하고 남는
-   자리만큼 자동으로 열을 채우는 그리드로 가로 배치한다. 화면이 좁아지면
-   (iOS/Android 포함) 200px가 안 남는 순간 자연스럽게 한 줄에 한 칸으로
-   줄어들어서 별도 미디어 쿼리 없이도 안 깨진다. */
+/* 체크인 · 회차 관리 · 참가자 관리 · 다운로드는 항목이 여러 개라 한 줄에
+   세로로 쌓아두면 스크롤이 길어진다 — 카드 하나가 최소 200px은 되게 하고
+   남는 자리만큼 자동으로 열을 채우는 그리드로 가로 배치한다. 화면이
+   좁아지면(iOS/Android 포함) 200px가 안 남는 순간 자연스럽게 한 줄에
+   한 칸으로 줄어들어서 별도 미디어 쿼리 없이도 안 깨진다. */
+.change-form fieldset.module #id_perm_checkin,
 .change-form fieldset.module #id_perm_event,
 .change-form fieldset.module #id_perm_participant,
 .change-form fieldset.module #id_perm_export {
@@ -743,8 +741,17 @@ html[data-theme="light"] .dbbt-theme-toggle-option[data-theme-choice="dark"] { c
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='9' viewBox='0 0 11 9' fill='none'%3E%3Cpath d='M1 4.5L4 7.5L10 1' stroke='white' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   background-repeat: no-repeat; background-position: center;
 }
-.change-form fieldset.module .perm-name { grid-column: 2; grid-row: 1; display: block; font-size: 12.5px; font-weight: 700; color: var(--text); }
-.change-form fieldset.module .perm-desc { grid-column: 2; grid-row: 2; display: block; font-size: 11px; color: var(--muted); margin-top: 3px; line-height: 1.6; }
+/* word-break:keep-all — 카드가 좁을 때 "다운로드"처럼 한 단어가 음절
+   단위로 잘려서 마지막 한 글자만 다음 줄에 덩그러니 남는 걸 막는다
+   (한국어는 띄어쓰기가 없으면 기본적으로 글자 단위로 줄바꿈된다). */
+.change-form fieldset.module .perm-name {
+  grid-column: 2; grid-row: 1; display: block; font-size: 12.5px; font-weight: 700; color: var(--text);
+  word-break: keep-all;
+}
+.change-form fieldset.module .perm-desc {
+  grid-column: 2; grid-row: 2; display: block; font-size: 11px; color: var(--muted); margin-top: 3px; line-height: 1.6;
+  word-break: keep-all;
+}
 
 /* 슈퍼유저 체크 시 아래 개별 권한 카드들을 시각적으로 흐리게(base_site.html의
    스크립트가 토글) — disabled 속성은 안 쓴다. disabled 필드는 폼 제출값에서

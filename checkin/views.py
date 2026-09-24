@@ -146,10 +146,16 @@ def _mark_checked_in(participant_id) -> tuple[Participant, bool]:
 # --------------------------------------------------------------------------
 @staff_member_required
 def checkin_view(request):
-    if not request.user.has_perm("checkin.use_scanner"):
+    can_scan_qr = request.user.has_perm("checkin.scan_qr")
+    can_search_manual = request.user.has_perm("checkin.search_manual")
+    if not can_scan_qr and not can_search_manual:
         raise PermissionDenied("체크인 스캐너 사용 권한이 없습니다.")
     active_event = Event.objects.filter(is_active=True).first()
-    return render(request, "checkin/checkin.html", {"event": active_event})
+    return render(
+        request,
+        "checkin/checkin.html",
+        {"event": active_event, "can_scan_qr": can_scan_qr, "can_search_manual": can_search_manual},
+    )
 
 
 def _extract_token(text: str) -> str | None:
@@ -163,8 +169,8 @@ def qr_lookup_api(request):
     """QR을 조회만 하고 체크인 처리는 하지 않음 — 스태프가 화면에서 참가자 정보를
     확인하고 "체크인 확정" 버튼을 눌러야 manual_checkin_api가 실제로 체크인시킴.
     """
-    if not request.user.has_perm("checkin.use_scanner"):
-        return JsonResponse({"status": "NOT_FOUND", "message": "체크인 스캐너 사용 권한이 없습니다."}, status=403)
+    if not request.user.has_perm("checkin.scan_qr"):
+        return JsonResponse({"status": "NOT_FOUND", "message": "QR 스캔 권한이 없습니다."}, status=403)
 
     try:
         body = json.loads(request.body or "{}")
@@ -188,8 +194,8 @@ def qr_lookup_api(request):
 @staff_member_required
 @require_GET
 def participant_search_api(request):
-    if not request.user.has_perm("checkin.use_scanner"):
-        return JsonResponse({"results": [], "message": "체크인 스캐너 사용 권한이 없습니다."}, status=403)
+    if not request.user.has_perm("checkin.search_manual"):
+        return JsonResponse({"results": [], "message": "수동 검색 권한이 없습니다."}, status=403)
     q = request.GET.get("q", "").strip()
     active_event = Event.objects.filter(is_active=True).first()
     if not q or not active_event:
@@ -206,7 +212,12 @@ def participant_search_api(request):
 @staff_member_required
 @require_POST
 def manual_checkin_api(request, participant_id):
-    if not request.user.has_perm("checkin.use_scanner"):
+    # QR 스캔 결과 확인/수동 검색 결과 확인 둘 다 같은 "체크인 확정" 버튼을
+    # 눌러 여기로 온다 — 요청만 봐서는 어느 경로로 왔는지 구분할 수 없으니,
+    # 둘 중 하나라도 있으면 확정을 허용한다(각 조회 API 자체는 scan_qr/
+    # search_manual로 이미 따로 막혀 있어 그 경로로 오려면 해당 권한이
+    # 필요하다).
+    if not request.user.has_perm("checkin.scan_qr") and not request.user.has_perm("checkin.search_manual"):
         return JsonResponse(
             {"status": "error", "message": "체크인 스캐너 사용 권한이 없습니다."}, status=403
         )
