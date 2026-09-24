@@ -14,7 +14,7 @@ from django_otp.oath import totp
 from django_otp.plugins.otp_totp.models import TOTPDevice
 
 from checkin.admin import ParticipantAdmin
-from checkin.models import Event, Participant
+from checkin.models import Event, Participant, Suggestion
 from checkin.services.announcement_export import build_announcement_file
 from checkin.services.application_confirmation_export import build_application_confirmation_file
 from checkin.services.event_excel_export import (
@@ -1096,3 +1096,77 @@ class AdminAppListOrderingTests(TestCase):
         app_labels = [app["app_label"] for app in resp.context["app_list"]]
         self.assertGreater(len(app_labels), 1, "다른 앱이 있어야 순서 비교가 의미 있음")
         self.assertEqual(app_labels[-1], "axes")
+
+
+class SuggestionFeatureTests(TestCase):
+    """상단바 "건의하기" 팝업(로그인한 스태프 전체가 작성) + 알림 벨(슈퍼유저
+    전용)이 실제로 맞물려 동작하는지 확인."""
+
+    def setUp(self):
+        User = get_user_model()
+        self.superuser = User.objects.create_superuser("root", "root@example.com", "pass12345")
+        self.staff = User.objects.create_user("staff1", email="staff1@example.com", password="x", is_staff=True)
+
+    def test_any_staff_can_create_suggestion(self):
+        self.client.login(username="staff1", password="x")
+        resp = self.client.post("/admin/suggestions/create/", {"title": "제목", "content": "내용입니다"})
+        self.assertEqual(resp.status_code, 200)
+        self.assertTrue(resp.json()["ok"])
+        suggestion = Suggestion.objects.get()
+        self.assertEqual(suggestion.author, self.staff)
+        self.assertEqual(suggestion.title, "제목")
+        self.assertFalse(suggestion.is_read)
+
+    def test_anonymous_cannot_create_suggestion(self):
+        resp = self.client.post("/admin/suggestions/create/", {"title": "제목", "content": "내용"})
+        self.assertEqual(resp.status_code, 302)  # 로그인 화면으로 리다이렉트
+        self.assertFalse(Suggestion.objects.exists())
+
+    def test_missing_title_or_content_rejected(self):
+        self.client.login(username="staff1", password="x")
+        resp = self.client.post("/admin/suggestions/create/", {"title": "", "content": "내용"})
+        self.assertEqual(resp.status_code, 400)
+        self.assertFalse(resp.json()["ok"])
+        self.assertFalse(Suggestion.objects.exists())
+
+    def test_notification_bell_context_only_for_superuser(self):
+        Suggestion.objects.create(author=self.staff, title="A", content="a")
+        self.client.login(username="staff1", password="x")
+        resp = self.client.get("/admin/")
+        self.assertNotIn("dbbt_suggestions_unread_count", resp.context)
+        self.assertNotIn('id="dbbt-notif-bell"', resp.content.decode())
+
+        self.client.login(username="root", password="pass12345")
+        resp = self.client.get("/admin/")
+        self.assertEqual(resp.context["dbbt_suggestions_unread_count"], 1)
+        self.assertIn('id="dbbt-notif-bell"', resp.content.decode())
+
+    def test_mark_all_read_requires_superuser(self):
+        s = Suggestion.objects.create(author=self.staff, title="A", content="a")
+        self.client.login(username="staff1", password="x")
+        resp = self.client.post("/admin/suggestions/mark-all-read/")
+        self.assertEqual(resp.status_code, 403)
+        s.refresh_from_db()
+        self.assertFalse(s.is_read)
+
+    def test_mark_all_read_marks_everything_read(self):
+        Suggestion.objects.create(author=self.staff, title="A", content="a")
+        Suggestion.objects.create(author=self.staff, title="B", content="b")
+        self.client.login(username="root", password="pass12345")
+        resp = self.client.post("/admin/suggestions/mark-all-read/")
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(Suggestion.objects.filter(is_read=False).count(), 0)
+
+    def test_opening_suggestion_detail_marks_it_read(self):
+        s = Suggestion.objects.create(author=self.staff, title="A", content="a")
+        self.client.login(username="root", password="pass12345")
+        resp = self.client.get(f"/admin/checkin/suggestion/{s.pk}/change/")
+        self.assertEqual(resp.status_code, 200)
+        s.refresh_from_db()
+        self.assertTrue(s.is_read)
+
+    def test_non_superuser_cannot_view_suggestion_admin(self):
+        Suggestion.objects.create(author=self.staff, title="A", content="a")
+        self.client.login(username="staff1", password="x")
+        resp = self.client.get("/admin/checkin/suggestion/")
+        self.assertEqual(resp.status_code, 403)  # 뷰/변경 권한이 아무한테도 없어 슈퍼유저만 통과

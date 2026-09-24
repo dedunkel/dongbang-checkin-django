@@ -22,7 +22,7 @@ from django.contrib import admin
 from django.contrib.auth import views as auth_views
 from django.urls import include, path
 
-from checkin.admin_views import accounts_dashboard, otp_setup
+from checkin.admin_views import accounts_dashboard, otp_setup, suggestion_create, suggestion_mark_all_read
 
 urlpatterns = [
     path("admin/accounts/", accounts_dashboard, name="accounts_dashboard"),
@@ -30,6 +30,10 @@ urlpatterns = [
     # 화면(SEC-03) — 이것도 admin.site.urls보다 앞에 둬야 그 캐치올에
     # 먼저 안 먹힌다.
     path("admin/2fa/", otp_setup, name="otp_setup"),
+    # 상단바 "건의하기" 팝업/알림 벨이 fetch로 부르는 API. 같은 이유로
+    # admin.site.urls보다 앞에 둔다.
+    path("admin/suggestions/create/", suggestion_create, name="suggestion_create"),
+    path("admin/suggestions/mark-all-read/", suggestion_mark_all_read, name="suggestion_mark_all_read"),
     path(
         "admin/password_reset/",
         auth_views.PasswordResetView.as_view(email_template_name="registration/password_reset_email.html"),

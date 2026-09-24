@@ -1,5 +1,6 @@
 import uuid
 
+from django.conf import settings
 from django.db import models
 from django.db.models import Q, UniqueConstraint
 
@@ -199,5 +200,31 @@ class Participant(models.Model):
         if self.checkin_status == CheckinStatus.NOT_CHECKED_IN and self.checked_in_at is not None:
             self.checked_in_at = None
             _also_update("checked_in_at")
+
+        super().save(*args, **kwargs)
+
+
+class Suggestion(models.Model):
+    """상단바 "건의하기" 버튼으로 남기는 건의사항. 로그인한 스태프 전체가
+    작성할 수 있고, 슈퍼유저만 상단바 알림 벨로 확인할 수 있다(둘 다 새
+    Permission을 추가하지 않고 is_staff/is_superuser로 직접 구분 — 계정별
+    개별 권한 체크박스 대상이 아니라 역할 자체에 고정된 기능이라서다).
+    """
+
+    author = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="suggestions"
+    )
+    title = models.CharField(max_length=200)
+    content = models.TextField()
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "건의사항"
+        verbose_name_plural = "건의사항"
+
+    def __str__(self):
+        return self.title
 
         super().save(*args, **kwargs)
