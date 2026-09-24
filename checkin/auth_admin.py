@@ -31,7 +31,8 @@ def _cap(name: str, desc: str):
 # _PERM_BUNDLES 참고 — "관리" 계열은 add_* 권한도 같이 묶어 부여한다).
 # 순서가 화면에 보이는 순서.
 CAP_CHECKIN = [
-    ("use_scanner", _cap("체크인 스캐너 사용", "현장에서 QR 스캔 · 이름/전화 수동 검색으로 체크인을 확정해요.")),
+    ("scan_qr", _cap("QR 스캔", "현장에서 카메라로 QR을 스캔해 체크인을 확정해요.")),
+    ("search_manual", _cap("수동 검색", "이름/전화로 직접 검색해 체크인을 확정해요.")),
 ]
 
 CAP_EVENT = [
@@ -72,7 +73,8 @@ _ALL_CAP_GROUPS = [
 # 묶어서 부여한다 — 화면에 "추가"용 체크박스를 따로 두면 실사용자 입장에서
 # 구분할 실익이 없다.
 _PERM_BUNDLES = {
-    "use_scanner": ["use_scanner"],
+    "scan_qr": ["scan_qr"],
+    "search_manual": ["search_manual"],
     "view_event": ["view_event"],
     "change_event": ["change_event", "add_event"],
     "delete_event": ["delete_event"],

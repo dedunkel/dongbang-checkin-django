@@ -481,7 +481,8 @@ class GranularPermissionCheckboxTests(TestCase):
         self.assertTrue(self.target.has_perm("checkin.mark_paid"))
         self.assertTrue(self.target.has_perm("checkin.view_participant"))
         self.assertFalse(self.target.has_perm("checkin.mark_refund"))
-        self.assertFalse(self.target.has_perm("checkin.use_scanner"))
+        self.assertFalse(self.target.has_perm("checkin.scan_qr"))
+        self.assertFalse(self.target.has_perm("checkin.search_manual"))
 
     def test_change_event_bundles_add_event_permission(self):
         # "회차 정보 관리" 체크박스 하나가 change_event뿐 아니라 add_event도
@@ -548,14 +549,15 @@ class GranularPermissionCheckboxTests(TestCase):
         data = {
             "username": "newops", "password1": "Xk8f2m9qLp!", "password2": "Xk8f2m9qLp!",
             "first_name": "새운영진", "email": "newops@example.com",
-            "perm_checkin": ["use_scanner"], "perm_event": [], "perm_participant": ["view_participant"],
+            "perm_checkin": ["scan_qr"], "perm_event": [], "perm_participant": ["view_participant"],
             "perm_export": [],
         }
         resp = self.client.post("/admin/auth/user/add/", data, follow=True)
         self.assertEqual(resp.status_code, 200)
         User = get_user_model()
         new_user = User.objects.get(username="newops")
-        self.assertTrue(new_user.has_perm("checkin.use_scanner"))
+        self.assertTrue(new_user.has_perm("checkin.scan_qr"))
+        self.assertFalse(new_user.has_perm("checkin.search_manual"))
         self.assertTrue(new_user.has_perm("checkin.view_participant"))
         self.assertFalse(new_user.has_perm("checkin.change_participant"))
         self.assertTrue(self.client.login(username="newops", password="Xk8f2m9qLp!"))
@@ -594,10 +596,50 @@ class GranularPermissionCheckboxTests(TestCase):
         p.refresh_from_db()
         self.assertEqual(p.payment_status, "PAID")
 
-    def test_scanner_view_requires_use_scanner_permission(self):
+    def test_scanner_view_requires_scan_qr_or_search_manual_permission(self):
         staff = get_user_model().objects.create_user("noscan", email="noscan@example.com", password="x", is_staff=True)
         self.client.login(username="noscan", password="x")
         resp = self.client.get("/checkin/")
+        self.assertEqual(resp.status_code, 403)
+
+    def test_scanner_view_shows_only_qr_scan_ui_with_scan_qr_only(self):
+        # "QR 스캔"과 "수동 검색"을 따로 분리했다 — QR 스캔 권한만 있으면
+        # 카메라 화면만 나오고 수동 검색 칸은 아예 렌더링되지 않아야 한다
+        # (검색 API를 부를 권한이 없는데 입력칸만 떠 있으면 눌러도 되는 줄
+        # 착각하게 된다).
+        staff = get_user_model().objects.create_user("qronly", email="qronly@example.com", password="x", is_staff=True)
+        _grant(staff, "scan_qr")
+        self.client.login(username="qronly", password="x")
+        resp = self.client.get("/checkin/")
+        self.assertEqual(resp.status_code, 200)
+        html = resp.content.decode()
+        self.assertIn('id="viewfinder"', html)
+        self.assertNotIn('id="searchBox"', html)
+
+    def test_scanner_view_shows_only_manual_search_ui_with_search_manual_only(self):
+        staff = get_user_model().objects.create_user("searchonly", email="searchonly@example.com", password="x", is_staff=True)
+        _grant(staff, "search_manual")
+        self.client.login(username="searchonly", password="x")
+        resp = self.client.get("/checkin/")
+        self.assertEqual(resp.status_code, 200)
+        html = resp.content.decode()
+        self.assertNotIn('id="viewfinder"', html)
+        self.assertIn('id="searchBox"', html)
+
+    def test_qr_lookup_api_requires_scan_qr_permission(self):
+        staff = get_user_model().objects.create_user("searchonly2", email="searchonly2@example.com", password="x", is_staff=True)
+        _grant(staff, "search_manual")
+        self.client.login(username="searchonly2", password="x")
+        resp = self.client.post(
+            "/api/checkin/lookup/", data="{}", content_type="application/json"
+        )
+        self.assertEqual(resp.status_code, 403)
+
+    def test_participant_search_api_requires_search_manual_permission(self):
+        staff = get_user_model().objects.create_user("qronly2", email="qronly2@example.com", password="x", is_staff=True)
+        _grant(staff, "scan_qr")
+        self.client.login(username="qronly2", password="x")
+        resp = self.client.get("/api/participants/search/?q=a")
         self.assertEqual(resp.status_code, 403)
 
 
@@ -715,7 +757,7 @@ class CheckinConfirmIdempotencyTests(TestCase):
     def setUp(self):
         User = get_user_model()
         self.staff = User.objects.create_user("staff1", email="staff1@example.com", password="x", is_staff=True)
-        _grant(self.staff, "use_scanner")
+        _grant(self.staff, "scan_qr", "search_manual")
         self.event = Event.objects.create(volume=1, name="테스트 회차", is_active=True)
         self.participant = Participant.objects.create(
             id=uuid.uuid4(), event=self.event, entry_type="참가", name="김철수", phone="010-0000-0000",
@@ -745,7 +787,7 @@ class ManualCheckinRefundGuardTests(TestCase):
     def setUp(self):
         User = get_user_model()
         self.staff = User.objects.create_user("staff1", email="staff1@example.com", password="x", is_staff=True)
-        _grant(self.staff, "use_scanner")
+        _grant(self.staff, "scan_qr", "search_manual")
         self.event = Event.objects.create(volume=1, name="테스트 회차", is_active=True)
         self.refunded = Participant.objects.create(
             id=uuid.uuid4(), event=self.event, entry_type="참가", name="환불된참가자",
@@ -1059,7 +1101,7 @@ class AccountDeactivationRevokesActiveSessionTests(TestCase):
     def setUp(self):
         User = get_user_model()
         self.staff = User.objects.create_user("staff1", email="staff1@example.com", password="x", is_staff=True)
-        _grant(self.staff, "use_scanner")
+        _grant(self.staff, "scan_qr", "search_manual")
 
     def test_session_cookie_age_shortened_from_default(self):
         from django.conf import settings

@@ -12,6 +12,7 @@
 
 {% csrf_token %}
 
+{% if can_scan_qr %}
 <div id="viewfinder" class="viewfinder">
   <video id="video" autoplay playsinline muted></video>
   <canvas id="canvas" style="display:none;"></canvas>
@@ -26,23 +27,27 @@
   카메라를 사용할 수 없습니다.<br />아래 수동 검색을 이용해주세요.
 </div>
 <p id="scanHint" class="muted" style="text-align:center; margin-top:0.85rem;">QR을 화면 사각형 안에 비춰주세요</p>
+{% endif %}
 
+{% if can_scan_qr and can_search_manual %}
 <div class="divider-row">
   <div class="line"></div>
   <div id="searchDividerLabel" class="label">또는 직접 검색</div>
   <div class="line"></div>
 </div>
+{% endif %}
 
+{% if can_search_manual %}
 <div style="margin-top:1.1rem;">
   <label for="searchBox">이름/전화번호로 수동 검색</label>
   <input type="text" id="searchBox" placeholder="이름 또는 전화번호" />
   <div id="searchResults" style="margin-top:0.5rem;"></div>
 </div>
+{% endif %}
 
-<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+{% if can_scan_qr %}<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>{% endif %}
 <script>
 const csrfToken = document.querySelector('input[name=csrfmiddlewaretoken]').value;
-const overlay = document.getElementById('scanResult');
 
 // 참가자 이름/학교/장르 등은 신청자가 직접 입력한 값이라, innerHTML에 넣기
 // 전에 반드시 이스케이프해야 함 (안 그러면 이름에 스크립트를 넣어 스태프
@@ -52,6 +57,32 @@ function escapeHtml(value) {
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
   }[c]));
 }
+
+// 로그인 세션이 만료되면 @staff_member_required가 이 API 요청들을 로그인
+// 페이지(HTML)로 리다이렉트시키는데, fetch()는 기본적으로 그 리다이렉트를
+// 따라가 최종 응답(HTML, 200)을 그대로 돌려준다. 그 상태에서 res.json()을
+// 부르면 처리되지 않은 예외가 나서 화면에 아무 안내도 없이 조용히 실패하고
+// (행사 중 스태프는 체크인이 된 줄 알고 다음 사람으로 넘어갈 위험), 실제로는
+// 참가자가 체크인되지 않은 채 남는다. content-type으로 먼저 걸러내 명확한
+// 안내를 보여준다.
+async function apiFetchJson(url, options) {
+  let res;
+  try {
+    res = await fetch(url, options);
+  } catch (e) {
+    alert('네트워크 오류로 요청에 실패했습니다. 다시 시도해주세요.');
+    return null;
+  }
+  if (!(res.headers.get('content-type') || '').includes('application/json')) {
+    alert('로그인이 만료됐습니다. 새로고침 후 다시 로그인해주세요.');
+    return null;
+  }
+  return res.json();
+}
+
+{% if can_scan_qr %}
+// --- QR 스캔 (권한: checkin.scan_qr) ---
+const overlay = document.getElementById('scanResult');
 
 function subInfo(p) {
   return [p.entryType, p.genre, p.school].filter(Boolean).map(escapeHtml).join(' · ');
@@ -94,28 +125,6 @@ function checkedInCardHtml(p) {
   `;
 }
 
-// 로그인 세션이 만료되면 @staff_member_required가 이 API 요청들을 로그인
-// 페이지(HTML)로 리다이렉트시키는데, fetch()는 기본적으로 그 리다이렉트를
-// 따라가 최종 응답(HTML, 200)을 그대로 돌려준다. 그 상태에서 res.json()을
-// 부르면 처리되지 않은 예외가 나서 화면에 아무 안내도 없이 조용히 실패하고
-// (행사 중 스태프는 체크인이 된 줄 알고 다음 사람으로 넘어갈 위험), 실제로는
-// 참가자가 체크인되지 않은 채 남는다. content-type으로 먼저 걸러내 명확한
-// 안내를 보여준다.
-async function apiFetchJson(url, options) {
-  let res;
-  try {
-    res = await fetch(url, options);
-  } catch (e) {
-    showOverlay('<div class="status bad">네트워크 오류로 요청에 실패했습니다. 다시 시도해주세요.</div>');
-    return null;
-  }
-  if (!(res.headers.get('content-type') || '').includes('application/json')) {
-    showOverlay('<div class="status bad">로그인이 만료됐습니다.<br/>새로고침 후 다시 로그인해주세요.</div>');
-    return null;
-  }
-  return res.json();
-}
-
 async function lookupQr(text) {
   const data = await apiFetchJson('{% url "checkin:qr_lookup_api" %}', {
     method: 'POST',
@@ -144,7 +153,6 @@ overlay.addEventListener('click', async (e) => {
   showOverlay(checkedInCardHtml(data.data));
 });
 
-// --- 카메라 QR 스캔 ---
 let lastText = '';
 let lastAt = 0;
 const video = document.getElementById('video');
@@ -160,7 +168,8 @@ async function startCamera() {
     document.getElementById('viewfinder').style.display = 'none';
     document.getElementById('cameraOffBox').style.display = 'flex';
     document.getElementById('scanHint').style.display = 'none';
-    document.getElementById('searchDividerLabel').textContent = '수동 검색';
+    var dividerLabel = document.getElementById('searchDividerLabel');
+    if (dividerLabel) dividerLabel.textContent = '수동 검색';
   }
 }
 
@@ -189,8 +198,10 @@ function tick() {
   requestAnimationFrame(tick);
 }
 startCamera();
+{% endif %}
 
-// --- 수동 검색 ---
+{% if can_search_manual %}
+// --- 수동 검색 (권한: checkin.search_manual) ---
 const searchBox = document.getElementById('searchBox');
 const searchResults = document.getElementById('searchResults');
 let searchTimer = null;
@@ -226,5 +237,6 @@ searchResults.addEventListener('click', async (e) => {
   }
   searchBox.dispatchEvent(new Event('input'));
 });
+{% endif %}
 </script>
 {% endblock %}
