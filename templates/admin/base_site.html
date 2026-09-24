@@ -69,6 +69,12 @@
         </svg>
         QR 체크인 스캐너
       </a>
+      <button type="button" id="dbbt-suggest-trigger" class="dbbt-btn dbbt-btn-outline">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+        </svg>
+        건의하기
+      </button>
     {% endif %}
     <div class="dbbt-theme-toggle" role="group" aria-label="라이트/다크 테마 전환">
       <button type="button" class="dbbt-theme-toggle-option" data-theme-choice="light" aria-label="라이트 모드">
@@ -83,6 +89,56 @@
         </svg>
       </button>
     </div>
+    {% if request.user.is_superuser %}
+      <div class="dbbt-notif-wrap">
+        <button type="button" id="dbbt-notif-bell" class="dbbt-notif-bell" aria-label="알림">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+          </svg>
+          {% if dbbt_suggestions_unread_count %}<span class="dbbt-notif-bell-badge">{{ dbbt_suggestions_unread_count }}</span>{% endif %}
+        </button>
+        <div class="dbbt-notif-panel" id="dbbt-notif-panel" hidden>
+          <div class="dbbt-notif-panel-head">
+            <span class="dbbt-notif-panel-title">건의사항</span>
+            <button type="button" id="dbbt-notif-mark-all" class="dbbt-notif-settings" title="모두 읽음으로 표시">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+              </svg>
+            </button>
+          </div>
+          <div class="dbbt-notif-filters">
+            <button type="button" class="dbbt-notif-filter active" data-notif-filter="all">전체</button>
+            <button type="button" class="dbbt-notif-filter" data-notif-filter="unread">안읽음</button>
+          </div>
+          <div class="dbbt-notif-list">
+            {% for row in dbbt_suggestions %}
+              <a class="dbbt-notif-row {% if row.obj.is_read %}read{% else %}unread{% endif %}" data-read="{{ row.obj.is_read|yesno:'1,0' }}" href="{% url 'admin:checkin_suggestion_change' row.obj.pk %}">
+                <span class="dbbt-notif-avatar">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+                  <span class="dbbt-notif-unread-dot"></span>
+                </span>
+                <span class="dbbt-notif-content">
+                  <span class="dbbt-notif-title-row">
+                    <span class="dbbt-notif-author">{{ row.author_name }}</span>
+                    {% if row.role_label %}<span class="dbbt-notif-role">· {{ row.role_label }}</span>{% endif %}
+                    <span class="dbbt-notif-time">{{ row.obj.created_at|timesince }} 전</span>
+                  </span>
+                  <span class="dbbt-notif-item-title">{{ row.obj.title }}</span>
+                  <span class="dbbt-notif-preview">{{ row.preview }}</span>
+                </span>
+              </a>
+            {% empty %}
+              <div class="dbbt-notif-empty">아직 건의사항이 없습니다.</div>
+            {% endfor %}
+          </div>
+          <div class="dbbt-notif-panel-foot">
+            <a href="{% url 'admin:checkin_suggestion_changelist' %}">전체 보기 →</a>
+          </div>
+        </div>
+      </div>
+    {% endif %}
     {% if request.user.is_authenticated %}
       <a href="{% url 'otp_setup' %}" class="dbbt-btn-link" title="2단계 인증 설정">2단계 인증</a>
       <span class="dbbt-user-email">{{ request.user.email|default:request.user.get_username }}</span>
@@ -98,6 +154,37 @@
   <a class="dbbt-tab{% if opts.model_name == 'event' %} dbbt-tab-active{% endif %}" href="{% url 'admin:checkin_event_changelist' %}">회차 관리</a>
   <a class="dbbt-tab{% if opts.model_name == 'participant' %} dbbt-tab-active{% endif %}" href="{% url 'admin:checkin_participant_changelist' %}">참가자 관리</a>
   <a class="dbbt-tab{% if admin_tab == 'accounts' or opts.model_name == 'user' %} dbbt-tab-active{% endif %}" href="{% url 'accounts_dashboard' %}">계정 관리</a>
+</div>
+
+<div class="dbbt-suggest-overlay" id="dbbt-suggest-overlay" hidden>
+  <div class="dbbt-suggest-modal">
+    <div class="dbbt-suggest-head">
+      <div>
+        <h2 class="dbbt-suggest-title">건의하기</h2>
+        <p class="dbbt-suggest-sub">불편한 점이나 개선 아이디어를 남겨주세요. 운영진이 확인할게요.</p>
+      </div>
+      <button type="button" id="dbbt-suggest-close" class="dbbt-suggest-close" aria-label="닫기">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <form id="dbbt-suggest-form">{% csrf_token %}
+      <div class="dbbt-suggest-body">
+        <p class="dbbt-suggest-error" id="dbbt-suggest-error" hidden></p>
+        <div class="dbbt-suggest-field">
+          <label for="dbbt-suggest-title">제목</label>
+          <input type="text" id="dbbt-suggest-title" name="title" placeholder="예: 참가자 검색이 너무 느려요" maxlength="200" required>
+        </div>
+        <div class="dbbt-suggest-field">
+          <label for="dbbt-suggest-content">내용</label>
+          <textarea id="dbbt-suggest-content" name="content" placeholder="어떤 상황이었는지 자세히 적어주시면 확인이 빨라져요" required></textarea>
+        </div>
+      </div>
+      <div class="dbbt-suggest-foot">
+        <button type="button" id="dbbt-suggest-cancel" class="dbbt-btn dbbt-btn-outline">취소</button>
+        <button type="submit" class="dbbt-btn dbbt-btn-primary">제출하기</button>
+      </div>
+    </form>
+  </div>
 </div>
 {% endif %}
 {% endblock %}
@@ -173,6 +260,102 @@
     }
     superBox.addEventListener('change', sync);
     sync();
+  })();
+
+  (function () {
+    // "건의하기" 팝업 — 열기/닫기/제출. 페이지 전체 이동 없이 fetch로 보내고
+    // 성공하면 바로 닫는다(실패하면 팝업은 열어둔 채 에러 문구만 보여줌).
+    var trigger = document.getElementById('dbbt-suggest-trigger');
+    var overlay = document.getElementById('dbbt-suggest-overlay');
+    if (!trigger || !overlay) return;
+    var form = document.getElementById('dbbt-suggest-form');
+    var errorEl = document.getElementById('dbbt-suggest-error');
+    var titleInput = document.getElementById('dbbt-suggest-title');
+    var contentInput = document.getElementById('dbbt-suggest-content');
+
+    function openModal() {
+      overlay.hidden = false;
+      errorEl.hidden = true;
+      titleInput.focus();
+    }
+    function closeModal() {
+      overlay.hidden = true;
+      form.reset();
+      errorEl.hidden = true;
+    }
+
+    trigger.addEventListener('click', openModal);
+    document.getElementById('dbbt-suggest-close').addEventListener('click', closeModal);
+    document.getElementById('dbbt-suggest-cancel').addEventListener('click', closeModal);
+    overlay.addEventListener('click', function (e) { if (e.target === overlay) closeModal(); });
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var csrf = form.querySelector('input[name=csrfmiddlewaretoken]').value;
+      fetch('{% url "suggestion_create" %}', {
+        method: 'POST',
+        headers: { 'X-CSRFToken': csrf },
+        body: new URLSearchParams({ title: titleInput.value, content: contentInput.value }),
+      })
+        .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
+        .then(function (result) {
+          if (!result.ok || !result.data.ok) {
+            errorEl.textContent = (result.data && result.data.error) || '제출에 실패했습니다. 다시 시도해주세요.';
+            errorEl.hidden = false;
+            return;
+          }
+          closeModal();
+        })
+        .catch(function () {
+          errorEl.textContent = '네트워크 오류로 제출에 실패했습니다. 다시 시도해주세요.';
+          errorEl.hidden = false;
+        });
+    });
+  })();
+
+  (function () {
+    // 건의사항 알림 벨 — 목록 자체는 이미 서버에서 렌더링돼 있어서(최근 20건),
+    // 여기서는 열기/닫기, "전체"/"안읽음" 필터, "모두 읽음" 버튼만 처리한다.
+    var bell = document.getElementById('dbbt-notif-bell');
+    var panel = document.getElementById('dbbt-notif-panel');
+    if (!bell || !panel) return;
+
+    bell.addEventListener('click', function (e) {
+      e.stopPropagation();
+      panel.hidden = !panel.hidden;
+    });
+    document.addEventListener('click', function (e) {
+      if (!panel.hidden && !panel.contains(e.target) && e.target !== bell) panel.hidden = true;
+    });
+
+    var filters = panel.querySelectorAll('.dbbt-notif-filter');
+    var rows = panel.querySelectorAll('.dbbt-notif-row');
+    filters.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        filters.forEach(function (f) { f.classList.toggle('active', f === btn); });
+        var onlyUnread = btn.getAttribute('data-notif-filter') === 'unread';
+        rows.forEach(function (row) {
+          row.hidden = onlyUnread && row.getAttribute('data-read') === '1';
+        });
+      });
+    });
+
+    var markAll = document.getElementById('dbbt-notif-mark-all');
+    if (markAll) {
+      markAll.addEventListener('click', function () {
+        var csrf = document.querySelector('#dbbt-suggest-form input[name=csrfmiddlewaretoken]').value;
+        fetch('{% url "suggestion_mark_all_read" %}', { method: 'POST', headers: { 'X-CSRFToken': csrf } })
+          .then(function () {
+            rows.forEach(function (row) {
+              row.classList.remove('unread');
+              row.classList.add('read');
+              row.setAttribute('data-read', '1');
+            });
+            var badge = bell.querySelector('.dbbt-notif-bell-badge');
+            if (badge) badge.remove();
+          });
+      });
+    }
   })();
 </script>
 {% endblock %}

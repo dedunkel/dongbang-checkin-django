@@ -4,12 +4,15 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
 from django.core.exceptions import PermissionDenied
 from django.db.models import Prefetch
+from django.http import JsonResponse
 from django.shortcuts import redirect, render
 from django.utils import timezone
+from django.views.decorators.http import require_POST
 from django_otp import devices_for_user
 from django_otp.plugins.otp_totp.models import TOTPDevice
 
 from .auth_admin import TIER_LABEL, _tier_of
+from .models import Suggestion
 from .otp import totp_qr_data_url
 
 
@@ -114,3 +117,28 @@ def otp_setup(request):
             "manual_key": device.key,
         },
     )
+
+
+# 상단바 "건의하기" 버튼 — 로그인한 스태프 전체가 쓸 수 있다(스캐너만 쓰는
+# 계정도 포함). 별도 권한 체크 없이 staff_member_required만으로 충분하다.
+@staff_member_required
+@require_POST
+def suggestion_create(request):
+    title = (request.POST.get("title") or "").strip()
+    content = (request.POST.get("content") or "").strip()
+    if not title or not content:
+        return JsonResponse({"ok": False, "error": "제목과 내용을 모두 입력해주세요."}, status=400)
+    Suggestion.objects.create(author=request.user, title=title, content=content)
+    return JsonResponse({"ok": True})
+
+
+# 상단바 알림 벨의 "모두 읽음" — 슈퍼유저 전용. 목록 자체는 매 페이지 렌더링
+# 때마다 context_processors.suggestion_notifications가 서버에서 채워주므로
+# 별도 목록 조회 API는 없다(초기 로드에 이미 최근 20건이 들어있음).
+@staff_member_required
+@require_POST
+def suggestion_mark_all_read(request):
+    if not request.user.is_superuser:
+        raise PermissionDenied("건의사항은 슈퍼유저만 처리할 수 있습니다.")
+    Suggestion.objects.filter(is_read=False).update(is_read=True)
+    return JsonResponse({"ok": True})

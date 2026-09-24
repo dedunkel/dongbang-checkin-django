@@ -11,7 +11,7 @@ from django.urls import reverse
 from django.utils.html import format_html
 from django.utils.http import content_disposition_header
 
-from .models import CheckinStatus, Event, Genre, Participant, PaymentStatus, VerificationStatus
+from .models import CheckinStatus, Event, Genre, Participant, PaymentStatus, Suggestion, VerificationStatus
 from .services import sheet_sync
 from .services.announcement_export import build_announcement_file
 from .services.application_confirmation_export import build_application_confirmation_file
@@ -639,3 +639,31 @@ class ParticipantAdmin(admin.ModelAdmin):
             ("QR / 체크인", {"fields": ("qr_link_display", "qr_sent_at", "checkin_status", "checked_in_at")}),
             ("기타", {"fields": ("id", "created_at")}),
         )
+
+
+@admin.register(Suggestion)
+class SuggestionAdmin(admin.ModelAdmin):
+    # Suggestion에는 커스텀 Permission을 안 두고 내장 view/change 권한 그대로
+    # 쓴다 — 계정별 개별 권한 체크박스(auth_admin.py)에도 포함하지 않았으므로
+    # 아무한테도 부여되지 않는 채로 남고, 결과적으로 슈퍼유저만 이 화면에
+    # 들어올 수 있다(슈퍼유저는 모든 권한 체크를 자동으로 통과).
+    list_display = ("title", "author", "is_read_badge", "created_at")
+    list_filter = ("is_read",)
+    readonly_fields = ("author", "title", "content", "created_at")
+    fields = ("author", "title", "content", "is_read", "created_at")
+
+    def has_add_permission(self, request):
+        return False
+
+    @admin.display(description="확인 여부", ordering="is_read")
+    def is_read_badge(self, obj):
+        if obj.is_read:
+            return format_html('<span class="dbbt-badge dbbt-badge-ok">확인함</span>')
+        return format_html('<span class="dbbt-badge dbbt-badge-warn">안읽음</span>')
+
+    def change_view(self, request, object_id, form_url="", extra_context=None):
+        # 상단바 알림에서 건의사항을 열어보면(=내용을 확인하면) 그 자리에서
+        # 읽음 처리한다 — 안읽음 배지를 보고 들어왔는데도 목록으로 돌아가면
+        # 계속 안읽음으로 남아있으면 매번 다시 열어봐야 하는지 헷갈린다.
+        Suggestion.objects.filter(pk=object_id, is_read=False).update(is_read=True)
+        return super().change_view(request, object_id, form_url, extra_context)
