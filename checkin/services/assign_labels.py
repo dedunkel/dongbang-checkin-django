@@ -1,9 +1,12 @@
 """
-승인(verification_status=APPROVED, 참가자만) + 입금 확인(payment_status=PAID)된
-사람들 중 아직 라벨/토큰이 없는 사람에게 라벨 코드와 QR 토큰을 발급합니다.
-이미 처리된 사람은 건드리지 않으므로 몇 번을 다시 실행해도 안전합니다.
-(Next.js 버전의 app/api/labels/assign/route.ts, Apps Script 버전의
-assignAndIssue_와 동일한 정책)
+입금 확인(payment_status=PAID)된 사람들 중 아직 라벨/토큰이 없는 사람에게
+라벨 코드와 QR 토큰을 발급합니다. 이미 처리된 사람은 건드리지 않으므로
+몇 번을 다시 실행해도 안전합니다.
+
+학적검수(verification_status=APPROVED) 통과 여부는 더 이상 발급 조건이
+아니다 — 미통과자도 입금만 확인되면 라벨/QR을 발급하고, 대신 관리자
+액션(admin.py의 run_label_assign)이 발급 전에 미통과자 존재를 확인받고,
+점수표/스캐너 쪽에서 미통과 사실을 별도로 표시한다.
 """
 
 from __future__ import annotations
@@ -38,7 +41,7 @@ def assign_labels_and_tokens(event: Event) -> dict:
                 bucket["existing"].append(
                     FixedEntry(id=str(p.id), name=p.name, group=p.label_group, number=p.label_number)
                 )
-            elif p.verification_status == "APPROVED" and p.payment_status == "PAID":
+            elif p.payment_status == "PAID":
                 bucket["fresh"].append(FreshEntry(id=str(p.id), name=p.name))
 
         label_updates: dict[str, dict] = {}
@@ -58,8 +61,7 @@ def assign_labels_and_tokens(event: Event) -> dict:
         for p in all_participants:
             if p.qr_token:
                 continue
-            eligible = p.payment_status == "PAID" and (p.entry_type == "관람" or p.verification_status == "APPROVED")
-            if not eligible:
+            if p.payment_status != "PAID":
                 continue
             token_updates[str(p.id)] = uuid.uuid4()
 

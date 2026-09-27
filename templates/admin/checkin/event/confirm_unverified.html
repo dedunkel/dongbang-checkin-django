@@ -1,0 +1,44 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+<div class="dbbt-confirm-wrap">
+  <div class="dbbt-confirm-card">
+    <div class="dbbt-confirm-icon">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+        <line x1="12" y1="9" x2="12" y2="13"/>
+        <line x1="12" y1="17" x2="12.01" y2="17"/>
+      </svg>
+    </div>
+    <h2 class="dbbt-confirm-title">학적검수가 통과되지 않은 참가자가 있습니다</h2>
+    <div class="dbbt-confirm-count"><b>{{ unverified_participants|length }}</b><span>명 · 학적검수 미통과</span></div>
+    <p class="dbbt-confirm-body">
+      학적검수를 통과하지 못했지만 입금은 확인된 참가자입니다.
+      그래도 예선 순서(라벨)와 QR을 발급할까요? 점수표에는 "학적 인증 필요"로
+      표시되고 이름이 파란색으로 구분됩니다.
+    </p>
+    <div class="dbbt-confirm-list-label"><span>대상 명단</span><span>스크롤하여 전체 확인</span></div>
+    <div class="dbbt-confirm-list">
+      {% for p in unverified_participants %}
+        <div class="dbbt-confirm-row">
+          <span class="name">{{ p.name }}</span>
+          <span class="meta">{{ p.genre|default:"미지정" }}{% if p.school %} · {{ p.school }}{% endif %}</span>
+        </div>
+      {% endfor %}
+      <div class="dbbt-confirm-list-fade"></div>
+    </div>
+    <form method="post">
+      {% csrf_token %}
+      {% for obj in queryset %}
+        <input type="hidden" name="{{ action_checkbox_name }}" value="{{ obj.pk }}">
+      {% endfor %}
+      <input type="hidden" name="action" value="run_label_assign">
+      <input type="hidden" name="post" value="yes">
+      <div class="dbbt-confirm-foot">
+        <a href="." class="dbbt-btn dbbt-btn-outline">취소</a>
+        <button type="submit" class="dbbt-btn dbbt-btn-primary">확인</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
