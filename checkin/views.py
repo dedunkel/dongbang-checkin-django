@@ -242,6 +242,7 @@ def _participant_dto(p: Participant) -> dict:
         "school": p.school,
         "labelCode": p.label_code,
         "checkinStatus": p.checkin_status,
+        "verificationStatus": p.verification_status,
     }
 
 

@@ -3,10 +3,12 @@ from functools import wraps
 
 from django import forms
 from django.contrib import admin, messages
+from django.contrib.admin import helpers
 from django.db import transaction
 from django.db.models import CharField, Count, Q, TextField, Value
 from django.db.models.functions import Cast, Concat, LPad
 from django.http import HttpResponse
+from django.template.response import TemplateResponse
 from django.urls import reverse
 from django.utils.html import format_html
 from django.utils.http import content_disposition_header
@@ -183,9 +185,36 @@ def _filter_actions_by_permission(actions: dict, request) -> dict:
     return actions
 
 
+def _unverified_paid_participants(queryset):
+    """이번 발급 대상(참가, 입금 확인, 라벨/QR 둘 중 하나라도 아직 없음) 중
+    학적검수를 통과하지 못한 사람 목록 — run_label_assign 확인 팝업에 씀."""
+    return list(
+        Participant.objects.filter(event__in=queryset, entry_type="참가", payment_status="PAID")
+        .exclude(verification_status="APPROVED")
+        .filter(Q(label_code__isnull=True) | Q(qr_token__isnull=True))
+        .order_by("genre", "name")
+    )
+
+
 @admin.action(description="라벨 / QR 발급")
 @_requires_permission("run_label_assign", "라벨 / QR 발급")
 def run_label_assign(modeladmin, request, queryset):
+    # 학적검수 미통과자도 입금만 확인되면 라벨/QR을 내보내도록 정책이
+    # 바뀌면서(assign_labels.py), 실수로 미검수자에게까지 발급해버리는 걸
+    # 막기 위해 delete_selected와 같은 패턴으로 한 번 더 확인받는다 — 이미
+    # 확인(post=yes)된 재제출이면 곧바로 발급을 진행한다.
+    if request.POST.get("post") != "yes":
+        unverified = _unverified_paid_participants(queryset)
+        if unverified:
+            context = {
+                **modeladmin.admin_site.each_context(request),
+                "title": "학적검수가 통과되지 않은 참가자가 있습니다",
+                "queryset": queryset,
+                "unverified_participants": unverified,
+                "action_checkbox_name": helpers.ACTION_CHECKBOX_NAME,
+            }
+            return TemplateResponse(request, "admin/checkin/event/confirm_unverified.html", context)
+
     for event in queryset:
         result = assign_labels_and_tokens(event)
         messages.success(

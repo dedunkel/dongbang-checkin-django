@@ -25,6 +25,7 @@ from checkin.services.event_excel_export import (
     remarks_for,
     split_display_name,
 )
+from checkin.services.assign_labels import assign_labels_and_tokens
 from checkin.services.label_assign import GROUP_SIZE, FixedEntry, FreshEntry, assign_genre
 from checkin.services.score_sheet_export import build_score_sheet_file
 from checkin.services.sheet_sync import push_order_for_event
@@ -686,8 +687,6 @@ class MarkRefundActionTests(TestCase):
     def test_refunded_participant_not_reissued_label_or_qr(self):
         # assign_labels_and_tokens()를 다시 돌려도 환불된 사람은 여전히
         # payment_status != PAID이므로 새 라벨/QR을 받지 않아야 한다.
-        from checkin.services.assign_labels import assign_labels_and_tokens
-
         p = Participant.objects.create(
             id=uuid.uuid4(), event=self.event, entry_type="참가", name="박환불", phone="010-0000-0003",
             genre="Breaking", verification_status="APPROVED", payment_status="PAID",
@@ -698,6 +697,134 @@ class MarkRefundActionTests(TestCase):
         p.refresh_from_db()
         self.assertIsNone(p.label_code)
         self.assertIsNone(p.qr_token)
+
+
+class UnverifiedLabelAssignPolicyTests(TestCase):
+    """학적검수 미통과자도 입금만 확인되면 라벨/QR을 발급하도록 정책이
+    바뀌면서(assign_labels.py) 추가된 동작들 — 서비스 레벨 발급 조건,
+    admin의 "라벨 / QR 발급" 액션이 미통과자 존재 시 확인 팝업을 거치는지,
+    점수표 비고/이름색, 스캐너 API 응답의 verificationStatus 노출까지."""
+
+    def setUp(self):
+        User = get_user_model()
+        self.superuser = User.objects.create_superuser("root", "root@example.com", "pass12345")
+        self.event = Event.objects.create(volume=1, name="테스트 회차", is_active=True)
+        self.client.login(username="root", password="pass12345")
+
+    def _post_label_assign(self, event_ids, post_confirm=False):
+        data = {"action": "run_label_assign", "_selected_action": [str(pk) for pk in event_ids]}
+        if post_confirm:
+            data["post"] = "yes"
+        return self.client.post("/admin/checkin/event/", data, follow=True)
+
+    def test_unverified_paid_participant_gets_label_and_qr(self):
+        p = Participant.objects.create(
+            id=uuid.uuid4(), event=self.event, entry_type="참가", genre="Breaking",
+            name="김미검수", phone="010-0000-0001", payment_status="PAID",
+            verification_status="PENDING",
+        )
+        result = assign_labels_and_tokens(self.event)
+        p.refresh_from_db()
+        self.assertEqual(result["labeled"], 1)
+        self.assertEqual(result["issued"], 1)
+        self.assertEqual(p.label_code, "A-1")
+        self.assertIsNotNone(p.qr_token)
+
+    def test_unpaid_unverified_participant_still_excluded(self):
+        # 정책이 바뀐 건 "학적검수" 조건만이지 입금 조건은 그대로다.
+        p = Participant.objects.create(
+            id=uuid.uuid4(), event=self.event, entry_type="참가", genre="Breaking",
+            name="이미입금전", phone="010-0000-0002", payment_status="PENDING",
+            verification_status="PENDING",
+        )
+        assign_labels_and_tokens(self.event)
+        p.refresh_from_db()
+        self.assertIsNone(p.label_code)
+        self.assertIsNone(p.qr_token)
+
+    def test_run_label_assign_skips_confirmation_when_all_verified(self):
+        Participant.objects.create(
+            id=uuid.uuid4(), event=self.event, entry_type="참가", genre="Breaking",
+            name="김검수완료", phone="010-0000-0003", payment_status="PAID",
+            verification_status="APPROVED",
+        )
+        resp = self._post_label_assign([self.event.pk])
+        self.assertEqual(resp.status_code, 200)
+        self.assertNotIn("학적검수가 통과되지 않은 참가자가 있습니다", resp.content.decode())
+        p = Participant.objects.get(name="김검수완료")
+        self.assertIsNotNone(p.label_code)
+
+    def test_run_label_assign_shows_confirmation_and_withholds_issuance(self):
+        Participant.objects.create(
+            id=uuid.uuid4(), event=self.event, entry_type="참가", genre="Breaking",
+            name="김미검수2", phone="010-0000-0004", payment_status="PAID",
+            verification_status="PENDING",
+        )
+        resp = self._post_label_assign([self.event.pk])
+        self.assertEqual(resp.status_code, 200)
+        html = resp.content.decode()
+        self.assertIn("학적검수가 통과되지 않은 참가자가 있습니다", html)
+        self.assertIn("김미검수2", html)
+        p = Participant.objects.get(name="김미검수2")
+        self.assertIsNone(p.label_code, "확인 전에는 발급되면 안 됨")
+
+    def test_run_label_assign_proceeds_after_confirmation(self):
+        Participant.objects.create(
+            id=uuid.uuid4(), event=self.event, entry_type="참가", genre="Breaking",
+            name="김미검수3", phone="010-0000-0005", payment_status="PAID",
+            verification_status="PENDING",
+        )
+        resp = self._post_label_assign([self.event.pk], post_confirm=True)
+        self.assertEqual(resp.status_code, 200)
+        p = Participant.objects.get(name="김미검수3")
+        self.assertIsNotNone(p.label_code)
+        self.assertIsNotNone(p.qr_token)
+
+    def test_score_sheet_marks_unverified_remarks_and_name_color(self):
+        Participant.objects.create(
+            id=uuid.uuid4(), event=self.event, entry_type="참가", genre="Breaking",
+            name="김미검수4", phone="010-0000-0006", school="국민대학교", academic_status="재학",
+            label_group="A", label_number=1, label_code="A-1",
+            payment_status="PAID", verification_status="PENDING",
+        )
+        _, content = build_score_sheet_file(self.event)
+        wb = load_workbook(filename=io.BytesIO(content))
+        ws = wb["브레이킹"]
+        row = [c.value for c in ws[3]]
+        self.assertEqual(row[-1], "학적 인증 필요")  # 비고
+        name_cell = ws.cell(row=3, column=2)
+        self.assertEqual(name_cell.font.color.rgb, "FF3B82F6")
+
+    def test_score_sheet_verified_name_not_colored(self):
+        Participant.objects.create(
+            id=uuid.uuid4(), event=self.event, entry_type="참가", genre="Breaking",
+            name="김검수완료2", phone="010-0000-0007",
+            label_group="A", label_number=1, label_code="A-1",
+            payment_status="PAID", verification_status="APPROVED",
+        )
+        _, content = build_score_sheet_file(self.event)
+        wb = load_workbook(filename=io.BytesIO(content))
+        ws = wb["브레이킹"]
+        name_cell = ws.cell(row=3, column=2)
+        color = name_cell.font.color
+        self.assertTrue(color is None or color.type != "rgb")
+
+    def test_qr_lookup_api_exposes_verification_status(self):
+        staff = get_user_model().objects.create_user("scanstaff", email="scanstaff@example.com", password="x", is_staff=True)
+        _grant(staff, "scan_qr")
+        token = uuid.uuid4()
+        Participant.objects.create(
+            id=uuid.uuid4(), event=self.event, entry_type="참가", genre="Breaking",
+            name="김스캔", phone="010-0000-0008", payment_status="PAID",
+            verification_status="PENDING", qr_token=token,
+        )
+        self.client.login(username="scanstaff", password="x")
+        resp = self.client.post(
+            "/api/checkin/lookup/", data=json.dumps({"text": str(token)}), content_type="application/json"
+        )
+        data = resp.json()
+        self.assertEqual(data["status"], "FOUND")
+        self.assertEqual(data["data"]["verificationStatus"], "PENDING")
 
 
 class ParticipantStatTilesTests(TestCase):

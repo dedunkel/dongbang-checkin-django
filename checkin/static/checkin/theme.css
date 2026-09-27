@@ -246,7 +246,17 @@ footer { text-align: center; padding: 1rem; font-size: 0.75rem; color: var(--mut
 .result-card .status { margin-top: 0.6rem; font-size: 0.8rem; font-weight: 700; }
 .result-card .status.ok { color: var(--ok); }
 .result-card .status.bad { color: var(--bad); }
+.result-card .status.warn { color: var(--warn); }
 .result-card button { margin-top: 0.75rem; width: 100%; }
+
+/* 학적검수 미통과자도 라벨/QR이 나가므로(assign_labels.py) 체크인 자체는
+   막지 않되, 스태프가 알아볼 수 있게 이름 아래에 경고 배지를 보여준다. */
+.result-card .verify-warning {
+  margin-top: 0.55rem; padding: 0.45rem 0.7rem; border-radius: 0.6rem;
+  background: var(--warn-soft); color: var(--warn); font-size: 0.78rem; font-weight: 700;
+  display: flex; align-items: center; justify-content: center; gap: 0.35rem;
+}
+.result-card .verify-warning svg { flex: none; }
 .camera-off-box {
   margin-top: 1rem; width: 100%; min-height: 140px; background: var(--surface); border: 1px dashed var(--line);
   border-radius: 0.75rem; display: flex; align-items: center; justify-content: center; text-align: center; padding: 1.5rem;

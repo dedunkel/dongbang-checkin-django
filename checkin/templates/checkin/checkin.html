@@ -101,10 +101,17 @@ function hideOverlay() {
 function foundCardHtml(p) {
   const code = p.labelCode ? `<div class="code">${escapeHtml(p.labelCode)}</div>` : '';
   const already = p.checkinStatus === 'CHECKED_IN';
+  // 학적검수 미통과자도 입금만 되면 라벨/QR이 나가므로(assign_labels.py),
+  // 체크인 자체는 막지 않되 스태프가 상황을 알 수 있게 경고만 덧붙인다.
+  const needsVerification = p.entryType === '참가' && p.verificationStatus !== 'APPROVED';
+  const warning = needsVerification
+    ? `<div class="verify-warning"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>학적 검수 필요</div>`
+    : '';
   return `
     ${code}
     <div class="name">${escapeHtml(p.name)}</div>
     <div class="sub">${subInfo(p)}</div>
+    ${warning}
     ${already
       ? '<div class="status bad">이미 체크인됨</div>'
       : `<button data-id="${escapeHtml(p.id)}" id="confirmCheckinBtn">체크인 확정</button>`}

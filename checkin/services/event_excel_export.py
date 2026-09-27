@@ -19,6 +19,7 @@ from typing import Callable
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Font
 from openpyxl.utils import get_column_letter
+from openpyxl.worksheet.worksheet import Worksheet
 
 from checkin.models import Event, Genre, Participant
 from checkin.services.name_utils import split_display_name
@@ -30,6 +31,7 @@ GENRE_TABS = [(g.value, g.label) for g in Genre] + [(None, "관람")]
 
 RowBuilder = Callable[[int, Participant], list]
 TabParticipants = Callable[[Event, "str | None"], list[Participant]]
+RowStyler = Callable[[Worksheet, int, Participant], None]
 
 _PHONE_DIGITS_RE = re.compile(r"\D")
 
@@ -151,7 +153,7 @@ def write_title_row(ws, event: Event, sheet_title: str, num_columns: int) -> Non
 
 def _write_sheet(
     wb: Workbook, event: Event, sheet_title: str, participants: list[Participant],
-    headers: list[str], row_builder: RowBuilder,
+    headers: list[str], row_builder: RowBuilder, row_styler: RowStyler | None = None,
 ) -> None:
     ws = wb.create_sheet(title=sheet_title)
     write_title_row(ws, event, sheet_title, len(headers))
@@ -162,6 +164,8 @@ def _write_sheet(
 
     for i, p in enumerate(participants, start=1):
         ws.append(row_builder(i, p))
+        if row_styler:
+            row_styler(ws, ws.max_row, p)
 
     for col in range(1, len(headers) + 1):
         ws.column_dimensions[get_column_letter(col)].width = 16
@@ -170,14 +174,16 @@ def _write_sheet(
 def build_workbook(
     event: Event, headers: list[str], row_builder: RowBuilder,
     tab_participants: TabParticipants = participants_for_tab,
+    row_styler: RowStyler | None = None,
 ) -> Workbook:
     """탭 구성(장르별 + 관람)은 고정, 헤더/행 값/탭에 들어갈 참가자 선택
-    규칙만 호출하는 쪽에서 넘겨받는 범용 워크북 빌더."""
+    규칙만 호출하는 쪽에서 넘겨받는 범용 워크북 빌더. row_styler를 넘기면
+    행이 추가된 직후 그 행에 셀 서식(예: 이름 셀 색상)을 덧입힐 수 있다."""
     wb = Workbook()
     wb.remove(wb.active)  # 기본으로 생기는 빈 시트 제거
 
     for genre, tab_name in GENRE_TABS:
-        _write_sheet(wb, event, tab_name, tab_participants(event, genre), headers, row_builder)
+        _write_sheet(wb, event, tab_name, tab_participants(event, genre), headers, row_builder, row_styler)
 
     return wb
 
@@ -185,9 +191,10 @@ def build_workbook(
 def build_file(
     event: Event, headers: list[str], row_builder: RowBuilder, filename: str,
     tab_participants: TabParticipants = participants_for_tab,
+    row_styler: RowStyler | None = None,
 ) -> tuple[str, bytes]:
     """(파일명, xlsx 바이트) 튜플을 반환."""
-    wb = build_workbook(event, headers, row_builder, tab_participants)
+    wb = build_workbook(event, headers, row_builder, tab_participants, row_styler)
     buf = io.BytesIO()
     wb.save(buf)
     return filename, buf.getvalue()

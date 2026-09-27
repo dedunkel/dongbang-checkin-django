@@ -1087,3 +1087,59 @@ body.dbbt-login .dbbt-topbar-left h1 { display: none; }
 @media (max-width: 480px) {
   .dbbt-notif-panel { width: calc(100vw - 32px); right: -16px; }
 }
+
+/* ==========================================================================
+   "라벨 / QR 발급" 확인 화면 (templates/admin/checkin/event/confirm_unverified.html)
+   학적검수 미통과자가 섞여 있을 때 발급 전에 한 번 더 확인받는 delete_selected
+   스타일 인터스티셜 페이지.
+   ========================================================================== */
+.dbbt-confirm-wrap { display: flex; justify-content: center; padding: 40px 0; }
+.dbbt-confirm-card {
+  width: 100%; max-width: 560px; background: var(--surface); border: 1px solid var(--line);
+  border-radius: 10px; padding: 28px 30px; box-shadow: 0 8px 40px oklch(15% 0.006 60 / 0.12);
+}
+.dbbt-confirm-icon {
+  width: 44px; height: 44px; border-radius: 50%; background: var(--dbbt-warn-soft); color: var(--dbbt-warn);
+  display: flex; align-items: center; justify-content: center; margin-bottom: 16px;
+}
+.dbbt-confirm-title { font-size: 17px; font-weight: 900; color: var(--text); margin: 0 0 10px; }
+.dbbt-confirm-count {
+  display: inline-flex; align-items: baseline; gap: 5px; background: var(--dbbt-warn-soft); color: var(--dbbt-warn);
+  font-weight: 800; padding: 5px 12px; border-radius: 100px; margin-bottom: 14px;
+}
+.dbbt-confirm-count b { font-size: 16px; }
+.dbbt-confirm-count span { font-size: 12px; }
+.dbbt-confirm-body { font-size: 13px; color: var(--muted); line-height: 1.7; margin: 0 0 18px; }
+.dbbt-confirm-list-label {
+  font-size: 11px; font-weight: 700; color: var(--muted); margin: 0 0 6px; display: flex; justify-content: space-between;
+}
+/* 명단이 짧으면(4~5명) 칸이 내용만큼만 차지하고, 그보다 많아지면 높이를
+   185px로 고정해 마지막 줄이 일부러 반쯤 잘려 보이게 한다 — "더 있으니
+   스크롤하라"는 신호. 그 위에 옅은 그림자(.dbbt-confirm-list-fade)를 겹쳐
+   자연스럽게 흐려지게 하고, 끝까지 스크롤하면 그림자도 함께 사라진다. */
+.dbbt-confirm-list {
+  max-height: 185px; overflow-y: auto; border: 1px solid var(--line); border-radius: 8px;
+  margin-bottom: 22px; scrollbar-width: thin; scrollbar-color: var(--line) transparent;
+}
+.dbbt-confirm-list::-webkit-scrollbar { width: 6px; }
+.dbbt-confirm-list::-webkit-scrollbar-thumb { background: var(--line); border-radius: 3px; }
+.dbbt-confirm-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 10px 14px; border-bottom: 1px solid var(--line); font-size: 12.5px;
+}
+.dbbt-confirm-row:last-child { border-bottom: none; }
+.dbbt-confirm-row .name { font-weight: 700; color: var(--text); }
+.dbbt-confirm-row .meta { color: var(--muted); }
+.dbbt-confirm-list-fade {
+  position: sticky; bottom: 0; left: 0; right: 0; height: 26px; margin-top: -26px;
+  background: linear-gradient(to bottom, transparent, var(--surface)); pointer-events: none;
+}
+.dbbt-confirm-foot { display: flex; justify-content: flex-end; gap: 8px; }
+
+@media (max-width: 480px) {
+  .dbbt-confirm-wrap { padding: 20px 0; }
+  .dbbt-confirm-card { padding: 20px 18px; border-radius: 8px; }
+  .dbbt-confirm-title { font-size: 15.5px; }
+  .dbbt-confirm-foot { flex-direction: column-reverse; }
+  .dbbt-confirm-foot .dbbt-btn { width: 100%; }
+}
