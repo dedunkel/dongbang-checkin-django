@@ -81,7 +81,11 @@ def qr_view(request, token):
     return render(
         request,
         "checkin/qr.html",
-        {"participant": participant, "qr_data_url": qr_data_url},
+        {
+            "participant": participant,
+            "qr_data_url": qr_data_url,
+            "show_verification_notice": participant.needs_verification and participant.checkin_status != "CHECKED_IN",
+        },
     )
 
 
@@ -95,27 +99,87 @@ def scan_view(request, token):
     participant = Participant.objects.filter(qr_token=token).first()
     if not participant:
         return render(request, "checkin/scan.html", {"not_found": True})
-    return render(request, "checkin/scan.html", {"participant": participant})
+    # 검수 안내/버튼은 로그인한 스태프에게만 보인다 — 이 페이지는 로그인 없이도
+    # 열리므로(QR 링크를 가진 누구나), 학적 검수 여부까지 밖으로 드러내지 않는다.
+    is_staff = request.user.is_authenticated and request.user.is_staff
+    show_verification = is_staff and participant.needs_verification
+    just_verified = is_staff and request.GET.get("verified") == "1" and not participant.needs_verification
+    return render(
+        request,
+        "checkin/scan.html",
+        {
+            "participant": participant,
+            "show_verification": show_verification,
+            "can_approve": show_verification and _can_approve_verification(request.user),
+            "just_verified": just_verified,
+        },
+    )
+
+
+def _staff_login_redirect(token):
+    # @staff_member_required가 기본으로 하는 것처럼 로그인 화면으로 보내되,
+    # next는 이 POST 액션 자체가 아니라 GET인 scan_view로 잡는다 — POST
+    # 액션으로 next를 잡으면 로그인 후 리다이렉트가 GET으로 재요청되면서
+    # require_POST에 막혀 405가 나기 때문. 그 대신 로그인 후에는 확인
+    # 화면으로 돌아가서 버튼을 다시 눌러야 한다.
+    return redirect(f"{reverse('admin:login')}?next={reverse('checkin:scan', args=[token])}")
 
 
 @require_POST
 def scan_confirm(request, token):
     if not (request.user.is_authenticated and request.user.is_staff):
-        # @staff_member_required가 기본으로 하는 것처럼 로그인 화면으로 보내되,
-        # next는 이 POST 액션 자체가 아니라 GET인 scan_view로 잡는다 — POST
-        # 액션으로 next를 잡으면 로그인 후 리다이렉트가 GET으로 재요청되면서
-        # require_POST에 막혀 405가 나기 때문. 그 대신 로그인 후에는 확인
-        # 화면으로 돌아가서 "체크인 확정" 버튼을 다시 눌러야 한다.
-        login_url = f"{reverse('admin:login')}?next={reverse('checkin:scan', args=[token])}"
-        return redirect(login_url)
+        return _staff_login_redirect(token)
 
     participant = get_object_or_404(Participant, qr_token=token)
+    if participant.needs_verification:
+        messages.error(request, VERIFICATION_REQUIRED_MESSAGE)
+        return redirect("checkin:scan", token=token)
     participant, just_checked_in = _mark_checked_in(participant.pk)
     if just_checked_in:
         messages.success(request, f"{participant.name}님 체크인을 확정했습니다.")
     else:
         messages.info(request, f"{participant.name}님은 이미 체크인되어 있습니다.")
     return redirect("checkin:scan", token=token)
+
+
+@require_POST
+def scan_approve(request, token):
+    """QR 확인 페이지의 "검수 완료" 버튼 — 학적검수 승인 권한이 있는 스태프만."""
+    if not (request.user.is_authenticated and request.user.is_staff):
+        return _staff_login_redirect(token)
+    if not _can_approve_verification(request.user):
+        messages.error(request, "학적검수 승인 권한이 없습니다. 권한이 있는 운영진에게 검수를 요청해주세요.")
+        return redirect("checkin:scan", token=token)
+
+    participant = get_object_or_404(Participant, qr_token=token)
+    participant, error = _approve_verification(participant.pk)
+    if error:
+        messages.error(request, error)
+        return redirect("checkin:scan", token=token)
+    messages.success(request, f"{participant.name}님 학적 검수를 완료했습니다.")
+    return redirect(f"{reverse('checkin:scan', args=[token])}?verified=1")
+
+
+VERIFICATION_REQUIRED_MESSAGE = "학적 검수가 필요한 참가자입니다. 검수 완료 후 체크인해주세요."
+
+
+def _can_approve_verification(user) -> bool:
+    return user.is_authenticated and user.has_perm("checkin.approve_verification")
+
+
+def _approve_verification(participant_id) -> tuple[Participant, str | None]:
+    """학적검수를 승인 처리하고 (참가자, 실패 사유)를 반환 — 성공하면 사유는 None.
+    이미 승인된 사람에게 다시 불러도 그대로 성공(멱등)이다."""
+    with transaction.atomic():
+        participant = Participant.objects.select_for_update().get(pk=participant_id)
+        if participant.payment_status == "REFUND":
+            return participant, "환불된 참가자는 검수할 수 없습니다."
+        if participant.entry_type != "참가":
+            return participant, "학적 검수 대상이 아닌 참가자입니다."
+        if participant.verification_status != "APPROVED":
+            participant.verification_status = "APPROVED"
+            participant.save(update_fields=["verification_status"])
+    return participant, None
 
 
 def _mark_checked_in(participant_id) -> tuple[Participant, bool]:
@@ -189,7 +253,11 @@ def qr_lookup_api(request):
     if not participant:
         return JsonResponse({"status": "NOT_FOUND", "message": "등록되지 않은 QR입니다."})
 
-    return JsonResponse({"status": "FOUND", "data": _participant_dto(participant)})
+    return JsonResponse({
+        "status": "FOUND",
+        "data": _participant_dto(participant),
+        "canApproveVerification": _can_approve_verification(request.user),
+    })
 
 
 _PHONE_QUERY_RE = re.compile(r"[\d\s().+-]+")
@@ -232,7 +300,10 @@ def participant_search_api(request):
     ).annotate(phone_digits=_phone_without_separators()).filter(
         Q(name__icontains=q) | _phone_matches(q)
     )[:20]
-    return JsonResponse({"results": [_participant_dto(p) for p in rows]})
+    return JsonResponse({
+        "results": [_participant_dto(p) for p in rows],
+        "canApproveVerification": _can_approve_verification(request.user),
+    })
 
 
 @staff_member_required
@@ -254,7 +325,30 @@ def manual_checkin_api(request, participant_id):
         return JsonResponse(
             {"status": "error", "message": "환불된 참가자는 체크인할 수 없습니다."}, status=400
         )
+    # 화면에서 검수 완료 전에는 체크인 버튼을 숨기지만, 예전에 열어둔 화면이나
+    # 직접 요청으로 우회되지 않도록 서버에서도 같은 조건으로 막는다.
+    if participant.needs_verification:
+        return JsonResponse(
+            {"status": "error", "code": "VERIFICATION_REQUIRED", "message": VERIFICATION_REQUIRED_MESSAGE},
+            status=400,
+        )
     participant, _just_checked_in = _mark_checked_in(participant_id)
+    return JsonResponse({"status": "success", "data": _participant_dto(participant)})
+
+
+@staff_member_required
+@require_POST
+def approve_verification_api(request, participant_id):
+    """체크인 화면(QR 스캔 카드/수동 검색 목록)의 "검수 완료" 버튼."""
+    if not _can_approve_verification(request.user):
+        return JsonResponse(
+            {"status": "error", "message": "학적검수 승인 권한이 없습니다. 권한이 있는 운영진에게 검수를 요청해주세요."},
+            status=403,
+        )
+    get_object_or_404(Participant, pk=participant_id)
+    participant, error = _approve_verification(participant_id)
+    if error:
+        return JsonResponse({"status": "error", "message": error}, status=400)
     return JsonResponse({"status": "success", "data": _participant_dto(participant)})
 
 
@@ -269,6 +363,7 @@ def _participant_dto(p: Participant) -> dict:
         "labelCode": p.label_code,
         "checkinStatus": p.checkin_status,
         "verificationStatus": p.verification_status,
+        "needsVerification": p.needs_verification,
     }
 
 

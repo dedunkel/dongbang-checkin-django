@@ -11,12 +11,18 @@ urlpatterns = [
     path("qr/<uuid:token>/", views.qr_view, name="qr"),
     path("checkin/scan/<uuid:token>/", views.scan_view, name="scan"),
     path("checkin/scan/<uuid:token>/confirm/", views.scan_confirm, name="scan_confirm"),
+    path("checkin/scan/<uuid:token>/approve/", views.scan_approve, name="scan_approve"),
     path("api/checkin/lookup/", views.qr_lookup_api, name="qr_lookup_api"),
     path("api/participants/search/", views.participant_search_api, name="participant_search_api"),
     path(
         "api/participants/<uuid:participant_id>/manual-checkin/",
         views.manual_checkin_api,
         name="manual_checkin_api",
+    ),
+    path(
+        "api/participants/<uuid:participant_id>/approve-verification/",
+        views.approve_verification_api,
+        name="approve_verification_api",
     ),
     path("api/import/google-form/", views.google_form_import, name="google_form_import"),
 ]

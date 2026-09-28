@@ -166,6 +166,13 @@ class Participant(models.Model):
     def __str__(self):
         return f"{self.name} ({self.entry_type})"
 
+    @property
+    def needs_verification(self) -> bool:
+        """현장에서 학적 검수를 먼저 마쳐야 체크인할 수 있는 사람인지.
+        참가 구분이면서 검수가 승인되지 않은 경우(대기·반려)만 해당한다 —
+        관람은 검수 대상이 아니다."""
+        return self.entry_type == EntryType.PARTICIPANT and self.verification_status != VerificationStatus.APPROVED
+
     def save(self, *args, **kwargs):
         def _also_update(field: str) -> None:
             update_fields = kwargs.get("update_fields")

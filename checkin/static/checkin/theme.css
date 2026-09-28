@@ -256,14 +256,27 @@ footer { text-align: center; padding: 1rem; font-size: 0.75rem; color: var(--mut
 .result-card .status.warn { color: var(--warn); }
 .result-card button { margin-top: 0.75rem; width: 100%; }
 
-/* 학적검수 미통과자도 라벨/QR이 나가므로(assign_labels.py) 체크인 자체는
-   막지 않되, 스태프가 알아볼 수 있게 이름 아래에 경고 배지를 보여준다. */
-.result-card .verify-warning {
-  margin-top: 0.55rem; padding: 0.45rem 0.7rem; border-radius: 0.6rem;
-  background: var(--warn-soft); color: var(--warn); font-size: 0.78rem; font-weight: 700;
+/* 학적검수가 필요한 사람은 검수 완료를 먼저 눌러야 체크인 버튼이 나온다.
+   QR 결과 카드, 수동 검색 목록, QR 확인 페이지가 같은 조각을 쓴다. */
+.verify-warning, .verify-ok {
+  margin-top: 0.55rem; padding: 0.45rem 0.7rem; border-radius: 0.6rem; font-size: 0.78rem; font-weight: 700;
   display: flex; align-items: center; justify-content: center; gap: 0.35rem;
 }
-.result-card .verify-warning svg { flex: none; }
+.verify-warning { background: var(--warn-soft); color: var(--warn); }
+.verify-ok { background: var(--ok-soft); color: var(--ok); }
+.verify-warning svg, .verify-ok svg, .perm-note svg { flex: none; }
+.perm-note {
+  margin-top: 0.5rem; padding: 0.5rem 0.65rem; border-radius: 0.6rem; background: var(--surface2); color: var(--muted);
+  font-size: 0.74rem; line-height: 1.55; display: flex; gap: 0.4rem; align-items: flex-start; text-align: left;
+}
+.perm-note svg { margin-top: 2px; }
+.steps { display: flex; gap: 0.3rem; justify-content: center; list-style: none; padding: 0; margin: 0.65rem 0 0; }
+.steps li {
+  display: flex; align-items: center; gap: 0.25rem; font-size: 0.68rem; font-weight: 700;
+  padding: 0.22rem 0.55rem; border-radius: 0.4rem; background: var(--surface2); color: var(--muted);
+}
+.steps li.on { background: var(--accent-soft); color: var(--accent); }
+.steps li.done { background: var(--ok-soft); color: var(--ok); }
 .camera-off-box {
   margin-top: 1rem; width: 100%; min-height: 140px; background: var(--surface); border: 1px dashed var(--line);
   border-radius: 0.75rem; display: flex; align-items: center; justify-content: center; text-align: center; padding: 1.5rem;
@@ -275,7 +288,15 @@ footer { text-align: center; padding: 1rem; font-size: 0.75rem; color: var(--mut
 .divider-row .label { font-size: 0.7rem; color: var(--muted); font-weight: 700; }
 
 .search-item {
-  display: flex; justify-content: space-between; align-items: center; padding: 0.6rem 0.1rem;
+  display: flex; justify-content: space-between; align-items: center; gap: 0.6rem; padding: 0.65rem 0.1rem;
   border-top: 1px solid var(--line); font-size: 0.85rem;
 }
-.search-item button { margin: 0; padding: 0.35rem 0.75rem; font-size: 0.78rem; }
+.search-item .si-main { min-width: 0; flex: 1; }
+.search-item .si-act { flex: none; text-align: right; }
+.search-item .chip {
+  display: inline-flex; align-items: center; gap: 0.25rem; margin-top: 0.3rem; padding: 0.2rem 0.5rem;
+  border-radius: 0.4rem; font-size: 0.7rem; font-weight: 700;
+}
+.search-item .chip.warn { background: var(--warn-soft); color: var(--warn); }
+.search-item .chip.ok { background: var(--ok-soft); color: var(--ok); }
+.search-item button { margin: 0; padding: 0.35rem 0.75rem; font-size: 0.78rem; white-space: nowrap; }

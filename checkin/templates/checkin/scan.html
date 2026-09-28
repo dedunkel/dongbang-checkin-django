@@ -33,12 +33,46 @@
       {% if participant.checked_in_at %}
         <p class="muted">{{ participant.checked_in_at|date:"Y.m.d H:i" }}</p>
       {% endif %}
+    {% elif show_verification %}
+      {# 로그인한 스태프에게만: 학적 검수를 먼저 마쳐야 체크인 버튼이 나온다 #}
+      <div class="verify-warning" style="margin-top:1.1rem; font-size:0.85rem; padding:0.55rem 0.8rem;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>학적 검수 필요
+      </div>
+      {% if can_approve %}
+        <p class="muted" style="margin-top:1rem;">검수를 마친 뒤에 체크인할 수 있습니다.</p>
+        <form method="post" action="{% url 'checkin:scan_approve' token=participant.qr_token %}">
+          {% csrf_token %}
+          <button type="submit" class="btn" style="width:100%;">검수 완료</button>
+        </form>
+      {% else %}
+        <div class="perm-note">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+          학적검수 승인 권한이 있는 스태프만 검수할 수 있어요. 권한이 있는 운영진에게 요청해주세요.
+        </div>
+        <button type="button" class="btn btn-outline" style="width:100%;" disabled>체크인 완료</button>
+      {% endif %}
     {% else %}
+      {% if just_verified %}
+        <div class="verify-ok" style="margin-top:1.1rem; font-size:0.85rem; padding:0.55rem 0.8rem;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>학적 검수 완료
+        </div>
+      {% endif %}
       <p class="muted" style="margin-top:1.5rem;">아직 체크인되지 않았습니다.</p>
       <form method="post" action="{% url 'checkin:scan_confirm' token=participant.qr_token %}">
         {% csrf_token %}
-        <button type="submit" class="btn" style="width:100%;">체크인 확정</button>
+        <button type="submit" class="btn" id="confirm-btn" style="width:100%;">체크인 완료</button>
       </form>
+      {% if just_verified %}
+      <script>
+        // 검수 완료 직후 같은 자리에 체크인 버튼이 나타나므로, 연달아 눌러도 바로
+        // 체크인되지 않게 0.6초 동안만 잠근다.
+        (function () {
+          var btn = document.getElementById('confirm-btn');
+          btn.disabled = true;
+          setTimeout(function () { btn.disabled = false; }, 600);
+        })();
+      </script>
+      {% endif %}
       <p class="fine" style="margin-top:0.9rem; line-height:1.6;">
         스태프 로그인이 필요합니다.<br />기기당 최초 1회만 입력하면 됩니다.
       </p>
