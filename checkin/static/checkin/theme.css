@@ -117,6 +117,13 @@ a { color: var(--accent); }
   display: inline-flex; align-items: center; background: var(--surface); border: 1px solid var(--line);
   border-radius: 20px; padding: 3px; gap: 2px; box-shadow: 0 1px 3px oklch(18% 0.008 60 / 0.08);
 }
+/* 좁은 화면에서는 고정 위치 토글이 본문 첫 줄(상단바의 "관리자 모드" 필,
+   카드 모서리 등)을 덮는다 — 토글을 더 위로 올리고 본문에 토글이 들어갈
+   윗줄 여백을 확보해 겹치지 않게 한다. */
+@media (max-width: 780px) {
+  .theme-toggle { top: 10px; right: 12px; }
+  main { padding-top: 3.75rem; }
+}
 .theme-toggle-option {
   /* iOS Safari는 <button>에 appearance:none을 안 주면 자체 버튼 크롬(둥근
      사각형 + 최소 터치영역 확보용 여백)을 얹어서, width/height를 줘도 실제

@@ -845,6 +845,10 @@ html[data-theme="light"] .dbbt-theme-toggle-option[data-theme-choice="dark"] { c
   font-weight: 700; font-size: 15px; border-radius: 4px; border: none; cursor: pointer; font-family: inherit;
 }
 .dbbt-login-submit:hover { opacity: 0.92; }
+/* Django 기본 responsive.css가 좁은 화면(모바일)에서 `.login br { display: none }`으로
+   <br>을 통째로 꺼버려서, 안내 문구가 줄바꿈 없이 띄어쓰기도 없이 붙어 보였다
+   ("대시보드는스태프", "됩니다.계정이"). 우선순위를 한 단계 올려 다시 켠다. */
+body .dbbt-login-wrap br { display: inline; }
 .dbbt-login-help { margin-top: 16px; font-size: 10.5px; line-height: 1.6; color: var(--muted); text-align: center; word-break: keep-all; }
 
 /* 로그아웃 화면 — 로그인 카드 스타일 재사용, 배지/버튼형 링크만 추가 */
