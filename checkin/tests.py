@@ -1214,6 +1214,31 @@ class OnSiteVerificationFlowTests(TestCase):
 
 
 @override_settings(IMPORT_SECRET="test-secret")
+class GoogleFormImportSecretAuthTests(TestCase):
+    """구글 폼 웹훅의 공유 시크릿 검사(SEC-05: 상수 시간 비교로 교체). 맞는 값만
+    통과하고, 없거나 틀리거나 비ASCII 값이어도 500 없이 401로 거절되는지 확인."""
+
+    def _post(self, **headers):
+        return self.client.post(
+            "/api/import/google-form/", data=json.dumps({"rows": []}), content_type="application/json", **headers
+        )
+
+    def test_correct_secret_passes(self):
+        Event.objects.create(volume=1, name="테스트 회차", is_active=True)
+        self.assertEqual(self._post(HTTP_X_IMPORT_SECRET="test-secret").status_code, 200)
+
+    def test_wrong_secret_is_rejected(self):
+        self.assertEqual(self._post(HTTP_X_IMPORT_SECRET="test-secreT").status_code, 401)
+        self.assertEqual(self._post(HTTP_X_IMPORT_SECRET="test").status_code, 401)
+
+    def test_missing_secret_is_rejected(self):
+        self.assertEqual(self._post().status_code, 401)
+
+    def test_non_ascii_secret_is_rejected_not_server_error(self):
+        self.assertEqual(self._post(HTTP_X_IMPORT_SECRET="시크릿").status_code, 401)
+
+
+@override_settings(IMPORT_SECRET="test-secret")
 class GoogleFormImportGenreValidationTests(TestCase):
     """구글 폼 연동(google_form_import)이 예비 신청 폼(RegisterForm)과 같은
     기준으로 참가자 장르를 요구하는지(#87) — 장르가 없거나 Genre에 없는
