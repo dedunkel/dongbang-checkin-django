@@ -39,6 +39,7 @@ class Event(models.Model):
             ("export_announcement", "공지용 명단 다운로드 가능 (이름/연락처 마스킹)"),
             ("export_application_confirmation", "신청 확인용 명단 다운로드 가능"),
             ("run_label_assign", "라벨 · QR 발급 실행 가능"),
+            ("run_label_revoke", "라벨 · QR 발급 취소(전체 회수) 가능"),
             ("push_order_to_sheet", "점수 시트 순서 반영 가능"),
         ]
 

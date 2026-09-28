@@ -827,6 +827,100 @@ class UnverifiedLabelAssignPolicyTests(TestCase):
         self.assertEqual(data["data"]["verificationStatus"], "PENDING")
 
 
+class LabelRevokeActionTests(TestCase):
+    """"라벨 / QR 발급 취소" — 선택 회차의 예선 순서/QR 전부 회수, 발급된 게 없으면
+    안내 카드만 보여주고, 회수 전에 한 번 확인받는다."""
+
+    def setUp(self):
+        User = get_user_model()
+        self.superuser = User.objects.create_superuser("root", "root@example.com", "pass12345")
+        self.event = Event.objects.create(volume=1, name="회수 테스트 회차", is_active=True)
+        self.other_event = Event.objects.create(volume=2, name="다른 회차")
+        self.client.login(username="root", password="pass12345")
+
+    def _post(self, event_ids, post_confirm=False):
+        data = {"action": "run_label_revoke", "_selected_action": [str(pk) for pk in event_ids]}
+        if post_confirm:
+            data["post"] = "yes"
+        return self.client.post("/admin/checkin/event/", data, follow=True)
+
+    def _issued(self, event, name, checked_in=False):
+        return Participant.objects.create(
+            id=uuid.uuid4(), event=event, entry_type="참가", genre="Breaking", name=name,
+            phone="010-0000-0000", payment_status="PAID", verification_status="APPROVED",
+            label_group="A", label_number=Participant.objects.filter(event=event).count() + 1,
+            label_code=f"A-{Participant.objects.filter(event=event).count() + 1}",
+            qr_token=uuid.uuid4(), checkin_status="CHECKED_IN" if checked_in else "NOT_CHECKED_IN",
+        )
+
+    def test_nothing_issued_shows_notice_and_changes_nothing(self):
+        Participant.objects.create(
+            id=uuid.uuid4(), event=self.event, entry_type="참가", genre="Breaking",
+            name="미발급", phone="010-0000-0001", payment_status="PAID",
+        )
+        resp = self._post([self.event.pk])
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn("취소할 발급 내역이 없습니다", resp.content.decode())
+
+    def test_confirmation_shown_with_counts_and_nothing_revoked_yet(self):
+        p = self._issued(self.event, "김발급")
+        viewer = Participant.objects.create(
+            id=uuid.uuid4(), event=self.event, entry_type="관람", name="관람객",
+            phone="010-0000-0002", payment_status="PAID", qr_token=uuid.uuid4(),
+        )
+        resp = self._post([self.event.pk])
+        html = resp.content.decode()
+        self.assertIn("모두 회수할까요", html)
+        self.assertIn("1명", html)  # 예선 순서
+        self.assertIn("2명", html)  # QR (참가 + 관람)
+        p.refresh_from_db()
+        viewer.refresh_from_db()
+        self.assertIsNotNone(p.label_code)
+        self.assertIsNotNone(viewer.qr_token)
+
+    def test_confirmed_revoke_clears_labels_and_qr_but_keeps_checkin(self):
+        p = self._issued(self.event, "김체크인", checked_in=True)
+        other = self._issued(self.other_event, "다른회차참가자")
+        self._post([self.event.pk], post_confirm=True)
+        p.refresh_from_db()
+        other.refresh_from_db()
+        self.assertIsNone(p.label_code)
+        self.assertIsNone(p.label_group)
+        self.assertIsNone(p.label_number)
+        self.assertIsNone(p.qr_token)
+        self.assertEqual(p.checkin_status, "CHECKED_IN")
+        self.assertEqual(p.payment_status, "PAID")
+        self.assertIsNotNone(other.label_code, "선택하지 않은 회차는 건드리면 안 됨")
+        self.assertIsNotNone(other.qr_token)
+
+    def test_revoked_participant_can_be_reissued(self):
+        p = self._issued(self.event, "재발급")
+        self._post([self.event.pk], post_confirm=True)
+        assign_labels_and_tokens(self.event)
+        p.refresh_from_db()
+        self.assertIsNotNone(p.label_code)
+        self.assertIsNotNone(p.qr_token)
+
+    def test_requires_run_label_revoke_permission(self):
+        staff = get_user_model().objects.create_user("norevoke", email="norevoke@example.com", password="x", is_staff=True)
+        _grant(staff, "view_event", "run_label_assign")
+        p = self._issued(self.event, "권한없음")
+        self.client.login(username="norevoke", password="x")
+        self._post([self.event.pk], post_confirm=True)
+        p.refresh_from_db()
+        self.assertIsNotNone(p.label_code)
+        self.assertIsNotNone(p.qr_token)
+
+    def test_permission_available_in_account_checkboxes(self):
+        from checkin.auth_admin import CAP_EVENT, _PERM_BUNDLES
+
+        self.assertIn("run_label_revoke", [code for code, _ in CAP_EVENT])
+        self.assertEqual(_PERM_BUNDLES["run_label_revoke"], ["run_label_revoke"])
+        self.assertTrue(
+            Permission.objects.filter(content_type__app_label="checkin", codename="run_label_revoke").exists()
+        )
+
+
 class ParticipantStatTilesTests(TestCase):
     """참가자 목록 상단 "학적검수 대기 및 반려" 타일 — 대기 상태뿐 아니라
     반려된 사람도 함께 세어야 한다(운영진이 둘 다 후속 조치가 필요한

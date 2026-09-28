@@ -1136,6 +1136,26 @@ body.dbbt-login .dbbt-topbar-left h1 { display: none; }
 }
 .dbbt-confirm-foot { display: flex; justify-content: flex-end; gap: 8px; }
 
+/* 확인 카드 하단 버튼은 <a>(취소/확인 후 목록 이동)와 <button>이 섞여 있다 —
+   admin 기본 a:link 색이 .dbbt-btn-primary 글씨색을 덮어 안 보이고, <a>는
+   content-box라 모바일에서 width:100% + 패딩이 카드 밖으로 삐져나왔다. */
+.dbbt-confirm-foot .dbbt-btn { box-sizing: border-box; }
+.dbbt-confirm-foot a.dbbt-btn-primary, .dbbt-confirm-foot a.dbbt-btn-danger-solid { color: var(--bg); }
+
+/* "라벨 / QR 발급 취소" 확인/안내 카드 변형 (confirm_revoke.html) */
+.dbbt-btn-danger-solid { background: var(--dbbt-bad); color: var(--bg); }
+.dbbt-confirm-icon.bad { background: var(--dbbt-bad-soft); color: var(--dbbt-bad); }
+.dbbt-confirm-icon.info { background: var(--dbbt-accent-soft); color: var(--dbbt-accent); }
+.dbbt-confirm-count.bad { background: var(--dbbt-bad-soft); color: var(--dbbt-bad); }
+.dbbt-confirm-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px; }
+.dbbt-confirm-stat { border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; }
+.dbbt-confirm-stat b { display: block; font-size: 20px; font-weight: 900; color: var(--text); }
+.dbbt-confirm-stat span { font-size: 11.5px; color: var(--muted); font-weight: 700; }
+.dbbt-confirm-note {
+  font-size: 12px; color: var(--muted); line-height: 1.7; margin: 0 0 20px; padding: 10px 12px;
+  background: var(--surface2); border-radius: 6px;
+}
+
 @media (max-width: 480px) {
   .dbbt-confirm-wrap { padding: 20px 0; }
   .dbbt-confirm-card { padding: 20px 18px; border-radius: 8px; }

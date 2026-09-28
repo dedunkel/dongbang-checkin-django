@@ -223,6 +223,41 @@ def run_label_assign(modeladmin, request, queryset):
         )
 
 
+@admin.action(description="라벨 / QR 발급 취소")
+@_requires_permission("run_label_revoke", "라벨 / QR 발급 취소")
+def run_label_revoke(modeladmin, request, queryset):
+    """선택한 회차의 예선 순서(라벨)와 QR을 전부 회수한다. 환불 처리(mark_refund)와
+    같은 필드를 비우며, 체크인 기록·입금·학적검수 상태는 건드리지 않는다.
+    회수는 되돌릴 수 없어서 delete_selected와 같은 패턴으로 한 번 확인받고,
+    회수할 게 하나도 없으면 먼저 발급하라는 안내 카드만 보여준다."""
+    targets = Participant.objects.filter(event__in=queryset)
+    label_count = targets.filter(label_code__isnull=False).count()
+    qr_count = targets.filter(qr_token__isnull=False).count()
+
+    if request.POST.get("post") != "yes":
+        events = list(queryset)
+        context = {
+            **modeladmin.admin_site.each_context(request),
+            "title": "발급된 예선 순서 · QR 회수",
+            "queryset": queryset,
+            "event_label": events[0].name if len(events) == 1 else f"선택한 회차 {len(events)}개",
+            "label_count": label_count,
+            "qr_count": qr_count,
+            "nothing_issued": label_count == 0 and qr_count == 0,
+            "action_checkbox_name": helpers.ACTION_CHECKBOX_NAME,
+        }
+        return TemplateResponse(request, "admin/checkin/event/confirm_revoke.html", context)
+
+    revoked = targets.filter(Q(label_code__isnull=False) | Q(qr_token__isnull=False)).update(
+        label_group=None, label_number=None, label_code=None,
+        qr_token=None, qr_sent_at=None,
+    )
+    messages.success(
+        request,
+        f"예선 순서 {label_count}명 / QR {qr_count}명을 회수했습니다 (대상 {revoked}명).",
+    )
+
+
 @admin.action(description="점수 시트 순서 반영")
 @_requires_permission("push_order_to_sheet", "점수 시트 순서 반영")
 def push_order_to_sheet(modeladmin, request, queryset):
@@ -384,6 +419,7 @@ class EventAdmin(admin.ModelAdmin):
     ordering = ("-volume",)
     actions = [
         run_label_assign,
+        run_label_revoke,
         push_order_to_sheet,
         export_event_csv,
         export_qr_send_list,
