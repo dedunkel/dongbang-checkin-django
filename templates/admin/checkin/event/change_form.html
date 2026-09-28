@@ -16,6 +16,12 @@
     <form method="post" action="{% url 'admin:checkin_event_changelist' %}">
       {% csrf_token %}
       <input type="hidden" name="_selected_action" value="{{ original.pk }}">
+      <input type="hidden" name="action" value="run_label_revoke">
+      <button type="submit" class="dbbt-btn dbbt-btn-outline dbbt-btn-danger">라벨 / QR 발급 취소</button>
+    </form>
+    <form method="post" action="{% url 'admin:checkin_event_changelist' %}">
+      {% csrf_token %}
+      <input type="hidden" name="_selected_action" value="{{ original.pk }}">
       <input type="hidden" name="action" value="push_order_to_sheet">
       <button type="submit" class="dbbt-btn dbbt-btn-outline">점수 시트 순서 반영</button>
     </form>

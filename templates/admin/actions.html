@@ -4,6 +4,7 @@
 
   {% if cl.opts.model_name == "event" %}
     <button type="submit" name="action" value="run_label_assign" class="dbbt-btn dbbt-btn-outline">라벨 / QR 발급 실행</button>
+    <button type="submit" name="action" value="run_label_revoke" class="dbbt-btn dbbt-btn-outline dbbt-btn-danger">라벨 / QR 발급 취소</button>
     <button type="submit" name="action" value="push_order_to_sheet" class="dbbt-btn dbbt-btn-outline">점수 시트 순서 반영</button>
     {% if perms.checkin.delete_event %}
     <button type="submit" name="action" value="delete_selected" class="dbbt-btn dbbt-btn-outline dbbt-btn-danger">선택 회차 삭제</button>

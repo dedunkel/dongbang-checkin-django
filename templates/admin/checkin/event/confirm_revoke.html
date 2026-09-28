@@ -1,0 +1,53 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+<div class="dbbt-confirm-wrap">
+  <div class="dbbt-confirm-card">
+    {% if nothing_issued %}
+      <div class="dbbt-confirm-icon info">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+        </svg>
+      </div>
+      <h2 class="dbbt-confirm-title">취소할 발급 내역이 없습니다</h2>
+      <p class="dbbt-confirm-body">
+        선택한 회차에는 아직 발급된 예선 순서(라벨)와 QR이 없어요.
+        먼저 <b>라벨 / QR 발급 실행</b>을 해주세요.
+      </p>
+      <div class="dbbt-confirm-foot">
+        <a href="{% url 'admin:checkin_event_changelist' %}" class="dbbt-btn dbbt-btn-primary">확인</a>
+      </div>
+    {% else %}
+      <div class="dbbt-confirm-icon bad">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+          <line x1="12" y1="9" x2="12" y2="13"/>
+          <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+      </div>
+      <h2 class="dbbt-confirm-title">발급된 예선 순서와 QR을 모두 회수할까요?</h2>
+      <div class="dbbt-confirm-count bad"><b>{{ event_label }}</b></div>
+      <div class="dbbt-confirm-stats">
+        <div class="dbbt-confirm-stat"><b>{{ label_count }}명</b><span>예선 순서 회수</span></div>
+        <div class="dbbt-confirm-stat"><b>{{ qr_count }}명</b><span>QR 회수</span></div>
+      </div>
+      <p class="dbbt-confirm-note">
+        회수하면 기존 QR로는 체크인할 수 없고, 다시 발급하면 순서가 새로 배정돼요.
+        이미 체크인한 기록은 그대로 남습니다.
+      </p>
+      <form method="post">
+        {% csrf_token %}
+        {% for obj in queryset %}
+          <input type="hidden" name="{{ action_checkbox_name }}" value="{{ obj.pk }}">
+        {% endfor %}
+        <input type="hidden" name="action" value="run_label_revoke">
+        <input type="hidden" name="post" value="yes">
+        <div class="dbbt-confirm-foot">
+          <a href="{% url 'admin:checkin_event_changelist' %}" class="dbbt-btn dbbt-btn-outline">취소</a>
+          <button type="submit" class="dbbt-btn dbbt-btn-danger-solid">모두 회수</button>
+        </div>
+      </form>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

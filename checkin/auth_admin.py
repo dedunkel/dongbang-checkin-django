@@ -40,6 +40,7 @@ CAP_EVENT = [
     ("change_event", _cap("회차 정보 관리", "회차를 추가 · 수정하고 활성 회차를 전환해요.")),
     ("delete_event", _cap("회차 삭제", "회차와 소속 참가자 전체를 삭제해요. 되돌릴 수 없어요.")),
     ("run_label_assign", _cap("라벨 · QR 발급 실행", "참가자에게 조/번호 라벨과 개인 QR을 배정해요.")),
+    ("run_label_revoke", _cap("라벨 · QR 발급 취소", "발급된 예선 순서와 QR을 회차 단위로 전부 회수해요. 되돌릴 수 없어요.")),
     ("push_order_to_sheet", _cap("점수 시트 순서 반영", "연동된 점수 시트에 참가자 순서를 반영해요.")),
 ]
 
@@ -79,6 +80,7 @@ _PERM_BUNDLES = {
     "change_event": ["change_event", "add_event"],
     "delete_event": ["delete_event"],
     "run_label_assign": ["run_label_assign"],
+    "run_label_revoke": ["run_label_revoke"],
     "push_order_to_sheet": ["push_order_to_sheet"],
     "view_participant": ["view_participant"],
     "change_participant": ["change_participant", "add_participant"],
