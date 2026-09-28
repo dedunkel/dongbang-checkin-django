@@ -8,7 +8,8 @@ from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
 from django.core.exceptions import PermissionDenied
 from django.db import IntegrityError, transaction
-from django.db.models import Q
+from django.db.models import F, Q, Value
+from django.db.models.functions import Replace
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -191,6 +192,29 @@ def qr_lookup_api(request):
     return JsonResponse({"status": "FOUND", "data": _participant_dto(participant)})
 
 
+_PHONE_QUERY_RE = re.compile(r"[\d\s().+-]+")
+
+
+def _phone_without_separators():
+    """저장된 phone에서 하이픈·공백·점·괄호를 지운 값(검색 비교용 annotate)."""
+    expr = F("phone")
+    for ch in "-. ()":
+        expr = Replace(expr, Value(ch), Value(""))
+    return expr
+
+
+def _phone_matches(q: str) -> Q:
+    """전화번호는 신청자가 입력한 모양 그대로(하이픈 유무가 제각각) 저장되므로,
+    숫자·하이픈 등으로만 된 검색어는 하이픈 등을 뺀 숫자끼리도 비교한다 —
+    "01012345678"로 "010-1234-5678"을, 그 반대로도 찾을 수 있게. 이름 같은
+    일반 검색어에는 숫자 비교를 붙이지 않는다(댄서네임에 든 숫자 오탐 방지)."""
+    matches = Q(phone__icontains=q)
+    digits = re.sub(r"\D", "", q)
+    if digits and _PHONE_QUERY_RE.fullmatch(q):
+        matches |= Q(phone_digits__contains=digits)
+    return matches
+
+
 @staff_member_required
 @require_GET
 def participant_search_api(request):
@@ -205,7 +229,9 @@ def participant_search_api(request):
     # 없으면 환불된 사람이 검색 결과에 그대로 나타나 체크인될 수 있다(#105).
     rows = Participant.objects.filter(event=active_event).exclude(
         payment_status="REFUND"
-    ).filter(Q(name__icontains=q) | Q(phone__icontains=q))[:20]
+    ).annotate(phone_digits=_phone_without_separators()).filter(
+        Q(name__icontains=q) | _phone_matches(q)
+    )[:20]
     return JsonResponse({"results": [_participant_dto(p) for p in rows]})
 
 

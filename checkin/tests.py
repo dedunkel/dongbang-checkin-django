@@ -921,6 +921,52 @@ class LabelRevokeActionTests(TestCase):
         )
 
 
+class ManualSearchPhoneFormatTests(TestCase):
+    """수동 검색: 전화번호가 신청자가 입력한 모양 그대로(하이픈 유무 제각각)
+    저장되므로, 전체 번호로 검색할 때 하이픈 유무와 상관없이 찾혀야 한다 —
+    뒤 4자리가 같은 동명이인을 전체 번호로 구분하는 현장 상황."""
+
+    def setUp(self):
+        User = get_user_model()
+        staff = User.objects.create_user("searcher", email="searcher@example.com", password="x", is_staff=True)
+        _grant(staff, "search_manual")
+        self.event = Event.objects.create(volume=1, name="검색 테스트", is_active=True)
+        self.dashed = Participant.objects.create(
+            id=uuid.uuid4(), event=self.event, entry_type="참가", name="김민준", phone="010-1234-5678",
+        )
+        self.plain = Participant.objects.create(
+            id=uuid.uuid4(), event=self.event, entry_type="참가", name="김민준", phone="01099995678",
+        )
+        self.dancer = Participant.objects.create(
+            id=uuid.uuid4(), event=self.event, entry_type="참가", name="박비보이/b1", phone="010-0000-0000",
+        )
+        self.client.login(username="searcher", password="x")
+
+    def _search(self, q):
+        resp = self.client.get("/api/participants/search/", {"q": q})
+        self.assertEqual(resp.status_code, 200)
+        return {r["phone"] for r in resp.json()["results"]}
+
+    def test_last_four_digits_find_both_formats(self):
+        self.assertEqual(self._search("5678"), {"010-1234-5678", "01099995678"})
+
+    def test_full_number_without_hyphens_finds_dashed_record(self):
+        self.assertEqual(self._search("01012345678"), {"010-1234-5678"})
+
+    def test_full_number_with_hyphens_finds_plain_record(self):
+        self.assertEqual(self._search("010-9999-5678"), {"01099995678"})
+
+    def test_full_number_in_stored_format_still_works(self):
+        self.assertEqual(self._search("010-1234-5678"), {"010-1234-5678"})
+
+    def test_spaces_in_query_are_ignored(self):
+        self.assertEqual(self._search("010 1234 5678"), {"010-1234-5678"})
+
+    def test_name_query_with_digit_does_not_match_phone_digits(self):
+        # 댄서네임 "b1"을 찾으려는 검색어가 전화번호 속 숫자 1에 잡히면 안 된다.
+        self.assertEqual(self._search("b1"), {"010-0000-0000"})
+
+
 class ParticipantStatTilesTests(TestCase):
     """참가자 목록 상단 "학적검수 대기 및 반려" 타일 — 대기 상태뿐 아니라
     반려된 사람도 함께 세어야 한다(운영진이 둘 다 후속 조치가 필요한
@@ -1030,7 +1076,6 @@ class ManualCheckinRefundGuardTests(TestCase):
         self.assertEqual(self.refunded.checkin_status, "NOT_CHECKED_IN")
 
 
-@override_settings(IMPORT_SECRET="test-secret")
 class GoogleFormImportGenreValidationTests(TestCase):
     """구글 폼 연동(google_form_import)이 예비 신청 폼(RegisterForm)과 같은
     기준으로 참가자 장르를 요구하는지(#87) — 장르가 없거나 Genre에 없는
