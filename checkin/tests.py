@@ -921,6 +921,52 @@ class LabelRevokeActionTests(TestCase):
         )
 
 
+class ManualSearchPhoneFormatTests(TestCase):
+    """수동 검색: 전화번호가 신청자가 입력한 모양 그대로(하이픈 유무 제각각)
+    저장되므로, 전체 번호로 검색할 때 하이픈 유무와 상관없이 찾혀야 한다 —
+    뒤 4자리가 같은 동명이인을 전체 번호로 구분하는 현장 상황."""
+
+    def setUp(self):
+        User = get_user_model()
+        staff = User.objects.create_user("searcher", email="searcher@example.com", password="x", is_staff=True)
+        _grant(staff, "search_manual")
+        self.event = Event.objects.create(volume=1, name="검색 테스트", is_active=True)
+        self.dashed = Participant.objects.create(
+            id=uuid.uuid4(), event=self.event, entry_type="참가", name="김민준", phone="010-1234-5678",
+        )
+        self.plain = Participant.objects.create(
+            id=uuid.uuid4(), event=self.event, entry_type="참가", name="김민준", phone="01099995678",
+        )
+        self.dancer = Participant.objects.create(
+            id=uuid.uuid4(), event=self.event, entry_type="참가", name="박비보이/b1", phone="010-0000-0000",
+        )
+        self.client.login(username="searcher", password="x")
+
+    def _search(self, q):
+        resp = self.client.get("/api/participants/search/", {"q": q})
+        self.assertEqual(resp.status_code, 200)
+        return {r["phone"] for r in resp.json()["results"]}
+
+    def test_last_four_digits_find_both_formats(self):
+        self.assertEqual(self._search("5678"), {"010-1234-5678", "01099995678"})
+
+    def test_full_number_without_hyphens_finds_dashed_record(self):
+        self.assertEqual(self._search("01012345678"), {"010-1234-5678"})
+
+    def test_full_number_with_hyphens_finds_plain_record(self):
+        self.assertEqual(self._search("010-9999-5678"), {"01099995678"})
+
+    def test_full_number_in_stored_format_still_works(self):
+        self.assertEqual(self._search("010-1234-5678"), {"010-1234-5678"})
+
+    def test_spaces_in_query_are_ignored(self):
+        self.assertEqual(self._search("010 1234 5678"), {"010-1234-5678"})
+
+    def test_name_query_with_digit_does_not_match_phone_digits(self):
+        # 댄서네임 "b1"을 찾으려는 검색어가 전화번호 속 숫자 1에 잡히면 안 된다.
+        self.assertEqual(self._search("b1"), {"010-0000-0000"})
+
+
 class ParticipantStatTilesTests(TestCase):
     """참가자 목록 상단 "학적검수 대기 및 반려" 타일 — 대기 상태뿐 아니라
     반려된 사람도 함께 세어야 한다(운영진이 둘 다 후속 조치가 필요한
@@ -1028,6 +1074,143 @@ class ManualCheckinRefundGuardTests(TestCase):
         self.assertEqual(resp.json()["status"], "error")
         self.refunded.refresh_from_db()
         self.assertEqual(self.refunded.checkin_status, "NOT_CHECKED_IN")
+
+
+class OnSiteVerificationFlowTests(TestCase):
+    """현장 체크인의 학적 검수 흐름 — 검수가 필요한 참가자는 "검수 완료"를 먼저
+    처리해야 체크인할 수 있고, 서버도 화면과 같은 조건으로 막는다."""
+
+    def setUp(self):
+        User = get_user_model()
+        self.event = Event.objects.create(volume=1, name="테스트 회차", is_active=True)
+        self.needs = Participant.objects.create(
+            id=uuid.uuid4(), event=self.event, entry_type="참가", name="검수대기", phone="010-0000-0001",
+            genre="Waacking", payment_status="PAID", verification_status="PENDING", qr_token=uuid.uuid4(),
+        )
+        self.rejected = Participant.objects.create(
+            id=uuid.uuid4(), event=self.event, entry_type="참가", name="반려됨", phone="010-0000-0002",
+            genre="Popping", payment_status="PAID", verification_status="REJECTED", qr_token=uuid.uuid4(),
+        )
+        self.approved = Participant.objects.create(
+            id=uuid.uuid4(), event=self.event, entry_type="참가", name="검수완료", phone="010-0000-0003",
+            genre="Locking", payment_status="PAID", verification_status="APPROVED", qr_token=uuid.uuid4(),
+        )
+        self.viewer = Participant.objects.create(
+            id=uuid.uuid4(), event=self.event, entry_type="관람", name="관람객", phone="010-0000-0004",
+            payment_status="PAID", verification_status="N_A", qr_token=uuid.uuid4(),
+        )
+        self.approver = User.objects.create_user("approver", email="a@example.com", password="x", is_staff=True)
+        _grant(self.approver, "scan_qr", "search_manual", "approve_verification")
+        self.plain_staff = User.objects.create_user("plain", email="p@example.com", password="x", is_staff=True)
+        _grant(self.plain_staff, "scan_qr", "search_manual")
+
+    def _login(self, username):
+        self.client.login(username=username, password="x")
+
+    def test_needs_verification_property(self):
+        self.assertTrue(self.needs.needs_verification)
+        self.assertTrue(self.rejected.needs_verification)
+        self.assertFalse(self.approved.needs_verification)
+        self.assertFalse(self.viewer.needs_verification)
+
+    def test_search_reports_needs_verification_and_permission(self):
+        self._login("approver")
+        data = self.client.get("/api/participants/search/?q=검수대기").json()
+        self.assertTrue(data["canApproveVerification"])
+        self.assertTrue(data["results"][0]["needsVerification"])
+        self._login("plain")
+        data = self.client.get("/api/participants/search/?q=검수대기").json()
+        self.assertFalse(data["canApproveVerification"])
+
+    def test_manual_checkin_is_rejected_until_verified(self):
+        self._login("approver")
+        resp = self.client.post(f"/api/participants/{self.needs.pk}/manual-checkin/")
+        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(resp.json()["code"], "VERIFICATION_REQUIRED")
+        self.needs.refresh_from_db()
+        self.assertEqual(self.needs.checkin_status, "NOT_CHECKED_IN")
+
+        resp = self.client.post(f"/api/participants/{self.needs.pk}/approve-verification/")
+        self.assertEqual(resp.status_code, 200)
+        self.assertFalse(resp.json()["data"]["needsVerification"])
+        resp = self.client.post(f"/api/participants/{self.needs.pk}/manual-checkin/")
+        self.assertEqual(resp.status_code, 200)
+        self.needs.refresh_from_db()
+        self.assertEqual(self.needs.verification_status, "APPROVED")
+        self.assertEqual(self.needs.checkin_status, "CHECKED_IN")
+
+    def test_rejected_participant_can_be_approved_on_site(self):
+        self._login("approver")
+        resp = self.client.post(f"/api/participants/{self.rejected.pk}/approve-verification/")
+        self.assertEqual(resp.status_code, 200)
+        self.rejected.refresh_from_db()
+        self.assertEqual(self.rejected.verification_status, "APPROVED")
+
+    def test_approve_requires_permission(self):
+        self._login("plain")
+        resp = self.client.post(f"/api/participants/{self.needs.pk}/approve-verification/")
+        self.assertEqual(resp.status_code, 403)
+        self.needs.refresh_from_db()
+        self.assertEqual(self.needs.verification_status, "PENDING")
+
+    def test_staff_without_approval_permission_cannot_check_in_unverified(self):
+        self._login("plain")
+        resp = self.client.post(f"/api/participants/{self.needs.pk}/manual-checkin/")
+        self.assertEqual(resp.status_code, 400)
+
+    def test_approve_is_idempotent_and_skips_viewers_and_refunded(self):
+        self._login("approver")
+        self.assertEqual(self.client.post(f"/api/participants/{self.approved.pk}/approve-verification/").status_code, 200)
+        self.assertEqual(self.client.post(f"/api/participants/{self.viewer.pk}/approve-verification/").status_code, 400)
+        self.needs.payment_status = "REFUND"
+        self.needs.save()
+        self.assertEqual(self.client.post(f"/api/participants/{self.needs.pk}/approve-verification/").status_code, 400)
+
+    def test_verified_and_viewer_check_in_directly(self):
+        self._login("plain")
+        for participant in (self.approved, self.viewer):
+            resp = self.client.post(f"/api/participants/{participant.pk}/manual-checkin/")
+            self.assertEqual(resp.status_code, 200)
+
+    def test_scan_confirm_blocks_unverified(self):
+        self._login("approver")
+        self.client.post(f"/checkin/scan/{self.needs.qr_token}/confirm/")
+        self.needs.refresh_from_db()
+        self.assertEqual(self.needs.checkin_status, "NOT_CHECKED_IN")
+
+    def test_scan_page_verification_flow_for_approver(self):
+        self._login("approver")
+        resp = self.client.get(f"/checkin/scan/{self.needs.qr_token}/")
+        self.assertContains(resp, "학적 검수 필요")
+        self.assertContains(resp, "검수 완료")
+        self.assertNotContains(resp, "체크인 완료</button>")
+
+        resp = self.client.post(f"/checkin/scan/{self.needs.qr_token}/approve/", follow=True)
+        self.assertContains(resp, "학적 검수 완료")
+        self.assertContains(resp, "체크인 완료</button>")
+        self.needs.refresh_from_db()
+        self.assertEqual(self.needs.verification_status, "APPROVED")
+
+    def test_scan_page_without_approval_permission_shows_notice_only(self):
+        self._login("plain")
+        resp = self.client.get(f"/checkin/scan/{self.needs.qr_token}/")
+        self.assertContains(resp, "학적 검수 필요")
+        self.assertContains(resp, "권한이 있는 스태프만")
+        self.client.post(f"/checkin/scan/{self.needs.qr_token}/approve/")
+        self.needs.refresh_from_db()
+        self.assertEqual(self.needs.verification_status, "PENDING")
+
+    def test_scan_page_hides_verification_from_anonymous_visitors(self):
+        resp = self.client.get(f"/checkin/scan/{self.needs.qr_token}/")
+        self.assertNotContains(resp, "학적 검수 필요")
+
+    def test_participant_qr_page_shows_notice_only_when_unverified(self):
+        resp = self.client.get(f"/qr/{self.needs.qr_token}/")
+        self.assertContains(resp, "학적 검수가 아직 완료되지 않았어요")
+        resp = self.client.get(f"/qr/{self.approved.qr_token}/")
+        self.assertNotContains(resp, "학적 검수가 아직 완료되지 않았어요")
+        resp = self.client.get(f"/qr/{self.viewer.qr_token}/")
+        self.assertNotContains(resp, "학적 검수가 아직 완료되지 않았어요")
 
 
 @override_settings(IMPORT_SECRET="test-secret")
