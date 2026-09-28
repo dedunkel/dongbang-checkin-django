@@ -1,3 +1,4 @@
+import hmac
 import json
 import re
 import uuid
@@ -378,7 +379,11 @@ def google_form_import(request):
         return JsonResponse(
             {"error": "서버에 IMPORT_SECRET이 설정되어 있지 않습니다. .env를 확인해주세요."}, status=500
         )
-    if secret != settings.IMPORT_SECRET:
+    # !=는 앞 글자부터 비교하다 다른 글자에서 바로 끝나서, 응답 시간 차이로 시크릿을
+    # 한 글자씩 추측하는 타이밍 공격이 이론상 가능하다(SEC-05). compare_digest는
+    # 어디서 달라도 같은 시간이 걸린다. str끼리 비교하면 비ASCII 문자에서
+    # TypeError(500)가 나므로 bytes로 바꿔서 비교한다.
+    if not hmac.compare_digest((secret or "").encode("utf-8"), settings.IMPORT_SECRET.encode("utf-8")):
         return JsonResponse({"error": "인증 실패 (X-Import-Secret 불일치)"}, status=401)
 
     try:
