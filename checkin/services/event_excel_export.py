@@ -137,6 +137,22 @@ def find_duplicate_labels(event: Event) -> list[str]:
     return problems
 
 
+def find_duplicate_real_names(event: Event) -> set[str]:
+    """장르 탭 전체를 통틀어(장르 상관없이) 실명이 같은 참가자가 둘 이상인
+    이름 집합을 반환. "이름/댄서네임" 형식이면 실명만 비교한다 — 댄서네임이
+    달라도 현장에서 헷갈리는 건 결국 실명이 같은 두 사람이기 때문. 관람은
+    점수표에서 동명이인을 신경 쓸 대상이 아니라서 제외한다."""
+    counts: dict[str, int] = {}
+    for genre, _ in GENRE_TABS:
+        if genre is None:
+            continue
+        for p in participants_for_tab(event, genre):
+            real, _ = split_display_name(p.name)
+            if real:
+                counts[real] = counts.get(real, 0) + 1
+    return {name for name, n in counts.items() if n > 1}
+
+
 def write_title_row(ws, event: Event, sheet_title: str, num_columns: int) -> None:
     """탭 맨 위에 "동방배틀 Vol.N {장르} 참가자 명단"(관람은 "관람자 명단") 제목
     행을 병합 셀로 넣는다. 세 내보내기 전부 같은 제목 형식을 쓴다."""

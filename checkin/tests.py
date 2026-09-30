@@ -809,6 +809,59 @@ class UnverifiedLabelAssignPolicyTests(TestCase):
         color = name_cell.font.color
         self.assertTrue(color is None or color.type != "rgb")
 
+    def test_score_sheet_duplicate_real_name_across_genres_filled_yellow(self):
+        # 장르가 달라도(브레이킹/팝핑) 실명이 같으면 동명이인으로 잡혀야 한다.
+        Participant.objects.create(
+            id=uuid.uuid4(), event=self.event, entry_type="참가", genre="Breaking",
+            name="이하늘", phone="010-0000-0010",
+            label_group="A", label_number=1, label_code="A-1",
+            payment_status="PAID", verification_status="APPROVED",
+        )
+        Participant.objects.create(
+            id=uuid.uuid4(), event=self.event, entry_type="참가", genre="Popping",
+            name="이하늘/헤븐", phone="010-0000-0011",
+            label_group="A", label_number=1, label_code="A-1",
+            payment_status="PAID", verification_status="APPROVED",
+        )
+        _, content = build_score_sheet_file(self.event)
+        wb = load_workbook(filename=io.BytesIO(content))
+        for sheet in ("브레이킹", "팝핑"):
+            name_cell = wb[sheet].cell(row=3, column=2)
+            self.assertEqual(name_cell.fill.fgColor.rgb, "FFFFD94D")
+
+    def test_score_sheet_unique_name_not_filled_yellow(self):
+        Participant.objects.create(
+            id=uuid.uuid4(), event=self.event, entry_type="참가", genre="Breaking",
+            name="김유일", phone="010-0000-0012",
+            label_group="A", label_number=1, label_code="A-1",
+            payment_status="PAID", verification_status="APPROVED",
+        )
+        _, content = build_score_sheet_file(self.event)
+        wb = load_workbook(filename=io.BytesIO(content))
+        name_cell = wb["브레이킹"].cell(row=3, column=2)
+        self.assertNotEqual(getattr(name_cell.fill.fgColor, "rgb", None), "FFFFD94D")
+
+    def test_score_sheet_duplicate_and_unverified_combine_without_conflict(self):
+        # 동명이인이면서 학적 인증도 필요한 경우, 노란 배경(동명이인)과 파란
+        # 글자색(미검수)이 서로를 가리지 않고 같이 표시돼야 한다.
+        Participant.objects.create(
+            id=uuid.uuid4(), event=self.event, entry_type="참가", genre="Breaking",
+            name="박겹침", phone="010-0000-0013",
+            label_group="A", label_number=1, label_code="A-1",
+            payment_status="PAID", verification_status="APPROVED",
+        )
+        Participant.objects.create(
+            id=uuid.uuid4(), event=self.event, entry_type="참가", genre="Locking",
+            name="박겹침", phone="010-0000-0014",
+            label_group="A", label_number=1, label_code="A-1",
+            payment_status="PAID", verification_status="PENDING",
+        )
+        _, content = build_score_sheet_file(self.event)
+        wb = load_workbook(filename=io.BytesIO(content))
+        name_cell = wb["락킹"].cell(row=3, column=2)
+        self.assertEqual(name_cell.fill.fgColor.rgb, "FFFFD94D")
+        self.assertEqual(name_cell.font.color.rgb, "FF3B82F6")
+
     def test_qr_lookup_api_exposes_verification_status(self):
         staff = get_user_model().objects.create_user("scanstaff", email="scanstaff@example.com", password="x", is_staff=True)
         _grant(staff, "scan_qr")
