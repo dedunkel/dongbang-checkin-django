@@ -98,6 +98,11 @@ a { color: var(--accent); }
 .brand img { height: 25px; width: auto; filter: var(--logo-filter); }
 .logo-hero { width: 190px; height: auto; filter: var(--logo-filter); display: block; }
 .brand span { font-size: 0.7rem; letter-spacing: 0.12em; color: var(--muted); font-weight: 700; }
+/* 체크인 화면처럼 .brand를 홈으로 가는 링크(<a>)로 쓰는 곳에서만 밑줄을
+   없애고 hover 효과를 준다 — .brand 자체는 <div>로 쓰는 화면도 있어 여기
+   범위를 a.brand로 좁혀둔다. */
+a.brand { text-decoration: none; }
+a.brand:hover { opacity: 0.85; }
 
 .topbar {
   display: flex; align-items: center; justify-content: space-between;

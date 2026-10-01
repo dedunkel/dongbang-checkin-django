@@ -3,10 +3,10 @@
 {% block title %}현장 체크인{% endblock %}
 {% block content %}
 <div class="topbar">
-  <div class="brand">
+  <a href="{% url 'checkin:home' %}" class="brand">
     <img src="{% static 'checkin/logo.png' %}" alt="로고" />
     <span class="title" style="color:var(--text); letter-spacing:normal;">동방배틀{% if event %} VOL.{{ event.volume }}{% endif %} 체크인</span>
-  </div>
+  </a>
   <span class="pill">관리자 모드</span>
 </div>
 
