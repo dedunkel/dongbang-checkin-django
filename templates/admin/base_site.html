@@ -29,10 +29,10 @@
 {% block content_title %}
 <div class="dbbt-topbar">
   <div class="dbbt-topbar-left">
-    <div class="dbbt-topbar-brand">
+    <a href="{% url 'checkin:home' %}" class="dbbt-topbar-brand">
       <img src="{% static 'checkin/logo.png' %}" alt="">
       <span>DBBT STAFF</span>
-    </div>
+    </a>
     {% if opts and cl is not None %}
     {% elif opts and opts.model_name == 'user' and original %}
       <div class="dbbt-crumb">
