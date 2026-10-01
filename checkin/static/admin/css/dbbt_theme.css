@@ -225,7 +225,10 @@ body.change-list, body.change-form, body.dbbt-login {
 /* ---- 상단바 + 탭 (모든 admin 페이지 공통, base_site.html의 content_title) ---- */
 .dbbt-topbar { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
 .dbbt-topbar-left { min-width: 0; }
-.dbbt-topbar-brand { display: flex; align-items: center; gap: 8px; }
+/* 홈으로 이동하는 링크라 <a>로 감쌌는데, admin 기본 a 스타일(밑줄·링크색)이
+   덮어쓰지 않게 여기서 다시 지정한다. */
+.dbbt-topbar-brand { display: flex; align-items: center; gap: 8px; text-decoration: none; }
+.dbbt-topbar-brand:hover { opacity: 0.85; }
 .dbbt-topbar-brand img { height: 24px; width: auto; filter: var(--dbbt-logo-filter); }
 .dbbt-topbar-brand span { font-size: 10.5px; letter-spacing: 0.16em; color: var(--muted); font-weight: 700; }
 .dbbt-crumb { font-size: 12px; color: var(--muted); margin-top: 6px; }
@@ -822,7 +825,8 @@ html[data-theme="light"] .dbbt-theme-toggle-option[data-theme-choice="dark"] { c
    ========================================================================== */
 .dbbt-login-wrap { display: flex; align-items: center; justify-content: center; min-height: calc(100vh - 60px); padding: 40px 20px; }
 .dbbt-login-card { width: 100%; max-width: 300px; }
-.dbbt-login-brand { display: flex; align-items: center; justify-content: center; gap: 8px; }
+.dbbt-login-brand { display: flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; }
+.dbbt-login-brand:hover { opacity: 0.85; }
 .dbbt-login-brand img { height: 24px; width: auto; filter: var(--dbbt-logo-filter); }
 .dbbt-login-brand span { font-size: 11px; letter-spacing: 0.16em; color: var(--muted); font-weight: 700; }
 .dbbt-login-heading { text-align: center; margin-top: 22px; }
