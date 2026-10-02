@@ -41,19 +41,23 @@
       <input type="hidden" name="action" value="export_announcement_excel">
       <button type="submit" class="dbbt-pill">공지용 명단 (마스킹)</button>
     </form>
-    {% if perms.checkin.export_sensitive_data %}
+    {% if perms.checkin.export_qr_send_list %}
     <form method="post" action="{% url 'admin:checkin_event_changelist' %}">
       {% csrf_token %}
       <input type="hidden" name="_selected_action" value="{{ original.pk }}">
       <input type="hidden" name="action" value="export_qr_send_list">
       <button type="submit" class="dbbt-pill">QR 발송용 명단 · 운영진</button>
     </form>
+    {% endif %}
+    {% if perms.checkin.export_score_sheet %}
     <form method="post" action="{% url 'admin:checkin_event_changelist' %}">
       {% csrf_token %}
       <input type="hidden" name="_selected_action" value="{{ original.pk }}">
       <input type="hidden" name="action" value="export_score_sheet_excel">
       <button type="submit" class="dbbt-pill">점수표 · 운영진</button>
     </form>
+    {% endif %}
+    {% if perms.checkin.export_csv_backup %}
     <form method="post" action="{% url 'admin:checkin_event_changelist' %}">
       {% csrf_token %}
       <input type="hidden" name="_selected_action" value="{{ original.pk }}">
