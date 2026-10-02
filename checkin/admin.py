@@ -363,7 +363,15 @@ def export_qr_send_list(modeladmin, request, queryset):
     for p in participants:
         qr_url = request.build_absolute_uri(reverse("checkin:qr", args=[p.qr_token]))
         real_name, _dancer_name = split_display_name(p.name)
-        message = f"[{event.name}] {real_name}님, 아래 링크에서 입장용 QR을 확인해주세요.\n{qr_url}"
+        message = (
+            f"[{event.name}]\n\n"
+            f"안녕하세요, {real_name}님! {event.name} 운영팀입니다.\n\n"
+            f"{event.name} 참가 및 관람을 신청해 주셔서 진심으로 감사드립니다.  "
+            "아래 링크에서 입장 시 필요한 개인 QR 코드를 확인해 주시기 바랍니다.\n\n"
+            "🔗 입장용 QR 코드\n"
+            f"{qr_url}\n\n"
+            "감사합니다."
+        )
         writer.writerow([real_name, p.phone, p.entry_type, p.genre or "", qr_url, message])
     return response
 
