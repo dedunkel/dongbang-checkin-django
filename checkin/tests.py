@@ -1608,6 +1608,61 @@ class AccountDeactivationRevokesActiveSessionTests(TestCase):
         self.assertIn("/admin/login/", resp.url)
 
 
+class AxesClientIpResolutionTests(TestCase):
+    """django-axes가 로그인 실패를 추적하는 기준(IP 주소)이 Render 같은 리버스
+    프록시 뒤에서도 REMOTE_ADDR(=프록시 내부 주소, 항상 127.0.0.1)이 아니라
+    실제 방문자 IP로 잡히는지 확인 (#149 — 전 세계 방문자가 같은 잠금 버킷을
+    공유해서 한 명만 틀려도 전원이 잠기던 사고의 재발 방지).
+
+    django-axes 자체는 manage.py test 중 AXES_ENABLED=False로 꺼둬서(settings.py
+    참고, client.login()이 axes가 요구하는 request 인자 없이 호출되기 때문)
+    로그인 흐름을 통째로 테스트할 수 없다 — 그래서 axes가 IP를 뽑아내는 함수
+    (get_client_ip_address)를 직접 호출해서 확인한다."""
+
+    def setUp(self):
+        self.factory = RequestFactory()
+
+    def test_no_x_forwarded_for_falls_back_to_remote_addr(self):
+        # 프록시를 아예 안 거친(X-Forwarded-For 헤더 자체가 없는) 요청은
+        # REMOTE_ADDR로 떨어져야 한다 — 로컬 개발 환경 등 프록시가 없는
+        # 경우까지 깨지면 안 된다.
+        from axes.helpers import get_client_ip_address
+
+        request = self.factory.get("/admin/login/")
+        request.META["REMOTE_ADDR"] = "127.0.0.1"
+        self.assertNotIn("HTTP_X_FORWARDED_FOR", request.META)
+        ip = get_client_ip_address(request)
+        self.assertEqual(ip, "127.0.0.1")
+
+    def test_x_forwarded_for_resolves_to_real_client_ip_not_remote_addr(self):
+        # Render가 실제로 관찰한 접속 IP를 X-Forwarded-For 맨 끝에 붙여서
+        # 넘겨주는 상황 — REMOTE_ADDR(127.0.0.1, Render 내부 프록시 주소)이
+        # 아니라 그 값을 "진짜 IP"로 골라야 한다. 이게 #149 사고의 핵심 수정.
+        from axes.helpers import get_client_ip_address
+
+        request = self.factory.get("/admin/login/")
+        request.META["REMOTE_ADDR"] = "127.0.0.1"
+        request.META["HTTP_X_FORWARDED_FOR"] = "203.0.113.42"
+        ip = get_client_ip_address(request)
+        self.assertEqual(ip, "203.0.113.42")
+
+    def test_spoofed_leading_entries_are_not_trusted_as_client_ip(self):
+        # 공격자가 자기 요청의 X-Forwarded-For에 아무 공인 IP나(몇 개를 더
+        # 끼워넣든) 미리 적어 보내도, Render가 그 뒤에 실제로 관찰한 접속
+        # IP를 맨 끝에 붙이는 한(proxy_count=0 = "항상 맨 끝 값만 신뢰"),
+        # 공격자가 조작한 앞쪽 값이 아니라 맨 끝 값이 선택돼야 한다 — 그래야
+        # X-Forwarded-For를 직접 적어 보내는 것만으로 axes 잠금 추적을
+        # 회피하거나 남의 IP인 척할 수 없다.
+        from axes.helpers import get_client_ip_address
+
+        request = self.factory.get("/admin/login/")
+        request.META["REMOTE_ADDR"] = "127.0.0.1"
+        request.META["HTTP_X_FORWARDED_FOR"] = "9.9.9.9, 1.1.1.1, 2.2.2.2, 203.0.113.42"
+        ip = get_client_ip_address(request)
+        self.assertEqual(ip, "203.0.113.42")
+        self.assertNotIn(ip, ("9.9.9.9", "1.1.1.1", "2.2.2.2"))
+
+
 class AdminAppListOrderingTests(TestCase):
     """admin 홈 화면 앱 목록에서 django-axes(로그인 실패 기록 — 운영진이 평소에
     볼 일 없는 부가 기능)가 알파벳순으로 맨 위에 오지 않고 맨 뒤로 가는지 확인."""

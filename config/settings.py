@@ -142,6 +142,28 @@ AUTHENTICATION_BACKENDS = [
 # 없이도 시간이 지나면 다시 로그인할 수 있다. 잠금 기준은 IP 주소(기본값).
 AXES_FAILURE_LIMIT = 5
 AXES_COOLOFF_TIME = timedelta(hours=1)
+
+# 잠금 기준이 "IP 주소"인데, Render처럼 리버스 프록시 뒤에서 돌아가는 환경에서는
+# django-ipware 없이는 REMOTE_ADDR이 방문자의 진짜 IP가 아니라 Render 내부
+# 프록시 주소(항상 127.0.0.1)로 찍힌다 — 그러면 전 세계 모든 방문자가 같은
+# 잠금 버킷을 공유하게 돼서, 누구 하나(또는 봇 스캔)가 5번만 틀려도 그 계정으로
+# 로그인하는 모두가 같이 잠겨버린다 (실사고: 2026-10-31, #149).
+# django-ipware로 X-Forwarded-For에서 진짜 접속 IP를 꺼내 쓰도록 한다.
+#
+# AXES_IPWARE_PROXY_COUNT=0으로 "맨 끝(가장 오른쪽) 값만 신뢰"하게 한다 — 직관과
+# 달리 숫자를 1(프록시 한 홉)로 주면 오히려 끝에서 "두 번째" 값을 신뢰하게 되는데,
+# 그건 Render가 직접 관찰해서 붙인 진짜 값이 아니라 그 앞, 즉 방문자가 자기
+# 요청에 직접 적어 보낸(얼마든지 조작 가능한) 값이다 — 직접 테스트로 확인:
+#   "9.9.9.9, 203.0.113.42"(앞은 조작값, 뒤는 Render가 붙인 진짜 값)에
+#   proxy_count=1을 쓰면 조작값(9.9.9.9)이 선택된다. proxy_count=0은 항상
+#   맨 끝(Render가 직접 붙인 값)만 보기 때문에, 공격자가 앞에 가짜 값을 몇 개를
+#   끼워넣어도(길이가 몇이든) 흔들리지 않는다.
+# strict(기본값)는 체인 길이가 정확히 1(=프록시 전혀 안 거침)이어야만 해서,
+# Render가 어쩌다 값을 더 붙이는 경우까지 느슨하게 받아주려고 완화해둔다
+# (IPWARE_STRICT=False) — 그래도 위 이유로 항상 맨 끝 값만 신뢰하는 건 그대로다.
+AXES_IPWARE_PROXY_COUNT = 0
+AXES_IPWARE_META_PRECEDENCE_ORDER = ("HTTP_X_FORWARDED_FOR", "REMOTE_ADDR")
+IPWARE_STRICT = False
 # 테스트 클라이언트의 client.login()은 axes가 요구하는 request 객체 없이
 # authenticate()를 호출해서(AxesBackendRequestParameterRequired) 테스트가
 # 실패한다 — 브루트포스 방어는 테스트 대상이 아니므로 manage.py test 실행
